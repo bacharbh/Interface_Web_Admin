@@ -1,0 +1,110 @@
+version: '3.8'
+
+services:
+  # Frontend Nginx (Static Files + Reverse Proxy)
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.prod
+    container_name: shepherd_frontend
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    depends_on:
+      - backend
+
+  # Backend Node.js
+  backend:
+    build: 
+      context: ./backend
+    container_name: shepherd_backend
+    restart: unless-stopped
+    environment:
+      - NODE_ENV=production
+      - MONGODB_URI=mongodb://${MONGO_ROOT_USER}:${MONGO_ROOT_PASSWORD}@mongodb:27017/smart-shepherd?authSource=admin&replicaSet=rs0
+      - REDIS_URL=redis://redis:6379
+      - MQTT_BROKER_URL=mqtts://mosquitto:8883
+    ports:
+      - "5000:5000"
+    depends_on:
+      - mongodb
+      - redis
+      - mosquitto
+
+  # MongoDB Replica Set (Nécessaire pour curseurs, watch et transactions)
+  mongodb:
+    image: mongo:6.0
+    container_name: shepherd_mongodb
+    restart: always
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_ROOT_USER}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD}
+    command: ["--replSet", "rs0", "--bind_ip_all", "--port", "27017"]
+    volumes:
+      - mongo_data:/data/db
+    ports:
+      - "27017:27017"
+
+  # Redis Cache
+  redis:
+    image: redis:7-alpine
+    container_name: shepherd_redis
+    restart: always
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+
+  # MQTT Broker (TLS support)
+  mosquitto:
+    image: eclipse-mosquitto:2
+    container_name: shepherd_mqtt
+    restart: always
+    ports:
+      - "1883:1883"
+      - "8883:8883"
+    volumes:
+      - ./config/mosquitto/mosquitto.conf:/mosquitto/config/mosquitto.conf:ro
+      - ./config/mosquitto/certs:/mosquitto/config/certs:ro
+      - mosquitto_data:/mosquitto/data
+      - mosquitto_log:/mosquitto/log
+
+  # --- STACK MONITORING ---
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: shepherd_prometheus
+    restart: always
+    volumes:
+      - ./config/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./config/alert_rules.yml:/etc/prometheus/alert_rules.yml:ro
+    ports:
+      - "9090:9090"
+
+  alertmanager:
+    image: prom/alertmanager:latest
+    container_name: shepherd_alertmanager
+    restart: always
+    volumes:
+      - ./config/alertmanager.yml:/etc/alertmanager/config.yml:ro
+    ports:
+      - "9093:9093"
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: shepherd_grafana
+    restart: always
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD}
+      - GF_USERS_ALLOW_SIGN_UP=false
+    volumes:
+      - grafana_data:/var/lib/grafana
+
+volumes:
+  mongo_data:
+  redis_data:
+  mosquitto_data:
+  mosquitto_log:
+  grafana_data:

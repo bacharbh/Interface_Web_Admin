@@ -1,0 +1,11 @@
+{
+    "animals": [
+        {
+            "collar_id": "C001",
+            "name": "Bessie",
+            "bpm": 85,
+            "temperature": 39.2,
+            "activity": 12
+        }
+    ]
+}

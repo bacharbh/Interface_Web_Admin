@@ -1,0 +1,1227 @@
+Rapport de Projet
+Smart Shepherd
+Réalisé par : Wassim Akkari et bachar ben hassine
+A vril 2026
+Table des matières
+Introduction générale 6
+1 Cadre général du projet 7
+Introduction . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 7
+1.1 Présentation de l’entreprise . . . . . . . . . . . . . . . . . . . . . . . . . . . 7
+1.1.1 Secteur d’activités . . . . . . . . . . . . . . . . . . . . . . . . . . . 8
+1.2 Cahier des charges du projet . . . . . . . . . . . . . . . . . . . . . . . . . . 8
+1.2.1 Besoins fonctionnels . . . . . . . . . . . . . . . . . . . . . . . . . . 8
+1.2.2 Besoins non fonctionnels . . . . . . . . . . . . . . . . . . . . . . . . 8
+1.2.3 Identification des acteurs . . . . . . . . . . . . . . . . . . . . . . . . 9
+1.3 Méthode de développement . . . . . . . . . . . . . . . . . . . . . . . . . . 9
+1.3.1 Méthode adoptée . . . . . . . . . . . . . . . . . . . . . . . . . . . . 9
+1.3.2 Planification des sprints . . . . . . . . . . . . . . . . . . . . . . . . 9
+1.3.3 Constitution de l’équipe . . . . . . . . . . . . . . . . . . . . . . . . 10
+1.4 Étude de l’existant . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 10
+1.5 Solution proposée . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 10
+1.6 Product Backlog . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 11
+1.7 Critères d’acceptation des User Stories (Definition of Ready) . . . . . . . . 11
+1.8 Diagramme des cas d’utilisation global . . . . . . . . . . . . . . . . . . . . 11
+1.9 Diagramme de Gantt du projet . . . . . . . . . . . . . . . . . . . . . . . . 12
+1.10 Definition of Done . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 13
+1.11 Conclusion . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 13
+2 État de l’art 14
+2.1 Introduction . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 14
+2.2 Présentation du domaine . . . . . . . . . . . . . . . . . . . . . . . . . . . . 14
+2.3 Concepts et technologies clés . . . . . . . . . . . . . . . . . . . . . . . . . . 14
+2.4 Travaux existants et solutions similaires . . . . . . . . . . . . . . . . . . . . 15
+2.5 Analyse comparative . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 15
+2.6 Positionnement du projet . . . . . . . . . . . . . . . . . . . . . . . . . . . . 15
+2.7 Conclusion . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 16
+3 Sprint 1 : Fondations du système 17
+3.1 introduction . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 17
+3.2 Objectif du Sprint 1 . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 17
+3.3 Séance du Sprint Planning 1 . . . . . . . . . . . . . . . . . . . . . . . . . . 17
+3.3.1 Sprint Backlog 1 estimé . . . . . . . . . . . . . . . . . . . . . . . . 18
+3.4 Démarrage du Sprint . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 18
+3.4.1 Analyse . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 18
+1
+3.4.2 Séance du Sprint Planning 1 . . . . . . . . . . . . . . . . . . . . . . 19
+3.5 Diagramme de cas d’utilisation . . . . . . . . . . . . . . . . . . . . . . . . 19
+3.6 Diagramme de classes . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 20
+3.7 Diagramme de séquence (Login) . . . . . . . . . . . . . . . . . . . . . . . . 21
+3.7.1 Tests et déploiement . . . . . . . . . . . . . . . . . . . . . . . . . . 22
+3.8 Tests et validation . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 22
+3.9 Résultat du sprint . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 23
+3.10 Conclusion . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 23
+Conclusion . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 23
+4 Sprint 2 : Intégration IoT et capteurs 24
+4.1 Introduction . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 24
+4.2 Objectif du Sprint 2 . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 24
+4.3 Séance du Sprint Planning 2 . . . . . . . . . . . . . . . . . . . . . . . . . . 24
+4.3.1 Tableau du Sprint Planning 2 . . . . . . . . . . . . . . . . . . . . . 25
+4.4 Sprint Backlog 2 estimé . . . . . . . . . . . . . . . . . . . . . . . . . . . . 25
+4.5 Démarrage du Sprint . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 25
+4.5.1 Étude et choix du matériel IoT . . . . . . . . . . . . . . . . . . . . 25
+4.5.2 Tableau des composants IoT . . . . . . . . . . . . . . . . . . . . . . 26
+4.6 Composants IoT utilisés dans le projet . . . . . . . . . . . . . . . . . . . . 26
+4.6.1 Intégration des capteurs . . . . . . . . . . . . . . . . . . . . . . . . 27
+4.6.2 Développement et configuration . . . . . . . . . . . . . . . . . . . . 27
+4.6.3 Tests du prototype . . . . . . . . . . . . . . . . . . . . . . . . . . . 27
+4.6.4 Résultats des tests . . . . . . . . . . . . . . . . . . . . . . . . . . . 28
+4.6.5 Diagramme de cas d’utilisation . . . . . . . . . . . . . . . . . . . . 28
+4.6.6 Diagramme de classes . . . . . . . . . . . . . . . . . . . . . . . . . . 28
+4.6.7 Diagramme de séquence . . . . . . . . . . . . . . . . . . . . . . . . 29
+4.7 Résultats obtenus . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 30
+4.8 Conclusion . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 30
+5 Sprint 3 : Application mobile 31
+5.1 Introduction . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 31
+5.2 Objectif du Sprint 3 . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 31
+5.3 Séance du Sprint Planning 3 . . . . . . . . . . . . . . . . . . . . . . . . . . 31
+5.4 Sprint Backlog 3 estimé . . . . . . . . . . . . . . . . . . . . . . . . . . . . 32
+5.5 Démarrage du Sprint . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 32
+5.5.1 Conception de l’application . . . . . . . . . . . . . . . . . . . . . . 32
+5.6 Résultats obtenus . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 36
+5.7 Conclusion . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 36
+6 Sprint 4 : Dashboard administrateur et tests finaux 37
+6.1 Introduction . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 37
+6.2 Objectif du Sprint 4 . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 37
+6.3 Séance du Sprint Planning 4 . . . . . . . . . . . . . . . . . . . . . . . . . . 37
+6.4 Sprint Backlog 4 estimé . . . . . . . . . . . . . . . . . . . . . . . . . . . . 38
+6.5 Démarrage du Sprint . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 38
+6.5.1 Analyse . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 38
+6.5.2 Conception du dashboard administrateur . . . . . . . . . . . . . . . 38
+6.5.3 Développement . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 41
+2
+6.5.4 Tests et validation . . . . . . . . . . . . . . . . . . . . . . . . . . . 41
+6.6 Résultats obtenus . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 42
+6.7 Conclusion . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 42
+Conclusion générale 43
+3
+Table des figures
+1.1 Logo de l’ISIMA . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 7
+1.2 Diagramme de cas d’utilisation global . . . . . . . . . . . . . . . . . . . . . 12
+1.3 Diagramme de Gantt du projet . . . . . . . . . . . . . . . . . . . . . . . . 13
+3.1 Diagramme de cas d’utilisation - sprint1 . . . . . . . . . . . . . . . . . . . 20
+3.2 Diagramme de classes - sprint 1 . . . . . . . . . . . . . . . . . . . . . . . . 21
+3.3 Diagramme de séquence - sprint 1 . . . . . . . . . . . . . . . . . . . . . . . 22
+4.1 ESP32 - Microcontrôleur principal assurant le traitement et la gestion du
+système . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 26
+4.2 GPS NEO-6M - Permet la localisation des animaux en temps réel . . . . . 26
+4.3 DS18B20 - Capteur de température corporelle des animaux . . . . . . . . . 26
+4.4 MAX30102 - Mesure du rythme cardiaque et de l’oxygénation . . . . . . . 26
+4.5 MPU6050 - Détecte les mouvements et l’orientation de l’animal . . . . . . 26
+4.6 LoRa SX1276 - Communication longue distance entre les dispositifs . . . . 27
+4.7 Buzzer - Système d’alerte sonore en cas d’anomalie . . . . . . . . . . . . . 27
+4.8 Diagramme de cas d’utilisation - Sprint 2 . . . . . . . . . . . . . . . . . . . 28
+4.9 Diagramme de classes - Sprint 2 . . . . . . . . . . . . . . . . . . . . . . . . 29
+4.10 Diagramme de séquence - Sprint 2 . . . . . . . . . . . . . . . . . . . . . . . 30
+5.1 Diagramme de cas d’utilisation - sprint 3 . . . . . . . . . . . . . . . . . . . 33
+5.2 Diagramme de classes - sprint 3 . . . . . . . . . . . . . . . . . . . . . . . . 34
+5.3 Diagramme de séquence - sprint 3 . . . . . . . . . . . . . . . . . . . . . . . 35
+6.1 Diagramme de cas d’utilisation - sprint 4 . . . . . . . . . . . . . . . . . . . 39
+6.2 Diagramme de classes - sprint 4 . . . . . . . . . . . . . . . . . . . . . . . . 40
+6.3 Diagramme de séquence - sprint 4 . . . . . . . . . . . . . . . . . . . . . . . 41
+4
+Liste des tableaux
+1.1 Besoins fonctionnels . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 8
+1.2 Besoins non fonctionnels . . . . . . . . . . . . . . . . . . . . . . . . . . . . 9
+1.3 Identification des acteurs . . . . . . . . . . . . . . . . . . . . . . . . . . . . 9
+1.4 Planification des sprints . . . . . . . . . . . . . . . . . . . . . . . . . . . . 10
+1.5 Équipe projet . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 10
+1.6 Architecture du système . . . . . . . . . . . . . . . . . . . . . . . . . . . . 10
+1.7 Product Backlog . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 11
+2.1 Analyse des solutions existantes . . . . . . . . . . . . . . . . . . . . . . . . 15
+2.2 Analyse comparative des solutions . . . . . . . . . . . . . . . . . . . . . . . 15
+3.1 Sprint Backlog du Sprint 1 . . . . . . . . . . . . . . . . . . . . . . . . . . . 18
+3.2 Architecture du système Smart Shepherd . . . . . . . . . . . . . . . . . . . 19
+4.1 Sprint Planning 2 . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 25
+4.2 Sprint Backlog 2 . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 25
+4.3 Résultats des tests . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 28
+5.1 Sprint Backlog 3 . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 32
+6.1 Sprint Backlog 4 . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 38
+5
+Introduction générale
+Aujourd’hui, les avancées technologiques dans les domaines de l’Internet des objets
+(IoT), du développement mobile et des systèmes intelligents ont profondément transformé
+plusieurs secteurs, notamment l’agriculture et l’élevage. Ces technologies permettent dé-
+sormais d’assurer un suivi précis, automatisé et en temps réel des ressources animales, ce
+qui améliore la productivité et réduit les pertes.
+Dans ce contexte, ce projet de fin d’études s’inscrit dans une démarche d’innovation et
+propose la conception et la réalisation d’un système intelligent de suivi du bétail nommé
+Smart Shepherd. Ce système vise à offrir une solution complète et intégrée permettant la
+surveillance continue des animaux à l’aide de capteurs IoT, ainsi que le traitement et la
+visualisation des données via des interfaces numériques.
+La solution développée repose sur une architecture composée de plusieurs modules
+interconnectés. Les capteurs embarqués permettent de collecter différentes données telles
+que la température corporelle, le rythme cardiaque, la localisation GPS et le mouvement
+des animaux. Ces informations sont ensuite transmises vers un backend centralisé qui
+assure leur traitement et leur stockage.
+Deux interfaces principales exploitent ces données : une application mobile destinée
+aux utilisateurs pour le suivi en temps réel, et un dashboard web destiné à l’administrateur
+pour la supervision et la gestion globale du système.
+Ce rapport présente l’ensemble des étapes de réalisation du projet. Il commence par
+une étude du contexte et des concepts utilisés, puis décrit la mise en œuvre du système
+à travers une approche Agile organisée en sprints. Chaque sprint correspond à une phase
+spécifique du développement. Enfin, une conclusion générale synthétise les résultats ob-
+tenus et propose des perspectives d’amélioration pour le futur.
+6
+Chapitre 1
+Cadre général du projet
+Introduction
+Le secteur de l’élevage connaît aujourd’hui une transformation profonde grâce à l’in-
+tégration des nouvelles technologies. La digitalisation des exploitations agricoles permet
+d’améliorer la gestion des ressources, d’optimiser la productivité et de renforcer la sur-
+veillance des animaux en temps réel.
+Dans ce contexte, les technologies telles que l’Internet des Objets (IoT), les systèmes
+embarqués, les réseaux de communication sans fil et les applications mobiles jouent un
+rôle central dans la modernisation du domaine agricole.
+Le projetSmart Shepherds’inscrit dans cette dynamique d’innovation. Il propose
+une solution intelligente permettant la localisation, le suivi sanitaire et la gestion centra-
+lisée du bétail.
+1.1 Présentation de l’entreprise
+Le projet Smart Shepherd a été réalisé dans un cadre académique au sein de l’Institut
+Supérieur d’Informatique de Mahdia (ISIMA).
+L’ISIMA est un établissement d’enseignement supérieur spécialisé dans la formation
+en informatique, systèmes embarqués et génie logiciel.
+Figure 1.1– Logo de l’ISIMA
+Le projet s’inscrit dans ce contexte académique et vise à développer une solution
+intelligente pour le suivi du bétail basée sur l’IoT.
+7
+1.1.1 Secteur d’activités
+Ce projet évolue dans plusieurs domaines technologiques complémentaires, notam-
+ment :
+— L’agriculture intelligente, visant à moderniser et optimiser la gestion des exploita-
+tions agricoles;
+— L’Internet des Objets (IoT), permettant la collecte et l’échange de données en
+temps réel;
+— Les systèmes embarqués, utilisés pour la conception de dispositifs intelligents inté-
+grant capteurs et microcontrôleurs;
+— Le développement mobile et web, assurant la création d’interfaces de supervision
+et de gestion du système.
+1.2 Cahier des charges du projet
+Le cahier des charges définit les besoins fonctionnels et non fonctionnels du système
+Smart Shepherd.
+1.2.1 Besoins fonctionnels
+Cette section présente les principales fonctionnalités que le système Smart Shepherd
+doit offrir afin de répondre aux besoins des utilisateurs et d’assurer le bon fonctionnement
+de la plateforme.
+Fonctionnalité Description
+Authentification Accès sécurisé au système pour les utilisateurs et admi-
+nistrateurs
+Gestion des animaux Ajout, modification et suppression des animaux
+Localisation GPS Suivi en temps réel des animaux
+Alertes automatiques Notification en cas d’anomalies détectées
+Visualisation sur carte Affichage des animaux sur une carte interactive
+Gestion administra-
+teur (Dashboard)
+Gestion des utilisateurs, des animaux et des données du
+système
+Table 1.1– Besoins fonctionnels
+1.2.2 Besoins non fonctionnels
+Les besoins non fonctionnels définissent les contraintes de qualité que le système doit
+respecter afin de garantir une performance optimale et une expérience utilisateur fiable.
+8
+Critère Description
+Sécurité Protection des données et contrôle d’accès sécurisé
+Performance Traitement rapide des données en temps réel
+Disponibilité Accès continu au système sans interruption
+Fiabilité Fonctionnement stable et sans erreurs critiques
+Table 1.2– Besoins non fonctionnels
+1.2.3 Identification des acteurs
+Cette section présente les différents acteurs impliqués dans le système Smart Shepherd
+ainsi que leurs rôles dans le fonctionnement global de la plateforme.
+Acteur Description
+Éleveur Utilisateur principal du système via l’application mobile
+Administrateur Responsable de la gestion globale via le dashboard web
+Système IoT Ensemble des capteurs chargés de la collecte des données
+Backend Responsable du traitement, de l’analyse et du stockage
+des données
+Application Mobile Interface destinée aux utilisateurs pour la consultation
+et le suivi
+Dashboard Admin Interface web dédiée à la supervision et à l’administra-
+tion du système
+Table 1.3– Identification des acteurs
+1.3 Méthode de développement
+1.3.1 Méthode adoptée
+Le projet Smart Shepherd est développé en utilisant la méthode Agile Scrum, basée sur
+un découpage du travail en itérations appelées sprints, permettant une meilleure flexibilité
+et un suivi continu du projet.
+1.3.2 Planification des sprints
+Cette section présente l’organisation temporelle des différentes phases du projet sous
+forme de sprints.
+9
+Sprint Objectif Durée Livrable
+Sprint 1 Mise en place du backend et authenti-
+fication des utilisateurs
+2 semaines API fonctionnelle
+Sprint 2 Intégration des capteurs IoT et collecte
+des données
+2 semaines Prototype matériel
+Sprint 3 Développement de l’application mobile
+utilisateur
+2 semaines Application mobile
+opérationnelle
+Sprint 4 Développement du dashboard adminis-
+trateur et tests finaux
+2 semaines Version finale du sys-
+tème
+Table 1.4– Planification des sprints
+1.3.3 Constitution de l’équipe
+Cette section décrit les rôles des membres de l’équipe et leurs responsabilités dans le
+projet.
+Rôle Responsabilités
+Product Owner Définition des besoins et priorisation des fonctionnalités
+Scrum Master Supervision de l’application de la méthode Agile Scrum
+Développeurs Conception et développement du backend, de l’applica-
+tion mobile et du dashboard
+Table 1.5– Équipe projet
+1.4 Étude de l’existant
+Les solutions existantes dans le domaine du suivi du bétail se basent principalement
+sur des systèmes GPS simples, mais elles présentent des limites en termes d’intégration,
+de temps réel et de fonctionnalités avancées.
+1.5 Solution proposée
+La solution Smart Shepherd repose sur une architecture complète composée de plu-
+sieurs modules interconnectés.
+Composant Description
+Collier intelligent Dispositif embarqué basé sur ESP32 avec GPS et cap-
+teurs
+Backend API responsable du traitement et du stockage des don-
+nées
+Application Mobile Interface utilisateur destinée aux éleveurs
+Dashboard Admin Interface web pour la gestion et la supervision du sys-
+tème
+Base de données Stockage sécurisé et structuré des données
+Table 1.6– Architecture du système
+10
+1.6 Product Backlog
+Le Product Backlog regroupe l’ensemble des fonctionnalités du système classées selon
+leur priorité et leur état d’avancement.
+ID User Story Priorité Statut
+US1 Authentification des utilisateurs Haute Terminé
+US2 Gestion des animaux Haute En cours
+US3 Suivi GPS en temps réel Haute En cours
+US4 Génération d’alertes automa-
+tiques
+Moyenne En cours
+US5 Dashboard administrateur Haute En cours
+Table 1.7– Product Backlog
+1.7 Critères d’acceptation des User Stories (Definition
+of Ready)
+Les critères d’acceptation définissent les conditions nécessaires pour qu’une User Story
+soit prête à être développée. Ils permettent de garantir une compréhension claire des
+besoins et d’assurer la qualité des fonctionnalités avant leur implémentation.
+— User Story clairement définie et compréhensible
+— Critères fonctionnels bien spécifiés
+— Priorité définie dans le Product Backlog
+— Validation par le Product Owner
+— Estimation réalisée par l’équipe de développement
+1.8 Diagramme des cas d’utilisation global
+Cette section présente une vue globale des fonctionnalités du système Smart Shepherd
+ainsi que les interactions entre les différents acteurs (utilisateur, administrateur et sys-
+tème).
+11
+Figure 1.2– Diagramme de cas d’utilisation global
+1.9 Diagramme de Gantt du projet
+CettesectionillustrelaplanificationtemporelleduprojetSmartShepherd.Ellepermet
+de visualiser les différentes phases du projet ainsi que la répartition des tâches dans le
+temps selon une approche Agile.
+12
+Figure 1.3– Diagramme de Gantt du projet
+1.10 Definition of Done
+La Definition of Done (DoD) représente l’ensemble des critères qui permettent de
+considérer qu’une fonctionnalité est complètement terminée et prête à être livrée.
+— Code développé et conforme aux exigences
+— Fonctionnalité testée et validée
+— Absence d’erreurs critiques
+— Intégration réussie avec le backend
+— Documentation mise à jour
+— Validation par l’équipe projet
+1.11 Conclusion
+Ce chapitre a présenté le cadre général du projet Smart Shepherd ainsi que son archi-
+tecture basée sur une application mobile pour les utilisateurs et un dashboard adminis-
+trateur pour la supervision.
+13
+Chapitre 2
+État de l’art
+2.1 Introduction
+Ce chapitre présente l’état de l’art du projet Smart Shepherd. Il vise à introduire le
+domaine d’étude, analyser les solutions existantes, identifier les technologies utilisées et
+positionner notre solution par rapport aux travaux déjà réalisés. Cette étude permet de
+justifier les choix techniques adoptés dans le cadre du projet.
+2.2 Présentation du domaine
+Le projet Smart Shepherd s’inscrit dans le domaine de l’agriculture intelligente, éga-
+lement appelée Smart Farming, qui repose sur l’utilisation des technologies de l’Internet
+des Objets (IoT), des systèmes embarqués et des applications mobiles. Ce domaine a pour
+objectif d’améliorer la gestion des exploitations agricoles et d’optimiser le suivi du bétail.
+L’intégration de ces technologies permet aujourd’hui d’assurer une surveillance en
+temps réel des animaux, de réduire les pertes et d’améliorer la productivité des élevages.
+2.3 Concepts et technologies clés
+Cette section présente les principaux concepts, technologies et outils utilisés dans le
+cadre du projet Smart Shepherd. Elle permet de comprendre les bases techniques sur
+lesquelles repose le système ainsi que leur rôle dans la réalisation de la solution proposée.
+Les technologies utilisées couvrent les différentes parties du système, notamment l’IoT,
+le développement backend, la communication entre les composants ainsi que les interfaces
+utilisateur.
+Chaque concept présenté doit respecter les critères suivants :
+– Être clairement défini afin d’assurer une compréhension simple et précise.
+– Être expliqué de manière synthétique en mettant l’accent sur son utilité.
+– Être directement relié au projet Smart Shepherd pour justifier son utilisation.
+Il est recommandé d’intégrer des schémas explicatifs lorsque cela est pertinent afin
+d’illustrerlesinteractionsentrelesdifférentestechnologiesetd’améliorerlacompréhension
+globale de l’architecture du système.
+14
+2.4 Travaux existants et solutions similaires
+Plusieurs solutions desuivi du bétailexistent déjàsurle marché. Cessystèmes reposent
+généralement sur la localisation GPS et la surveillance basique des animaux.
+Solution Avantages Limites
+Systèmes GPS clas-
+siques
+Localisation simple Fonctionnalités limi-
+tées
+Solutions IoT com-
+merciales
+Suivi en temps réel Coût élevé
+Applications agricoles
+mobiles
+Interface utilisateur
+simple
+Manque de capteurs
+intégrés
+Table 2.1– Analyse des solutions existantes
+Ces solutions restent limitées car elles ne proposent pas une intégration complète entre
+matériel embarqué, backend et application mobile.
+2.5 Analyse comparative
+Une comparaison des solutions existantes avec le projet Smart Shepherd permet de
+mettre en évidence les différences principales.
+Critère GPS classique Solution IoT Smart Shepherd
+Localisation temps
+réel
+Oui Oui Oui
+Suivi santé Non Partiel Oui
+Alertes automatiques Non Oui Oui
+Coût Faible Élevé Moyen
+Application mobile Non Oui Oui
+Table 2.2– Analyse comparative des solutions
+Cette comparaison montre clairement que Smart Shepherd offre une solution plus
+complète et mieux adaptée aux besoins des éleveurs.
+2.6 Positionnement du projet
+Le projet Smart Shepherd se positionne comme une solution innovante et complète
+dans le domaine du suivi intelligent du bétail. Contrairement aux solutions existantes,
+il intègre à la fois des capteurs embarqués, un système de communication IoT et une
+application mobile centralisée.
+Cette intégration permet d’assurer un suivi en temps réel, une meilleure prise de
+décision et une gestion optimisée des troupeaux.
+15
+2.7 Conclusion
+Ce chapitre a permis de présenter l’état de l’art du projet Smart Shepherd. Nous avons
+analysé le domaine de l’agriculture intelligente, étudié les technologies utilisées, comparé
+les solutions existantes et positionné notre projet. Cette étude confirme la pertinence et
+la valeur ajoutée de la solution proposée.
+16
+Chapitre 3
+Sprint 1 : Fondations du système
+3.1 introduction
+Ce sprint représente la première étape du projet Smart Shepherd. Il a pour objectif
+de mettre en place la base technique du système à travers le développement du backend
+et la mise en œuvre de l’authentification. Cette phase permet d’assurer la communication
+entre deux interfaces distinctes :
+— l’application mobile destinée aux utilisateurs
+— le dashboard web destiné à l’administrateur
+3.2 Objectif du Sprint 1
+Ce sprint représente la première étape technique du projet Smart Shepherd, visant à
+poser les bases du système backend et de l’authentification sécurisée. Il permet d’assurer
+une structure stable pour la communication entre les différentes interfaces du projet.
+L’objectif principal de ce sprint est de développer une API backend fonctionnelle et
+sécurisée, capable de gérer les utilisateurs et les accès au système.
+3.3 Séance du Sprint Planning 1
+La séance de Sprint Planning 1 constitue une étape essentielle dans l’organisation
+du travail du projet Smart Shepherd selon la méthodologie Agile Scrum. Elle permet de
+définir clairement les objectifs du sprint ainsi que les tâches nécessaires pour les atteindre.
+Lors de cette réunion, les membres de l’équipe (Product Owner, Scrum Master et
+développeurs) ont collaboré afin de comprendre les besoins prioritaires du système et de
+les transformer en tâches techniques réalisables. Une attention particulière a été portée à
+la mise en place du backend et à l’implémentation du système d’authentification.
+Les éléments principaux discutés durant cette séance sont :
+— Analyse des besoins fonctionnels du système
+— Définition des priorités du sprint
+— Identification des tâches techniques à réaliser
+— Estimation de la charge de travail
+— Répartition des responsabilités au sein de l’équipe
+Le Sprint 1 a été planifié sur une durée de deux semaines, permettant ainsi une orga-
+nisation progressive des tâches et un suivi efficace de l’avancement du projet.
+17
+Les priorités retenues pour ce sprint sont centrées sur :
+— La mise en place de l’architecture backend (Node.js / Express)
+— L’implémentation de l’authentification sécurisée (login / register)
+— La gestion des rôles utilisateurs (administrateur et utilisateur)
+— La connexion à la base de données MongoDB
+— La sécurisation des accès via JWT
+Enfin, certaines hypothèses ont été prises en compte afin de garantir la réussite du
+sprint, notamment la disponibilité des environnements de développement, la stabilité des
+outils utilisés et la clarté des besoins définis en amont.
+Cette séance a permis de transformer les objectifs globaux du projet en un ensemble
+de tâches structurées, planifiées et réalisables dans un délai défini.
+3.3.1 Sprint Backlog 1 estimé
+Ce sprint backlog regroupe les principales tâches techniques nécessaires à la réalisation
+des objectifs fixés et à la mise en place du système backend.
+ID Fonctionnalité User Story Estimation
+SB1 Backend serveur Création de l’architec-
+ture backend
+2 jours
+SB2 Authentification Inscription et
+connexion utilisa-
+teur
+3 jours
+SB3 Gestion rôles Gestion admin / user 2 jours
+SB4 JWT Sécurisation des ses-
+sions
+2 jours
+SB5 MongoDB Stockage des données 1 jour
+SB6 Tests API Validation avec Post-
+man
+1 jour
+Table 3.1– Sprint Backlog du Sprint 1
+3.4 Démarrage du Sprint
+Le sprint a débuté par la mise en place de l’environnement de développement ainsi
+que la structuration du backend. Cette étape initiale a permis de construire une base
+technique stable pour le développement des différentes fonctionnalités du système.
+Les premières tâches réalisées ont porté sur la création de l’API backend, l’implémen-
+tation de l’authentification des utilisateurs et la connexion à la base de données MongoDB.
+Ces éléments ont assuré une communication fiable entre les différentes composantes du
+projet.
+3.4.1 Analyse
+Cette phase a pour objectif l’étude des besoins du système afin de définir une archi-
+tecture adaptée aux exigences fonctionnelles et techniques.
+18
+Elle permet de mieux comprendre le fonctionnement global du système ainsi que les
+contraintes à respecter lors du développement.
+L’analyse a permis d’identifier les éléments essentiels suivants :
+— Gestion sécurisée des utilisateurs
+— Séparation des rôles (administrateur / utilisateur)
+— Protection des routes sensibles
+— Définition des contraintes de sécurité
+— Respect des performances du système
+— Fiabilité des échanges de données
+3.4.2 Séance du Sprint Planning 1
+Lors de la séance de Sprint Planning, l’équipe projet a défini l’organisation générale du
+sprint ainsi que les composants techniques nécessaires à la réalisation du système Smart
+Shepherd. Cette étape a permis de structurer le travail et de clarifier les responsabilités
+de chaque partie du système.
+Le système repose sur une architecture client-serveur permettant de séparer clairement
+les responsabilités entre le backend, la base de données et les interfaces utilisateur. Cette
+organisation assure une meilleure maintenabilité, sécurité et évolutivité du système.
+Le tableau suivant présente les principaux composants de l’architecture ainsi que leur
+rôle dans le fonctionnement global du système.
+Composant Rôle dans le système
+Backend (Node.js /
+Express)
+Gère la logique métier, les requêtes API et la communi-
+cation entre les différentes parties du système.
+Base de données
+(MongoDB)
+Assure le stockage, la gestion et la sécurisation des don-
+nées des utilisateurs, animaux et capteurs.
+Authentification
+(JWT)
+Permet de sécuriser les accès au système et de gérer les
+sessions utilisateurs de manière fiable.
+Application mobile Interface utilisée par les éleveurs pour consulter les don-
+nées et suivre les animaux en temps réel.
+Dashboard web Interface destinée à l’administrateur pour la gestion du
+système et la supervision globale.
+Table 3.2– Architecture du système Smart Shepherd
+3.5 Diagramme de cas d’utilisation
+Ce diagramme représente les principales interactions entre les acteurs du système et
+les fonctionnalités offertes durant ce sprint.
+19
+S m art S hepherd S ystem  - S print 1
+Créer un compte
+Se connecter
+Consulter profil
+Consulter données animaux
+Gérer utilisateurs
+Gérer animaux
+Accéder dashboard
+Utilisateur
+Adm inistrateur
+include
+Figure 3.1– Diagramme de cas d’utilisation - sprint1
+3.6 Diagramme de classes
+Ce diagramme décrit la structure statique du système ainsi que les relations entre les
+différentes entités principales.
+20
+Figure 3.2– Diagramme de classes - sprint 1
+3.7 Diagramme de séquence (Login)
+Ce diagramme illustre le déroulement du processus d’authentification de l’utilisateur
+et l’échange de messages entre les différentes composantes du système.
+21
+Figure 3.3– Diagramme de séquence - sprint 1
+3.7.1 Tests et déploiement
+Durant ce sprint, le backend a été développé avec Node.js et Express. MongoDB a été
+utilisé comme base de données.
+Les principales fonctionnalités implémentées sont :
+— API d’authentification
+— Hashage des mots de passe avec bcrypt
+— Génération de tokens JWT
+— Gestion des rôles utilisateur
+— Sécurisation des routes
+— Connexion à la base de données
+3.8 Tests et validation
+Les tests ont été réalisés avec Postman afin de vérifier :
+— Création de compte utilisateur
+— Connexion sécurisée
+— Génération du token JWT
+22
+— Accès selon les rôles
+— Protection des routes
+Tous les tests ont été validés avec succès.
+3.9 Résultat du sprint
+À la fin de ce sprint, un backend fonctionnel et sécurisé a été mis en place. Il constitue
+la base du système Smart Shepherd et permet l’intégration des modules suivants :
+— Système IoT (GPS et capteurs)
+— Application mobile
+— Dashboard administrateur
+3.10 Conclusion
+Ce Sprint 1 a permis de poser les bases du système Smart Shepherd à travers le
+développementdubackendetdel’authentificationsécurisée.Lestestsréalisésontconfirmé
+le bon fonctionnement de l’API et la gestion des utilisateurs.
+Ce sprint constitue une étape clé pour la suite du projet et prépare l’intégration des
+modules IoT.
+23
+Chapitre 4
+Sprint 2 : Intégration IoT et capteurs
+4.1 Introduction
+Le Sprint 2 constitue une étape essentielle dans le développement du projet Smart
+Shepherd. Après la mise en place du backend et de l’authentification lors du Sprint 1, ce
+sprint est consacré à l’intégration des composants IoT et des capteurs.
+L’objectif est de transformer le système en une solution embarquée intelligente ca-
+pable de collecter des données physiques en temps réel depuis les animaux, puis de les
+transmettre vers la plateforme backend.
+4.2 Objectif du Sprint 2
+L’objectif principal de ce sprint est de réaliser un prototype matériel fonctionnel inté-
+grant différents capteurs IoT afin d’assurer la collecte et la transmission des données des
+animaux.
+Les résultats attendus sont :
+— Intégration des capteurs dans un système embarqué
+— Communication entre capteurs et microcontrôleur
+— Transmission des données vers le backend
+— Réalisation d’un prototype fonctionnel stable
+4.3 Séance du Sprint Planning 2
+Lors de la séance de Sprint Planning 2, l’équipe a organisé les tâches liées à la partie
+matérielle du projet. Une attention particulière a été donnée à la sélection des composants
+IoT et à la répartition des responsabilités entre les membres.
+La planification a permis de définir les priorités suivantes :
+— Choix du matériel IoT adapté
+— Intégration des capteurs
+— Programmation du microcontrôleur
+— Tests du prototype
+24
+4.3.1 Tableau du Sprint Planning 2
+Cette étape de planification permet d’organiser les différentes tâches du Sprint 2 afin
+d’assurer une meilleure répartition du travail au sein de l’équipe. Elle facilite également
+le suivi de l’avancement du projet et la gestion des priorités techniques.
+Rôle / Tâche Description Durée estimée
+Étude du matériel Analyse des capteurs et composants 2 jours
+Intégration capteurs Connexion physique des capteurs 3 jours
+Programmation ESP32 Développement du code embarqué 3 jours
+Communication IoT Transmission des données 2 jours
+Tests prototype Validation du système 2 jours
+Table 4.1– Sprint Planning 2
+4.4 Sprint Backlog 2 estimé
+Le sprint backlog regroupe l’ensemble des fonctionnalités techniques sélectionnées pour
+ce sprint afin d’assurer une meilleure organisation du travail. Il permet de prioriser les
+tâches à réaliser en fonction des objectifs définis et des contraintes du projet.
+ID Fonctionnalité User Story Estimation
+SB1 Lecture capteurs En tant que système, je collecte
+les données des capteurs
+2 jours
+SB2 GPS tracking Localisation des animaux en
+temps réel
+3 jours
+SB3 Communication IoT Envoi des données vers backend 2 jours
+SB4 Gestion énergie Optimisation consommation bat-
+terie
+2 jours
+SB5 Prototype ESP32 Assemblage matériel complet 3 jours
+SB6 Tests terrain Validation du fonctionnement
+réel
+2 jours
+Table 4.2– Sprint Backlog 2
+4.5 Démarrage du Sprint
+Le Sprint 2 a débuté par la mise en place du matériel IoT et la préparation de l’en-
+vironnement de développement embarqué. L’équipe a ensuite procédé à l’assemblage des
+composants et à la configuration du microcontrôleur ESP32.
+4.5.1 Étude et choix du matériel IoT
+Cette phase consiste à sélectionner les composants nécessaires au système Smart She-
+pherd en fonction des besoins du projet.
+25
+4.5.2 Tableau des composants IoT
+Le système Smart Shepherd repose sur plusieurs composants IoT essentiels permettant
+lacollecte,letraitementetlatransmissiondesdonnées.Letableausuivantprésentechaque
+composant ainsi que son rôle et son illustration.
+4.6 Composants IoT utilisés dans le projet
+Cette section présente les principaux composants matériels utilisés dans le système
+Smart Shepherd. Chaque composant joue un rôle spécifique dans la collecte et la trans-
+mission des données.
+Figure 4.1– ESP32 - Microcontrôleur principal assurant le traitement et la gestion du
+système
+Figure 4.2– GPS NEO-6M - Permet la localisation des animaux en temps réel
+Figure 4.3– DS18B20 - Capteur de température corporelle des animaux
+Figure 4.4– MAX30102 - Mesure du rythme cardiaque et de l’oxygénation
+Figure 4.5– MPU6050 - Détecte les mouvements et l’orientation de l’animal
+26
+Figure 4.6– LoRa SX1276 - Communication longue distance entre les dispositifs
+Figure 4.7– Buzzer - Système d’alerte sonore en cas d’anomalie
+4.6.1 Intégration des capteurs
+Les capteurs ont été intégrés au microcontrôleur ESP32 en respectant les schémas de
+connexion électroniques. Chaque capteur a été testé individuellement afin de garantir son
+bon fonctionnement avant l’intégration globale.
+Les données collectées sont :
+— Température corporelle
+— Fréquence cardiaque
+— Position GPS
+— Mouvement et orientation
+4.6.2 Développement et configuration
+Le développement du firmware embarqué a été réalisé sur ESP32 en utilisant Arduino
+IDE / PlatformIO.
+Les fonctionnalités développées :
+— Lecture des capteurs en temps réel
+— Traitement des données
+— Transmission via LoRa ou Wi-Fi
+— Gestion de l’énergie
+— Déclenchement des alertes (buzzer)
+4.6.3 Tests du prototype
+Les tests ont été réalisés afin de valider le bon fonctionnement du système.
+27
+4.6.4 Résultats des tests
+Test Résultat
+Lecture capteur température Réussi
+Lecture GPS Réussi
+Communication LoRa Réussi
+Transmission backend Réussi
+Système d’alerte Réussi
+Table 4.3– Résultats des tests
+4.6.5 Diagramme de cas d’utilisation
+Le diagramme suivant représente les interactions entre les acteurs du système (utili-
+sateur, administrateur et système IoT) et les principales fonctionnalités du Sprint 2.
+S m art S hepherd - S print 2
+S'inscrire / Se connecter
+Consulter animaux
+Voir données capteurs
+Voir localisation GPS
+Recevoir alertes
+Gérer animaux
+Gérer utilisateurs Superviser données IoT
+Envoyer données capteurs
+Éleveur (Utilisateur Mobile)
+Administrateur (Dashboard)
+Système IoT (ESP32)
+Figure 4.8– Diagramme de cas d’utilisation - Sprint 2
+4.6.6 Diagramme de classes
+Ce diagramme présente la structure statique du système ainsi que les relations entre
+les principales entités (utilisateurs, animaux, capteurs et données IoT).
+28
+User
+i d
+nam e
+em ail
+password
+ro le
+Anim al
+i d
+nam e
+ty p e
+status
+SensorData
+i d
+tem perature
+heartRate
+gpsLocation
+m ovem ent
+tim estam p
+Device
+deviceId
+status
+Alert
+i d
+ty p e
+message
+d a te
+Adm in
+i d
+nam e
+em ail
+1
+*
+1
+*
+1
+*
+1
+1
+Figure 4.9– Diagramme de classes - Sprint 2
+4.6.7 Diagramme de séquence
+Ce diagramme illustre le processus de transmission des données depuis les capteurs
+vers le backend, jusqu’au stockage dans la base de données.
+29
+IoT_Device
+IoT_Device
+ESP32
+ESP32
+Capteurs
+Capteurs
+Backend API
+Backend API
+MongoDB
+MongoDB
+Démarrage système
+Lire données (temp, GPS, HR, mouvement)
+Données capteurs
+Envoyer données via LoRa / WiFi
+Stocker données capteurs
+Confirmation stockage
+ACK (OK)
+Figure 4.10– Diagramme de séquence - Sprint 2
+4.7 Résultats obtenus
+À la fin de ce sprint, un prototype IoT fonctionnel a été réalisé. Le système est capable
+de :
+— Collecter des données depuis plusieurs capteurs
+— Localiser les animaux en temps réel
+— Transmettre les données vers le backend
+— Déclencher des alertes en cas d’anomalie
+4.8 Conclusion
+Le Sprint 2 a permis de concrétiser la partie matérielle du projet en intégrant les
+capteurs et en développant un prototype fonctionnel. Cette étape renforce la solution
+globale et permet de passer vers des fonctionnalités plus avancées dans les prochains
+sprints.
+30
+Chapitre 5
+Sprint 3 : Application mobile
+5.1 Introduction
+Le Sprint 3 constitue une étape clé dans le développement du projet Smart Shepherd.
+Après la réalisation du backend lors du Sprint 1 et l’intégration des capteurs IoT lors du
+Sprint 2, ce sprint est consacré au développement de l’application mobile.
+Cette application représente l’interface principale destinée aux utilisateurs du système.
+Elle permet d’interagir avec la plateforme, de consulter les données des animaux et de
+suivre leur état en temps réel.
+L’objectif de ce sprint est de développer une application mobile fonctionnelle, connec-
+tée au backend et capable d’afficher les données issues du système IoT.
+5.2 Objectif du Sprint 3
+L’objectif principal de ce sprint est de concevoir et développer une application mobile
+opérationnelle pour les utilisateurs du système Smart Shepherd.
+Les résultats attendus sont :
+— Mise en place d’une interface mobile intuitive
+— Développement du système d’authentification (login / register)
+— Consultation des données des animaux
+— Affichage de la localisation GPS en temps réel
+— Réception des alertes système
+— Communication avec le backend via API REST
+5.3 Séance du Sprint Planning 3
+Lors de la séance de Sprint Planning 3, l’équipe a défini les tâches nécessaires pour le
+développement de l’application mobile. Les priorités ont été fixées en fonction des besoins
+utilisateurs et des fonctionnalités du système.
+Les points principaux abordés sont :
+— Analyse des fonctionnalités de l’application mobile
+— Définition des écrans de l’application
+— Priorisation des fonctionnalités critiques
+— Estimation du temps de développement
+— Répartition des tâches entre les membres de l’équipe
+31
+Le sprint a été planifié sur une durée de deux semaines afin de garantir une implémen-
+tation progressive et efficace.
+5.4 Sprint Backlog 3 estimé
+Le tableau suivant présente le Sprint Backlog du Sprint 3. Il regroupe les principales
+fonctionnalités de l’application mobile, accompagnées de leurs user stories et des estima-
+tions nécessaires à leur réalisation.
+ID Fonctionnalité User Story Estimation
+SB1 Authentification mobile En tant qu’utilisateur, je veux me
+connecter à l’application
+2 jours
+SB2 Liste des animaux Consulter les animaux dispo-
+nibles
+2 jours
+SB3 GPS tracking Voir la position des animaux en
+temps réel
+3 jours
+SB4 Alertes Recevoir des notifications en cas
+d’anomalie
+2 jours
+SB5 Profil utilisateur Gérer les informations du compte 2 jours
+SB6 Connexion API backend Communication avec le serveur 3 jours
+Table 5.1– Sprint Backlog 3
+5.5 Démarrage du Sprint
+Le Sprint 3 a débuté par la mise en place de l’environnement de développement mobile
+et la connexion avec le backend existant. L’équipe a ensuite entamé la conception de
+l’architecture de l’application.
+Les premières étapes ont permis de structurer l’application et de définir la navigation
+entre les différents écrans.
+Analyse des besoins
+L’analyse a permis d’identifier les besoins essentiels de l’application mobile :
+— Authentification sécurisée des utilisateurs
+— Consultation des données des animaux en temps réel
+— Suivi de la localisation GPS
+— Réception des alertes
+— Interface simple et facile à utiliser
+5.5.1 Conception de l’application
+La conception de l’application mobile repose sur une architecture client-serveur assu-
+rant la communication entre l’interface mobile et le backend via des API REST. Cette
+phase permet de définir les principales interactions entre les utilisateurs et le système.
+32
+Diagramme de cas d’utilisation
+Ce diagramme représente les différentes fonctionnalités offertes à l’utilisateur à travers
+l’application mobile ainsi que leurs interactions avec le système.
+S m art S hepherd S ystem
+S'inscrire / Se connecter
+Consulter animaux
+Voir GPS en temps réel
+Recevoir alertes
+Consulter données capteurs
+Authentification API
+Gestion données BackendUtilisateur Mobile
+Figure 5.1– Diagramme de cas d’utilisation - sprint 3
+Diagramme de classes
+Ce diagramme décrit la structure des principales classes de l’application mobile ainsi
+que leur relation avec le backend.
+33
+User
+i d
+nam e
+em ail
+password
+ro le
+Anim al
+i d
+nam e
+ty p e
+status
+SensorData
+tem perature
+heartRate
+gpsLocation
+m ovem ent
+tim estam p
+Alert
+i d
+ty p e
+message
+d a te
+MobileApp
+login()
+getAnim als()
+showGPS()
+getAlerts()
+BackendAPI
+login()
+getAnim als()
+getSensorData()
+sendAlerts()
+1
+*
+1
+*
+1
+*
+Figure 5.2– Diagramme de classes - sprint 3
+34
+Diagramme de séquence (Login)
+Ce diagramme illustre le processus d’authentification entre l’utilisateur, l’application
+mobile et le backend.
+User
+User
+Mobile App
+Mobile App
+Backend API
+Backend API
+MongoDB
+MongoDB
+JWT Service
+JWT Service
+Enter credentials
+POST /login
+Verify credentials
+User data
+Generate token
+Token
+Token + role
+Login success
+Request animals data
+Fetch data
+D ata
+Response
+Figure 5.3– Diagramme de séquence - sprint 3
+Développement
+Le développement de l’application mobile a été réalisé à l’aide de React Native, per-
+mettant de créer une interface multiplateforme performante et fluide.
+Les principales fonctionnalités implémentées sont :
+— Authentification des utilisateurs avec connexion sécurisée
+— Communication avec le backend via des API REST
+— Affichage dynamique des données des animaux en temps réel
+— Intégration d’une carte GPS pour la localisation des animaux
+— Mise en place d’un système de notifications et d’alertes
+— Gestion de la navigation entre les différents écrans de l’application
+Tests et validation
+Des tests fonctionnels ont été réalisés afin de vérifier le bon fonctionnement de l’appli-
+cation mobile et sa communication avec le backend.
+Les tests effectués sont les suivants :
+35
+— Test de l’authentification (login et inscription)
+— Test des appels API vers le backend
+— Test d’affichage des données des animaux
+— Test de la localisation GPS
+— Test du système de notifications
+— Test de navigation entre les écrans
+Les résultats obtenus montrent que l’ensemble des fonctionnalités fonctionne correc-
+tement. L’application assure une communication stable avec le backend et répond aux
+besoins définis dans le cahier des charges.
+Ainsi, le module mobile est validé et prêt pour l’intégration avec les autres composants
+du système Smart Shepherd.
+5.6 Résultats obtenus
+À la fin de ce sprint, une application mobile fonctionnelle a été développée avec succès.
+Le système permet désormais :
+— Connexion sécurisée des utilisateurs
+— Consultation des données des animaux
+— Suivi GPS en temps réel
+— Réception des alertes
+— Interaction avec le backend
+5.7 Conclusion
+Le Sprint 3 a permis de développer une application mobile complète et fonctionnelle,
+constituant l’interface principale du système Smart Shepherd.
+Cette étape complète l’architecture globale du projet et permet de passer vers les tests
+finaux et le développement du dashboard administrateur.
+36
+Chapitre 6
+Sprint 4 : Dashboard administrateur et
+tests finaux
+6.1 Introduction
+Le Sprint 4 représente la dernière étape du développement du projet Smart Shepherd.
+Après la réalisation du backend (Sprint 1), l’intégration des capteurs IoT (Sprint 2) et le
+développement de l’application mobile (Sprint 3), ce sprint est consacré au développement
+du dashboard administrateur ainsi qu’aux tests finaux du système.
+Ce sprint permet de finaliser l’ensemble du système en ajoutant une interface de su-
+pervision destinée à l’administrateur, ainsi qu’en validant le bon fonctionnement global
+de la solution.
+6.2 Objectif du Sprint 4
+L’objectif principal de ce sprint est de développer un dashboard administrateur com-
+plet et fonctionnel, permettant la gestion et la supervision du système Smart Shepherd.
+Les résultats attendus sont :
+— Développement du dashboard administrateur
+— Gestion des utilisateurs
+— Gestion des animaux
+— Visualisation des données IoT
+— Supervision du système en temps réel
+— Réalisation des tests finaux du système
+— Validation globale de la solution
+6.3 Séance du Sprint Planning 4
+Lors de la séance de Sprint Planning 4, l’équipe a défini les dernières fonctionnalités
+à implémenter afin de compléter le système Smart Shepherd.
+Les priorités retenues sont :
+— Création de l’interface dashboard administrateur
+— Implémentation des fonctionnalités de gestion (utilisateurs et animaux)
+— Intégration des données IoT dans le dashboard
+— Affichage des statistiques du système
+37
+— Planification des tests finaux
+La durée du sprint a été fixée à deux semaines afin de permettre une finalisation
+complète du projet.
+6.4 Sprint Backlog 4 estimé
+Danscettesection,nousprésentonsleSprintBacklogduSprint4,quiregroupelesprin-
+cipales fonctionnalités du dashboard administrateur ainsi que leur estimation en termes
+de durée. Ce backlog permet de structurer le travail et de planifier les tâches nécessaires
+à la finalisation du système Smart Shepherd.
+ID Fonctionnalité User Story Estimation
+SB1 Authentification admin En tant qu’administrateur, je
+veux me connecter au dashboard
+2 jours
+SB2 Gestion utilisateurs Gérer les comptes utilisateurs 3 jours
+SB3 Gestion animaux Ajouter / modifier / supprimer
+les animaux
+3 jours
+SB4 Visualisation IoT Consulter les données des cap-
+teurs en temps réel
+2 jours
+SB5 Statistiques système Visualiser les performances du
+système
+2 jours
+SB6 Tests finaux Valider le fonctionnement global
+du système
+2 jours
+Table 6.1– Sprint Backlog 4
+6.5 Démarrage du Sprint
+Le Sprint 4 a débuté par la mise en place de l’environnement de développement du
+dashboard administrateur et la connexion avec le backend existant.
+Les premières étapes ont consisté à structurer l’interface du dashboard et à intégrer
+les différentes fonctionnalités de gestion et de supervision.
+6.5.1 Analyse
+L’analyse a permis d’identifier les besoins spécifiques de l’administrateur :
+— Gestion complète des utilisateurs du système
+— Supervision des animaux et de leur état
+— Accès aux données IoT en temps réel
+— Suivi des alertes et événements du système
+— Interface claire et ergonomique
+6.5.2 Conception du dashboard administrateur
+La conception du dashboard administrateur repose sur une architecture client-serveur
+permettant la communication avec le backend via des API REST. Cette étape permet de
+38
+définir les interactions entre l’administrateur et le système Smart Shepherd.
+Diagramme de cas d’utilisation
+Ce diagramme présente les différentes fonctionnalités offertes à l’administrateur ainsi
+que ses interactions avec le système.
+Sm art Shepherd - D ashboard A dm in
+Se connecter
+Gérer utilisateurs
+Gérer animaux
+Consulter données IoT
+Voir statistiques système
+Recevoir alertes système
+API Authentification
+API Backend DataAdm inistrateur
+Figure 6.1– Diagramme de cas d’utilisation - sprint 4
+Diagramme de classes
+Ce diagramme décrit la structure des principales classes du dashboard ainsi que leur
+relation avec le backend.
+39
+Adm in
+i d
+nam e
+em ail
+password
+ro le
+User
+i d
+nam e
+em ail
+password
+Anim al
+i d
+nam e
+ty p e
+status
+SensorData
+tem perature
+heartRate
+gpsLocation
+m ovem ent
+tim estam p
+Alert
+i d
+ty p e
+message
+d a te
+Dashboard
+login()
+manageUsers()
+manageAnimals()
+viewStats()
+m onitorSystem ()
+BackendAPI
+auth()
+getUsers()
+getAnim als()
+getSensorData()
+getAlerts()
+Figure 6.2– Diagramme de classes - sprint 4
+Diagramme de séquence (Login Admin)
+Ce diagramme illustre le processus d’authentification de l’administrateur et la com-
+munication avec le backend.
+40
+Adm in
+Adm in
+Dashboard Web
+Dashboard Web
+Backend API
+Backend API
+MongoDB
+MongoDB
+JWT Service
+JWT Service
+Enter credentials
+POST /admin/login
+Verify admin credentials
+Adm in data
+Generate token
+Token
+Login success + token
+Access dashboard
+Manage users / animals
+CRUD requests
+Update data
+Confirm ation
+Response
+Figure 6.3– Diagramme de séquence - sprint 4
+6.5.3 Développement
+Le développement du dashboard a été réalisé à l’aide de technologies web modernes.
+Les fonctionnalités principales implémentées sont :
+— Authentification sécurisée de l’administrateur
+— Gestion CRUD des utilisateurs
+— Gestion des animaux
+— Affichage des données des capteurs IoT
+— Interface de supervision en temps réel
+— Tableaux de bord statistiques
+6.5.4 Tests et validation
+Des tests complets ont été réalisés afin de valider le fonctionnement du dashboard et
+du système global.
+Les tests effectués incluent :
+— Test de connexion administrateur
+— Test de gestion des utilisateurs
+— Test de gestion des animaux
+— Test d’affichage des données IoT
+— Test des statistiques
+— Test global du système
+41
+Les résultats obtenus montrent que le dashboard fonctionne correctement et que l’en-
+semble du système Smart Shepherd est stable et opérationnel.
+6.6 Résultats obtenus
+À la fin de ce sprint, le dashboard administrateur a été entièrement développé et
+intégré au système.
+Le système final permet désormais :
+— Gestion complète du système par l’administrateur
+— Suivi des animaux en temps réel
+— Visualisation des données IoT
+— Supervision globale de la plateforme
+— Interaction entre mobile, IoT et backend
+Ce sprint marque la finalisation du projet Smart Shepherd.
+6.7 Conclusion
+Le Sprint 4 a permis de finaliser le projet en développant le dashboard administrateur
+et en réalisant les tests finaux.
+Le système Smart Shepherd est désormais complet, intégrant les trois composantes
+principales : le backend, l’application mobile et le dashboard administrateur. Cette solu-
+tion permet une gestion intelligente et centralisée du suivi des animaux.
+42
+Conclusion générale
+Ce projet de fin d’études s’inscrit dans le développement d’une solution intelligente
+de suivi et de gestion du bétail intituléeSmart Shepherd. L’objectif principal était de
+concevoir et de réaliser un système complet intégrant des technologies IoT, une application
+mobile et un dashboard administrateur, afin d’assurer le suivi en temps réel des animaux.
+Tout au long du projet, plusieurs étapes ont été réalisées de manière progressive et
+structurée selon une approche Agile. Le premier sprint a permis la mise en place du
+backend et du système d’authentification, constituant la base du système. Le deuxième
+sprint a été consacré à l’intégration des capteurs IoT et à la réalisation d’un prototype
+matériel fonctionnel capable de collecter et transmettre des données en temps réel.
+Le troisième sprint a abouti au développement d’une application mobile destinée aux
+utilisateurs, offrant des fonctionnalités de consultation des données, de localisation GPS
+et de réception des alertes. Enfin, le quatrième sprint a permis la réalisation du dashboard
+administrateur ainsi que la validation globale du système à travers des tests fonctionnels.
+Les résultats obtenus montrent que le système développé répond aux objectifs fixés.
+Il permet une gestion centralisée, une surveillance en temps réel et une meilleure prise de
+décision grâce aux données collectées.
+Ce travail a également permis d’approfondir les compétences en développement web
+et mobile, en IoT, ainsi qu’en gestion de projet Agile. Toutefois, le système peut être
+amélioré dans le futur par l’intégration de l’intelligence artificielle pour la prédiction des
+anomalies et l’optimisation du suivi des animaux.
+En conclusion, le projet Smart Shepherd représente une solution complète et évolutive
+pour la gestion intelligente du bétail, combinant matériel et logiciel dans un système
+cohérent et efficace.
+43
+Bibliographie
+[1] Node.js Documentation :https://nodejs.org
+[2] Express.js Documentation :https://expressjs.com
+[3] React Native Documentation :https://reactnative.dev
+[4] MongoDB Documentation :https://www.mongodb.com/docs
+[5] JSON Web Token (JWT) Introduction :https://jwt.io/introduction
+[6] Postman API Platform :https://www.postman.com
+[7] ESP32 Official Documentation (Espressif Systems) :https://www.espressif.com
+[8] u-blox NEO-6M GPS Module Documentation
+[9] DS18B20 Temperature Sensor Datasheet (Maxim Integrated)
+[10] MAX30102 Pulse Oximeter Sensor Datasheet (Maxim Integrated)
+[11] MPU6050 Motion Sensor Datasheet (InvenSense)
+[12] LoRa Alliance Official Website :https://lora-alliance.org
+[13] Introduction to Internet of Things (IoT) : Concepts and Applications
+[14] Agile Software Development Methodology Overview
+[15] Buyya, R., "Internet of Things : Principles and Paradigms", Elsevier, 2016
+[16] Scrum Guide Official :https://scrumguides.org
+44

@@ -1,0 +1,282 @@
+\documentclass[a4paper,12pt]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[french]{babel}
+\usepackage{geometry}
+\usepackage{graphicx}
+\usepackage{tikz}
+\usepackage{xcolor}
+\usepackage{fontawesome5}
+\usepackage{tcolorbox}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{multirow}
+
+\geometry{margin=2.5cm}
+\usetikzlibrary{shapes.geometric, arrows, positioning, shadows}
+
+% Couleurs personnalisées
+\definecolor{primaryblue}{RGB}{34, 197, 94}
+\definecolor{accentgreen}{RGB}{16, 185, 129}
+\definecolor{alertred}{RGB}{239, 68, 68}
+\definecolor{darkbg}{RGB}{15, 23, 42}
+\definecolor{lightgray}{RGB}{243, 244, 246}
+
+\title{\textbf{Smart Shepherd - Vue d'Ensemble du Dashboard}}
+\author{Interface d'Administration IoT}
+\date{\today}
+
+\begin{document}
+
+\maketitle
+
+\begin{tcolorbox}[colback=primaryblue!10, colframe=primaryblue, title={\faIcon{tachometer-alt} \textbf{Tableau de Bord Intelligent}}]
+Le dashboard Smart Shepherd fournit une surveillance temps réel complet du troupeau avec des métriques de performance, des alertes intelligentes et des visualisations de données interactives.
+\end{tcolorbox}
+
+\section{Architecture du Dashboard}
+
+\begin{center}
+\begin{tikzpicture}[
+    node distance=2cm,
+    box/.style={rectangle, rounded corners, draw=primaryblue, fill=lightgray, text width=3cm, minimum height=1cm, text centered, font=\small},
+    metric/.style={rectangle, rounded corners, draw=accentgreen, fill=accentgreen!20, text width=2.5cm, minimum height=0.8cm, text centered, font=\footnotesize},
+    alert/.style={rectangle, rounded corners, draw=alertred, fill=alertred!20, text width=2.5cm, minimum height=0.8cm, text centered, font=\footnotesize}
+]
+
+% Header
+\node[box] (header) {En-tête de Navigation\\Contrôles Utilisateur};
+\node[box, below=of header] (main) {Zone Principale\\Grid Layout};
+
+% KPI Cards
+\node[metric, below left=0.5cm and 1cm of main] (total) {Total Troupeau\\{\Large\faIcon{users}}};
+\node[metric, below=of total] (active) {En Ligne\\{\Large\faIcon{wifi}}};
+\node[metric, below=of active] (alerts) {Alertes\\{\Large\faIcon{exclamation-triangle}}};
+\node[metric, below=of alerts] (outofzone) {Hors Zone\\{\Large\faIcon{map-marker-alt}}};
+
+% Charts
+\node[box, below right=0.5cm and 1cm of main] (charts) {Graphiques Temps Réel\\Métriques d'Activité};
+\node[alert, below=of charts] (alertfeed) {Flux d'Alertes\\Notifications Critiques};
+
+% Weather Widget
+\node[box, above right=0.5cm and 1cm of main] (weather) {Widget Météo\\Conditions Actuelles};
+
+% Connections
+\draw[->, thick, primaryblue] (header) -- (main);
+\draw[->, thick, accentgreen] (main) -- (total);
+\draw[->, thick, accentgreen] (main) -- (active);
+\draw[->, thick, accentgreen] (main) -- (alerts);
+\draw[->, thick, accentgreen] (main) -- (outofzone);
+\draw[->, thick, primaryblue] (main) -- (charts);
+\draw[->, thick, alertred] (charts) -- (alertfeed);
+\draw[->, thick, primaryblue] (main) -- (weather);
+
+\end{tikzpicture}
+\end{center}
+
+\section{Composants Principaux du Dashboard}
+
+\subsection{Cartes KPI (Key Performance Indicators)}
+
+\begin{table}[h]
+\centering
+\begin{tabular}{|l|c|c|l|}
+\hline
+\textbf{Indicateur} & \textbf{Valeur} & \textbf{Icône} & \textbf{Description} \\
+\hline
+Total Troupeau & \textcolor{primaryblue}{\textbf{Variable}} & \faIcon{users} & Nombre total de moutons équipés \\
+En Ligne & \textcolor{accentgreen}{\textbf{Variable}} & \faIcon{wifi} & Appareils connectés \\
+Alertes & \textcolor{alertred}{\textbf{Variable}} & \faIcon{exclamation-triangle} & Notifications actives \\
+Hors Zone & \textcolor{alertred}{\textbf{Variable}} & \faIcon{map-marker-alt} & Animaux hors périmètre \\
+\hline
+\end{tabular}
+\caption{Indicateurs de performance en temps réel}
+\end{table}
+
+\subsection{Métriques Secondaires}
+
+\begin{tcolorbox}[colback=lightgray, colframe=primaryblue, title={\faIcon{chart-line} Métriques de Santé}]
+\begin{itemize}
+    \item \textbf{Niveau Batterie :} Pourcentage moyen avec alertes < 20\%
+    \item \textbf{Température Troupeau :} Moyenne 38.5°C (normale)
+    \item \textbf{Charge Ingestion :} Flux de télémétrie en pourcentage
+\end{itemize}
+\end{tcolorbox}
+
+\subsection{Graphiques d'Activité}
+
+\begin{center}
+\begin{tikzpicture}[scale=0.8]
+    % Axes
+    \draw[->] (0,0) -- (8,0) node[anchor=north] {Temps};
+    \draw[->] (0,0) -- (0,4) node[anchor=east] {Valeur};
+    
+    % Grid
+    \foreach \x in {1,2,3,4,5,6,7}
+        \draw[gray!30, dashed] (\x,0) -- (\x,4);
+    \foreach \y in {1,2,3}
+        \draw[gray!30, dashed] (0,\y) -- (8,\y);
+    
+    % Data lines
+    \draw[primaryblue, ultra thick] plot coordinates {(0.5,1) (1.5,1.5) (2.5,2) (3.5,2.3) (4.5,2.8) (5.5,3.2) (6.5,3.5) (7.5,3.8)};
+    \draw[alertred, ultra thick, dashed] plot coordinates {(0.5,0.5) (1.5,0.8) (2.5,1.2) (3.5,1.0) (4.5,1.5) (5.5,1.8) (6.5,2.0) (7.5,2.2)};
+    
+    % Legend
+    \node[primaryblue] at (6,3.5) {Troupeau Actif};
+    \node[alertred] at (6,3.0) {Niveau Alertes};
+    
+    % Labels
+    \foreach \x/\label in {1/T1, 2/T2, 3/T3, 4/T4, 5/T5, 6/T6, 7/T7}
+        \node[below] at (\x,0) {\tiny\label};
+\end{tikzpicture}
+\end{center}
+
+\section{Système d'Alertes}
+
+\subsection{Types d'Alertes}
+
+\begin{table}[h]
+\centering
+\begin{tabular}{|l|c|c|l|}
+\hline
+\textbf{Type} & \textbf{Sévérité} & \textbf{Couleur} & \textbf{Action} \\
+\hline
+Température Élevée & CRITIQUE & \textcolor{alertred}{Rouge} & Intervention immédiate \\
+Batterie Faible & WARNING & \textcolor{orange}{Orange} & Recharge planifiée \\
+Hors Zone & WARNING & \textcolor{orange}{Orange} & Vérification géographique \\
+Fréquence Cardiaque & CRITIQUE & \textcolor{alertred}{Rouge} & Examen vétérinaire \\
+Inactivité & INFO & \textcolor{blue}{Bleu} & Monitoring continu \\
+\hline
+\end{tabular}
+\caption{Classification des alertes par sévérité}
+\end{table}
+
+\subsection{Flux d'Alertes Temps Réel}
+
+\begin{tcolorbox}[colback=alertred!10, colframe=alertred, title={\faIcon{bell} Notifications Critiques}]
+\begin{itemize}
+    \item \textbf{Alertes Non Lues :} Compteur en temps réel
+    \item \textbf{Filtrage par Sévérité :} CRITIQUE > WARNING > INFO
+    \item \textbf{Historique :} 100 dernières alertes conservées
+    \item \textbf{Actions Rapides :} Marquer comme lu, Détails, Supprimer
+\end{itemize}
+\end{tcolorbox}
+
+\section{Contrôles et Interactions}
+
+\subsection{Boutons de Contrôle Principaux}
+
+\begin{center}
+\begin{tikzpicture}[
+    button/.style={rectangle, rounded corners, draw=primaryblue, fill=primaryblue!20, text width=3cm, minimum height=0.8cm, text centered}
+]
+
+% Simulation Toggle
+\node[button] (sim) at (0,0) {\faIcon{play} Simulation};
+\node[below=0.1cm of sim, font=\tiny] {Basculer mode};
+
+% Pause/Resume
+\node[button] at (4,0) {\faIcon{pause} Pause};
+\node[below=0.1cm of 4,0, font=\tiny] {Mettre en pause};
+
+% Connection Status
+\node[button] at (8,0) {\faIcon{wifi} Connecté};
+\node[below=0.1cm of 8,0, font=\tiny] {Statut MQTT};
+
+\end{tikzpicture}
+\end{center}
+
+\subsection{État de Connexion}
+
+\begin{table}[h]
+\centering
+\begin{tabular}{|l|c|c|}
+\hline
+\textbf{État} & \textbf{Indicateur} & \textbf{Description} \\
+\hline
+MQTT Connecté & \textcolor{accentgreen}{\faIcon{check-circle}} & Communication temps réel active \\
+Mode Hors-ligne & \textcolor{orange}{\faIcon{exclamation-triangle}} & Données locales utilisées \\
+Passerelle Hors-ligne & \textcolor{alertred}{\faIcon{times-circle}} & Aucune connexion disponible \\
+\hline
+\end{tabular}
+\caption{États de connexion et leurs indicateurs visuels}
+\end{table}
+
+\section{Widget Météo}
+
+\begin{tcolorbox}[colback=lightgray, colframe=primaryblue, title={\faIcon{cloud-sun} Conditions Météorologiques}]
+\begin{itemize}
+    \item \textbf{Température Actuelle :} Affichage en temps réel
+    \item \textbf{Conditions :} Ensoleillé, Nuageux, Pluvieux
+    \item \textbf{Prévisions :} 24 heures suivantes
+    \item \textbf{Impact Troupeau :} Recommandations basées sur météo
+\end{itemize}
+\end{tcolorbox}
+
+\section{Performance et Optimisation}
+
+\subsection{Métriques de Performance}
+
+\begin{table}[h]
+\centering
+\begin{tabular}{|l|c|c|l|}
+\hline
+\textbf{Métrique} & \textbf{Valeur Cible} & \textbf{Actuel} & \textbf{Statut} \\
+\hline
+Temps de Chargement & < 2s & Variable & \textcolor{orange}{À optimiser} \\
+Mises à Jour Chart & 5s & 5s & \textcolor{accentgreen}{OK} \\
+Mémoire Utilisée & < 100MB & Variable & \textcolor{orange}{À surveiller} \\
+Réactivité UI & < 100ms & Variable & \textcolor{orange}{À améliorer} \\
+\hline
+\end{tabular}
+\caption{Indicateurs de performance du dashboard}
+\end{table}
+
+\subsection{Optimisations Implémentées}
+
+\begin{itemize}
+    \item \textbf{Lazy Loading :} Chargement différé des composants lourds
+    \item \textbf{Memoization :} Mémorisation des calculs coûteux
+    \item \textbf{Virtual Scrolling :} Pour listes longues d'alertes
+    \item \textbf{Code Splitting :} Division du bundle JavaScript
+    \item \textbf{Caching :} Mise en cache des données fréquemment accédées
+\end{itemize}
+
+\section{Accessibilité et UX}
+
+\subsection{Caractéristiques d'Accessibilité}
+
+\begin{itemize}
+    \item \textbf{Navigation Clavier :} Accès complet via tabulation
+    \item \textbf{Contrastes Élevés :} Respect WCAG 2.1 AA
+    \item \textbf{Lecteurs Écran :} Labels ARIA complets
+    \item \textbf{Mode Sombre :} Réduction fatigue oculaire
+    \item \textbf{Responsive Design :} Adaptation mobile/tablette
+\end{itemize}
+
+\subsection{Expérience Utilisateur}
+
+\begin{tcolorbox}[colback=primaryblue!10, colframe=primaryblue, title={\faIcon{user-circle} UX Design}]
+\begin{itemize}
+    \item Interface intuitive avec feedback visuel immédiat
+    \item Animations fluides et transitions naturelles
+    \item Informations hiérarchisées par importance
+    \item Actions rapides accessibles en un clic
+    \item État système toujours visible
+\end{itemize}
+\end{tcolorbox}
+
+\section{Conclusion}
+
+Le dashboard Smart Shepherd représente une solution de monitoring IoT complète et moderne, combinant :
+\begin{itemize}
+    \item \textbf{Surveillance Temps Réel :} Données instantanées du troupeau
+    \item \textbf{Alertes Intelligentes :} Détection proactive des problèmes
+    \item \textbf{Visualisations Riches :} Graphiques interactifs et métriques détaillées
+    \item \textbf{Interface Moderne :} Design responsive et accessible
+    \item \textbf{Performance Optimisée :} Expérience utilisateur fluide
+\end{itemize}
+
+Cette interface permet aux éleveurs de prendre des décisions éclairées basées sur des données fiables et actualisées en continu.
+
+\end{document}

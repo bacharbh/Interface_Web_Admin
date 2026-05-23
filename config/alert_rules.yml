@@ -1,0 +1,32 @@
+groups:
+  - name: SmartShepherdAlerts
+    rules:
+      # Memory Alert
+      - alert: HighMemoryUsage
+        expr: process_resident_memory_bytes{job="smart-shepherd-backend"} > 100000000
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Instance Memory > 100MB"
+          description: "Le backend Node.js consomme plus de 100MB de RAM ({{ $value }} bytes)."
+
+      # API Latency Alert
+      - alert: APILatencyHigh
+        expr: rate(http_request_duration_seconds_sum[5m]) / rate(http_request_duration_seconds_count[5m]) > 0.5
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "API Response Time > 500ms"
+          description: "La latence moyenne de l'API est supérieure à 500ms sur les 5 dernières minutes."
+
+      # MQTT Disconnect Alert
+      - alert: MQTTDisconnected
+        expr: mqtt_connected_clients == 0
+        for: 30s
+        labels:
+          severity: critical
+        annotations:
+          summary: "Broker MQTT Déconnecté"
+          description: "Mosquitto n'a reçu aucune connexion depuis plus de 30 secondes. Vérifier le broker."

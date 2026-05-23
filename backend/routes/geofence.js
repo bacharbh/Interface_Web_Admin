@@ -1,0 +1,261 @@
+import express from 'express';
+import Joi from 'joi';
+import Sheep from '../models/Sheep.js';
+import authMiddleware, { authorize } from '../middleware/auth.js';
+
+const router = express.Router();
+
+// Validation schemas
+const geofenceSchema = Joi.object({
+  name: Joi.string().required().min(1).max(100),
+  description: Joi.string().optional().max(500),
+  geometry: Joi.object({
+    type: Joi.string().valid('Polygon').required(),
+    coordinates: Joi.array().items(
+      Joi.array().items(
+        Joi.array().length(2).items(Joi.number())
+      )
+    ).required()
+  }).required(),
+  isActive: Joi.boolean().default(true),
+  alertThreshold: Joi.number().min(1).default(1), // Number of violations before alert
+  notificationChannels: Joi.array().items(
+    Joi.string().valid('email', 'sms', 'push', 'websocket')
+  ).default(['websocket'])
+});
+
+// In-memory storage for geofences (in production, use MongoDB)
+let geofences = [
+  {
+    id: 'default-pasture',
+    name: 'Main Pasture',
+    description: 'Primary grazing area for all sheep',
+    geometry: {
+      type: 'Polygon',
+      coordinates: [[
+        [-74.0060, 40.7128], // NYC coordinates as example
+        [-74.0050, 40.7128],
+        [-74.0050, 40.7138],
+        [-74.0060, 40.7138],
+        [-74.0060, 40.7128]
+      ]]
+    },
+    isActive: true,
+    alertThreshold: 1,
+    notificationChannels: ['websocket'],
+    createdAt: new Date(),
+    updatedAt: new Date()
+  }
+];
+
+// Get all geofences
+router.get('/', authMiddleware, async (req, res) => {
+  try {
+    const activeGeofences = geofences.filter(g => g.isActive);
+    res.json({ geofences: activeGeofences });
+  } catch (error) {
+    res.status(500).json({ error: 'Error fetching geofences' });
+  }
+});
+
+// Get specific geofence
+router.get('/:id', authMiddleware, async (req, res) => {
+  try {
+    const geofence = geofences.find(g => g.id === req.params.id && g.isActive);
+    
+    if (!geofence) {
+      return res.status(404).json({ error: 'Geofence not found' });
+    }
+
+    res.json({ geofence });
+  } catch (error) {
+    res.status(500).json({ error: 'Error fetching geofence' });
+  }
+});
+
+// Create new geofence
+router.post('/', authMiddleware, authorize('admin', 'operator'), async (req, res) => {
+  try {
+    const { error } = geofenceSchema.validate(req.body);
+    if (error) {
+      return res.status(400).json({ error: error.details[0].message });
+    }
+
+    const geofence = {
+      id: Date.now().toString(),
+      ...req.body,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
+
+    geofences.push(geofence);
+
+    // Emit real-time update
+    const io = req.app.get('io');
+    io.emit('geofence:created', geofence);
+
+    res.status(201).json({
+      message: 'Geofence created successfully',
+      geofence
+    });
+  } catch (error) {
+    res.status(500).json({ error: 'Error creating geofence' });
+  }
+});
+
+// Update geofence
+router.put('/:id', authMiddleware, authorize('admin', 'operator'), async (req, res) => {
+  try {
+    const index = geofences.findIndex(g => g.id === req.params.id);
+    
+    if (index === -1) {
+      return res.status(404).json({ error: 'Geefence not found' });
+    }
+
+    const { error } = geofenceSchema.validate(req.body);
+    if (error) {
+      return res.status(400).json({ error: error.details[0].message });
+    }
+
+    geofences[index] = {
+      ...geofences[index],
+      ...req.body,
+      updatedAt: new Date()
+    };
+
+    // Emit real-time update
+    const io = req.app.get('io');
+    io.emit('geofence:updated', geofences[index]);
+
+    res.json({
+      message: 'Geofence updated successfully',
+      geofence: geofences[index]
+    });
+  } catch (error) {
+    res.status(500).json({ error: 'Error updating geofence' });
+  }
+});
+
+// Delete geofence
+router.delete('/:id', authMiddleware, authorize('admin'), async (req, res) => {
+  try {
+    const index = geofences.findIndex(g => g.id === req.params.id);
+    
+    if (index === -1) {
+      return res.status(404).json({ error: 'Geofence not found' });
+    }
+
+    const deletedGeofence = geofences[index];
+    geofences.splice(index, 1);
+
+    // Emit real-time update
+    const io = req.app.get('io');
+    io.emit('geofence:deleted', { id: req.params.id });
+
+    res.json({ message: 'Geofence deleted successfully' });
+  } catch (error) {
+    res.status(500).json({ error: 'Error deleting geofence' });
+  }
+});
+
+// Check if sheep is within geofence
+router.post('/check', async (req, res) => {
+  try {
+    const { sheepId, coordinates } = req.body;
+    
+    if (!coordinates || !Array.isArray(coordinates) || coordinates.length !== 2) {
+      return res.status(400).json({ error: 'Invalid coordinates format' });
+    }
+
+    const [longitude, latitude] = coordinates;
+
+    // Find sheep
+    const sheep = await Sheep.findOne({ sheepId, isActive: true });
+    if (!sheep) {
+      return res.status(404).json({ error: 'Sheep not found' });
+    }
+
+    // Check against all active geofences
+    const violations = [];
+    const withinGeofences = [];
+
+    for (const geofence of geofences.filter(g => g.isActive)) {
+      const isWithin = isPointInPolygon([longitude, latitude], geofence.geometry.coordinates[0]);
+      
+      if (isWithin) {
+        withinGeofences.push({
+          geofenceId: geofence.id,
+          name: geofence.name
+        });
+      } else {
+        violations.push({
+          geofenceId: geofence.id,
+          name: geofence.name,
+          sheepId,
+          coordinates: [longitude, latitude],
+          timestamp: new Date()
+        });
+      }
+    }
+
+    // Emit alerts for violations
+    if (violations.length > 0) {
+      const io = req.app.get('io');
+      io.emit('geofence:violation', violations);
+    }
+
+    res.json({
+      sheepId,
+      coordinates: [longitude, latitude],
+      withinGeofences,
+      violations,
+      timestamp: new Date()
+    });
+  } catch (error) {
+    res.status(500).json({ error: 'Error checking geofence status' });
+  }
+});
+
+// Get geofence violations
+router.get('/violations', authMiddleware, async (req, res) => {
+  try {
+    const { startDate, endDate, sheepId } = req.query;
+    
+    // In a real implementation, this would query a violations collection
+    // For now, return a placeholder response
+    const violations = {
+      data: [], // Would contain violation records
+      summary: {
+        totalViolations: 0,
+        dateRange: {
+          start: startDate,
+          end: endDate
+        }
+      }
+    };
+
+    res.json(violations);
+  } catch (error) {
+    res.status(500).json({ error: 'Error fetching geofence violations' });
+  }
+});
+
+// Helper function to check if point is in polygon
+function isPointInPolygon(point, polygon) {
+  const [x, y] = point;
+  let inside = false;
+
+  for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
+    const [xi, yi] = polygon[i];
+    const [xj, yj] = polygon[j];
+
+    const intersect = ((yi > y) !== (yj > y))
+        && (x < (xj - xi) * (y - yi) / (yj - yi) + xi);
+    
+    if (intersect) inside = !inside;
+  }
+
+  return inside;
+}
+
+export default router;

@@ -1,0 +1,253 @@
+📊 COMPARAISON MULTI-ANIMAUX — GUIDE UTILISATEUR FINAL
+======================================================
+
+🎯 QUOI DE NEUF?
+================
+Vous pouvez maintenant comparer les signes vitaux de 2 à 4 animaux en même temps!
+
+✨ C'EST SIMPLE:
+1. Allez à "Gestion du troupeau" (/animals)
+2. Cochez les checkboxes à côté des animaux (max 4)
+3. Un footer collant apparaît en bas
+4. Cliquez "Comparer ↗"
+5. Analysez le rapport de comparaison
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+👁️ CE QUE VOUS VERREZ
+======================
+
+PAGE 1: Sélection d'Animaux (/animals)
+--------------------------------------
+[Tableau]
+✓ Bella     [BPM: 85  | Temp: 38.5 | Batterie: 75%]
+✓ Luna      [BPM: 110 | Temp: 39.2 | Batterie: 45%]
+  Max       [BPM: 140 | Temp: 40.1 | Batterie: 20%]
+
+Footer Collant (en bas):
+┌──────────────────────────────────────────────────┐
+│  ✓ 2 animaux sélectionnés                        │
+│  Bella • Luna                                     │
+│                                  [Annuler] [Comparer ↗] │
+└──────────────────────────────────────────────────┘
+
+PAGE 2: Comparaison (/compare?ids=SHEEP_001,SHEEP_002)
+-----------------------------------------------------
+
+📋 EN-TÊTE:
+"Comparaison — 2 animaux"
+← retour  [Ajouter un animal]
+
+🎴 CARTES RÉSUMÉ:
+┌─────────────────┐  ┌─────────────────┐
+│ B (Bella)       │  │ L (Luna)        │
+│ Race: Merino    │  │ Race: Suffolk   │
+│ ✓ Sain          │  │ ⚠ Alerte        │
+│ ❤️ BPM: 85      │  │ ❤️ BPM: 110     │
+│ 🌡️ 38.5°C       │  │ 🌡️ 39.2°C      │
+│ ⚡ 65% activité │  │ ⚡ 45% activité │
+│ 🔋 75%          │  │ 🔋 45%          │
+└─────────────────┘  └─────────────────┘
+
+🎚️ SÉLECTEURS:
+[❤️ BPM] [🌡️ Température] [⚡ Activité]
+[1h] [6h] [24h] [7j]
+
+📈 GRAPHIQUE:
+(Deux courbes colorées - une par animal)
+├─ Légende interactive en bas
+│  └─ Cliquez sur un nom pour masquer/afficher
+├─ Tooltips au survol
+└─ Responsive et zoomable
+
+📊 TABLEAU COMPARATIF:
+┌────────────────┬─────┬─────┬──────────┐
+│ Métrique       │ Bella │ Luna │ Écart Max │
+├────────────────┼─────┼─────┼──────────┤
+│ Plage normale  │ 70-120  bpm       │
+├────────────────┼─────┼─────┼──────────┤
+│ Valeur actuelle│ 85 ✓│ 110 │   25    │
+├────────────────┼─────┼─────┼──────────┤
+│ Statut         │ Bon │ Alerte │  —   │
+└────────────────┴─────┴─────┴──────────┘
+
+🧠 ANALYSE IA:
+┌────────────────────────────────────────┐
+│ 🧠 Analyse Comparative IA   [Généré par IA] │
+│                                        │
+│ "Bella et Luna montrent une légère    │
+│ différence de fréquence cardiaque.    │
+│ Luna (110 BPM) est l'animal le plus  │
+│ actif. La température est normale.    │
+│ Vérifiez les conditions de bien-être."│
+│                                        │
+│ Conseil: Validation vétérinaire       │
+│ recommandée avant action.              │
+└────────────────────────────────────────┘
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🎨 COMPRENDRE LES COULEURS
+===========================
+
+Statut Santé:
+✓ Vert   = Bon (tout va bien)
+⚠ Orange = Alerte (surveiller)
+🔴 Rouge = Critique (action requise)
+
+Tableau:
+🟢 Vert   = Dans la plage normale
+🟠 Orange = Léger écart à la normale
+🔴 Rouge  = Écart important (> 15%)
+
+Graphique:
+Chaque animal a sa couleur:
+   🟢 Bella:  Vert
+   🔵 Luna:   Bleu
+   🟠 Max:    Orange
+   🔴 Sam:    Rouge
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+❓ FAQ RAPIDE
+=============
+
+Q: Je peux comparer combien d'animaux?
+R: De 2 à 4 animaux en même temps.
+
+Q: Comment ajouter plus d'animaux?
+R: Cliquez "Ajouter un animal" en haut → sélectionnez d'autres
+
+Q: Les données sont-elles temps réel?
+R: Oui! Mises à jour toutes les quelques secondes
+
+Q: Comment partager la comparaison?
+R: Le lien /compare?ids=... peut être partagé
+
+Q: Puis-je exporter les données?
+R: Le tableau peut être copié/screenshot. PDF coming soon!
+
+Q: Comment fonctionne l'analyse IA?
+R: Claude 3.5 Sonnet analyze les données et fait des recommendations
+
+Q: Et si l'IA ne marche pas?
+R: Une analyse mock s'affiche à la place (toujours utile!)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🎯 CAS D'USAGE RÉELS
+====================
+
+Cas 1: Détection d'épidémie
+---------------------------
+Action:     Sélectionnez les 4 animaux malades
+Résultat:   Tous ont Temp > 39.5°C
+Analyse IA: "Tous présentent les mêmes signes
+             d'infection virale. Isolement recommandé."
+
+Cas 2: Stress environnemental
+-----------------------------
+Action:     Comparez 3 animaux du même secteur
+Résultat:   Tous avec activité faible (20-30%)
+Analyse IA: "Condition environnementale détectée.
+             Vérifiez température, humidité, accès à l'eau."
+
+Cas 3: Identification d'animal à risque
+--------------------------------------
+Action:     Comparez nouveau + 3 animals sains
+Résultat:   1 avec BPM 145, Temp 40.2°C
+Analyse IA: "Animal 1 présente des signes critiques.
+             Visite vétérinaire URGENTE recommandée."
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+⚙️ PARAMÈTRES D'INTERPRÉTATION
+==============================
+
+BPM (Fréquence Cardiaque)
+  Plage normale: 70-120 bpm
+  Alerte: > 110 ou < 75
+  Critique: > 138 (15% au-dessus)
+
+Température
+  Plage normale: 38.5-39.5°C
+  Alerte: > 39.5 ou < 38.5
+  Critique: > 45.4°C (15% au-dessus)
+
+Activité
+  Plage normale: 50-100%
+  Alerte: < 50%
+  Critique: < 42.5% (15% en dessous)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+💡 CONSEILS D'UTILISATION
+==========================
+
+✅ À FAIRE:
+• Comparer animaux du même secteur
+• Utiliser pour valider diagnostics IA
+• Exporter rapports pour vétérinaire
+• Vérifier tendances (utiliser 7j)
+• Consulter vétérinaire si doutes
+
+❌ NE PAS FAIRE:
+• Ne pas remplacer diagnostic vétérinaire
+• Ne pas ignorer analyse IA rouge
+• Ne pas comparer trop d'animaux à fois
+• Ne pas oublier contexte environnemental
+• Ne pas traiter sans avis professionnel
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🚀 PROCHAINES FONCTIONNALITÉS
+=============================
+
+🔜 Bientôt:
+• Export PDF des comparaisons
+• Partage de liens sécurisé
+• Historique des comparaisons
+• Annotations personnalisées
+• Alertes automatiques
+
+🔮 Future:
+• Prédictions IA (tendances 7j)
+• Clustering automatique
+• Recommandations de traitement
+• Intégration calendrier vétérinaire
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📞 SUPPORT
+==========
+
+Question technique?
+  → Lire documentation complète
+  → Consulter vétérinaire pour questions médicales
+
+Problème d'affichage?
+  → Rafraîchir la page (F5)
+  → Vider le cache (Ctrl+Shift+Del)
+  → Vérifier connexion internet
+
+Feedback?
+  → Contactez l'équipe Smart Shepherd
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+✨ BON À SAVOIR
+===============
+
+• Les données sont stockées localement sur votre navigateur
+• L'analyse IA est privée (données non sauvegardées)
+• Compatible mobile (responsive design)
+• Fonctionne en mode sombre
+• Accès rapide via URL params
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Créé: 4 mai 2026
+Version: 1.0.0
+Status: ✅ Production Ready
+
+Happy farming! 🐑🐑🐑
