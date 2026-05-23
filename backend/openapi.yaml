@@ -1,0 +1,2146 @@
+openapi: 3.0.3
+info:
+  title: Smart Shepherd API
+  description: |
+    API REST pour le système de monitoring IoT Smart Shepherd.
+    Gère l'authentification, les animaux, la télémétrie, les géofences, les notifications et les utilisateurs.
+  version: 1.0.0
+  contact:
+    name: Smart Shepherd Team
+    email: support@smartshepherd.com
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+
+servers:
+  - url: http://localhost:5000/api
+    description: Serveur de développement
+  - url: https://api.smartshepherd.com/v1
+    description: Serveur de production
+
+tags:
+  - name: Authentification
+    description: Gestion de l'authentification et des tokens JWT
+  - name: Animaux
+    description: CRUD pour la gestion du troupeau
+  - name: Télémétrie
+    description: Données IoT et métriques en temps réel
+  - name: Géofences
+    description: Zones géographiques et monitoring
+  - name: Notifications
+    description: Alertes et système de notification
+  - name: Utilisateurs
+    description: Gestion des comptes utilisateurs
+
+paths:
+  # ============================================
+  # AUTHENTIFICATION ENDPOINTS
+  # ============================================
+  /auth/register:
+    post:
+      tags:
+        - Authentification
+      summary: Créer un nouveau compte utilisateur
+      description: Enregistre un nouvel utilisateur dans le système
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserRegistration'
+            example:
+              username: "jean_dupont"
+              email: "jean@ferme.com"
+              password: "Password123!"
+              role: "ADMIN"
+      responses:
+        '201':
+          description: Utilisateur créé avec succès
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+              example:
+                success: true
+                message: "Utilisateur créé avec succès"
+                user:
+                  id: "64f8a1b2c3d4e5f6a7b8c9d0"
+                  username: "jean_dupont"
+                  email: "jean@ferme.com"
+                  role: "ADMIN"
+                token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+  /auth/login:
+    post:
+      tags:
+        - Authentification
+      summary: Connexion utilisateur
+      description: Authentifie un utilisateur et retourne un token JWT
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserLogin'
+            example:
+              email: "jean@ferme.com"
+              password: "Password123!"
+      responses:
+        '200':
+          description: Connexion réussie
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+              example:
+                success: true
+                message: "Connexion réussie"
+                user:
+                  id: "64f8a1b2c3d4e5f6a7b8c9d0"
+                  username: "jean_dupont"
+                  email: "jean@ferme.com"
+                  role: "ADMIN"
+                token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /auth/profile:
+    get:
+      tags:
+        - Authentification
+      summary: Obtenir le profil utilisateur
+      description: Retourne les informations de l'utilisateur connecté
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Profil utilisateur récupéré avec succès
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserProfile'
+              example:
+                success: true
+                user:
+                  id: "64f8a1b2c3d4e5f6a7b8c9d0"
+                  username: "jean_dupont"
+                  email: "jean@ferme.com"
+                  role: "ADMIN"
+                  createdAt: "2023-09-15T10:30:00.000Z"
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  # ============================================
+  # ANIMAUX ENDPOINTS
+  # ============================================
+  /sheep:
+    get:
+      tags:
+        - Animaux
+      summary: Lister tous les animaux
+      description: Retourne la liste complète du troupeau avec pagination
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Search'
+        - $ref: '#/components/parameters/HealthStatus'
+      responses:
+        '200':
+          description: Liste des animaux récupérée avec succès
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Sheep'
+                  pagination:
+                    $ref: '#/components/schemas/Pagination'
+              example:
+                success: true
+                data:
+                  - id: "64f8a1b2c3d4e5f6a7b8c9d0"
+                    sheepId: "SHEEP001"
+                    breed: "Merinos"
+                    age: 3
+                    weight: 75.5
+                    gender: "male"
+                    healthStatus: "Good"
+                    location:
+                      lat: 33.885
+                      lng: -5.54
+                    deviceId: "C001"
+                    medicalHistory: []
+                    createdAt: "2023-09-15T10:30:00.000Z"
+                pagination:
+                  page: 1
+                  limit: 20
+                  total: 150
+                  pages: 8
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+    post:
+      tags:
+        - Animaux
+      summary: Ajouter un nouvel animal
+      description: Crée un nouvel enregistrement d'animal dans le troupeau
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SheepCreate'
+            example:
+              sheepId: "SHEEP002"
+              breed: "Suffolk"
+              age: 2
+              weight: 68.2
+              gender: "female"
+              deviceId: "C002"
+      responses:
+        '201':
+          description: Animal créé avec succès
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "Animal créé avec succès"
+                  data:
+                    $ref: '#/components/schemas/Sheep'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+  /sheep/{id}:
+    get:
+      tags:
+        - Animaux
+      summary: Obtenir un animal spécifique
+      description: Retourne les détails d'un animal par son ID
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/SheepId'
+      responses:
+        '200':
+          description: Animal récupéré avec succès
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: '#/components/schemas/Sheep'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+    put:
+      tags:
+        - Animaux
+      summary: Mettre à jour un animal
+      description: Modifie les informations d'un animal existant
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/SheepId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SheepUpdate'
+            example:
+              breed: "Merinos"
+              age: 4
+              weight: 78.0
+              healthStatus: "Warning"
+      responses:
+        '200':
+          description: Animal mis à jour avec succès
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "Animal mis à jour avec succès"
+                  data:
+                    $ref: '#/components/schemas/Sheep'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+    delete:
+      tags:
+        - Animaux
+      summary: Supprimer un animal
+      description: Supprime un animal du système (soft delete)
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/SheepId'
+      responses:
+        '200':
+          description: Animal supprimé avec succès
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "Animal supprimé avec succès"
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /sheep/{id}/location:
+    put:
+      tags:
+        - Animaux
+      summary: Mettre à jour la position d'un animal
+      description: Enregistre la nouvelle position GPS d'un animal
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/SheepId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LocationUpdate'
+            example:
+              lat: 33.886
+              lng: -5.541
+              accuracy: 5.2
+              timestamp: "2023-09-15T10:30:00.000Z"
+      responses:
+        '200':
+          description: Position mise à jour avec succès
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "Position mise à jour avec succès"
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /sheep/{id}/medical:
+    post:
+      tags:
+        - Animaux
+      summary: Ajouter un enregistrement médical
+      description: Ajoute une nouvelle entrée dans l'historique médical d'un animal
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/SheepId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MedicalRecord'
+            example:
+              type: "vaccination"
+              description: "Vaccin contre la fièvre aphteuse"
+              veterinarian: "Dr. Martin"
+              date: "2023-09-15T10:30:00.000Z"
+              notes: "Réaction normale observée"
+      responses:
+        '201':
+          description: Enregistrement médical ajouté avec succès
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "Enregistrement médical ajouté avec succès"
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  # ============================================
+  # TÉLÉMÉTRIE ENDPOINTS
+  # ============================================
+  /telemetry:
+    post:
+      tags:
+        - Télémétrie
+      summary: Recevoir des données télémétriques
+      description: Endpoint pour les appareils IoT envoyer leurs données
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TelemetryData'
+            example:
+              deviceId: "C001"
+              timestamp: "2023-09-15T10:30:00.000Z"
+              location:
+                lat: 33.885
+                lng: -5.54
+                accuracy: 3.5
+              battery: 85
+              temperature: 38.5
+              heartRate: 75
+              activity: "walking"
+              signalStrength: -65
+      responses:
+        '201':
+          description: Données télémétriques enregistrées avec succès
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "Données enregistrées avec succès"
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /telemetry/latest:
+    get:
+      tags:
+        - Télémétrie
+      summary: Obtenir les dernières données télémétriques
+      description: Retourne les données les plus récentes pour tous les appareils
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Données télémétriques récupérées avec succès
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/TelemetryData'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /telemetry/device/{deviceId}:
+    get:
+      tags:
+        - Télémétrie
+      summary: Obtenir l'historique télémétrique d'un appareil
+      description: Retourne l'historique des données pour un appareil spécifique
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/DeviceId'
+        - $ref: '#/components/parameters/StartDate'
+        - $ref: '#/components/parameters/EndDate'
+        - $ref: '#/components/parameters/Limit'
+      responses:
+        '200':
+          description: Historique télémétrique récupéré avec succès
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/TelemetryData'
+                  pagination:
+                    $ref: '#/components/schemas/Pagination'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /telemetry/statistics:
+    get:
+      tags:
+        - Télémétrie
+      summary: Obtenir les statistiques télémétriques
+      description: Retourne des statistiques agrégées sur les données télémétriques
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/Period'
+      responses:
+        '200':
+          description: Statistiques récupérées avec succès
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: '#/components/schemas/TelemetryStatistics'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  # ============================================
+  # GEOFENCES ENDPOINTS
+  # ============================================
+  /geofences:
+    get:
+      tags:
+        - Géofences
+      summary: Lister toutes les géofences
+      description: Retourne la liste de toutes les zones géographiques définies
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Géofences récupérées avec succès
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Geofence'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+    post:
+      tags:
+        - Géofences
+      summary: Créer une nouvelle géofence
+      description: Définit une nouvelle zone géographique de monitoring
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GeofenceCreate'
+            example:
+              name: "Pâturage Nord"
+              description: "Zone principale de pâturage"
+              coords:
+                - [33.885, -5.540]
+                - [33.886, -5.540]
+                - [33.886, -5.541]
+                - [33.885, -5.541]
+              color: "#10b981"
+              isActive: true
+      responses:
+        '201':
+          description: Géofence créée avec succès
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "Géofence créée avec succès"
+                  data:
+                    $ref: '#/components/schemas/Geofence'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /geofences/{id}:
+    get:
+      tags:
+        - Géofences
+      summary: Obtenir une géofence spécifique
+      description: Retourne les détails d'une géofence par son ID
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/GeofenceId'
+      responses:
+        '200':
+          description: Géofence récupérée avec succès
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: '#/components/schemas/Geofence'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+    put:
+      tags:
+        - Géofences
+      summary: Mettre à jour une géofence
+      description: Modifie les paramètres d'une géofence existante
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/GeofenceId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GeofenceUpdate'
+            example:
+              name: "Pâturage Nord Modifié"
+              description: "Zone principale mise à jour"
+              isActive: false
+      responses:
+        '200':
+          description: Géofence mise à jour avec succès
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "Géofence mise à jour avec succès"
+                  data:
+                    $ref: '#/components/schemas/Geofence'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+    delete:
+      tags:
+        - Géofences
+      summary: Supprimer une géofence
+      description: Supprime une zone géographique du système
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/GeofenceId'
+      responses:
+        '200':
+          description: Géofence supprimée avec succès
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "Géofence supprimée avec succès"
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /geofences/check:
+    post:
+      tags:
+        - Géofences
+      summary: Vérifier si un animal est dans une géofence
+      description: Vérifie la position d'un animal par rapport aux géofences actives
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GeofenceCheck'
+            example:
+              sheepId: "SHEEP001"
+              location:
+                lat: 33.885
+                lng: -5.540
+      responses:
+        '200':
+          description: Vérification effectuée avec succès
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: '#/components/schemas/GeofenceCheckResult'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /geofences/violations:
+    get:
+      tags:
+        - Géofences
+      summary: Obtenir les violations de géofences
+      description: Retourne la liste des violations actives et historiques
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ActiveOnly'
+        - $ref: '#/components/parameters/StartDate'
+        - $ref: '#/components/parameters/EndDate'
+      responses:
+        '200':
+          description: Violations récupérées avec succès
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/GeofenceViolation'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  # ============================================
+  # NOTIFICATIONS ENDPOINTS
+  # ============================================
+  /notifications:
+    get:
+      tags:
+        - Notifications
+      summary: Lister toutes les notifications
+      description: Retourne la liste des notifications avec pagination et filtres
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/UnreadOnly'
+        - $ref: '#/components/parameters/Severity'
+        - $ref: '#/components/parameters/Type'
+      responses:
+        '200':
+          description: Notifications récupérées avec succès
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Notification'
+                  pagination:
+                    $ref: '#/components/schemas/Pagination'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+    post:
+      tags:
+        - Notifications
+      summary: Créer une notification
+      description: Crée une nouvelle notification dans le système
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NotificationCreate'
+            example:
+              type: "LOW_BATTERY"
+              title: "Batterie faible"
+              message: "L'appareil C001 a une batterie faible (15%)"
+              severity: "WARNING"
+              sheepId: "SHEEP001"
+              deviceId: "C001"
+      responses:
+        '201':
+          description: Notification créée avec succès
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "Notification créée avec succès"
+                  data:
+                    $ref: '#/components/schemas/Notification'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /notifications/{id}:
+    get:
+      tags:
+        - Notifications
+      summary: Obtenir une notification spécifique
+      description: Retourne les détails d'une notification par son ID
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/NotificationId'
+      responses:
+        '200':
+          description: Notification récupérée avec succès
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: '#/components/schemas/Notification'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+    put:
+      tags:
+        - Notifications
+      summary: Marquer une notification comme lue
+      description: Marque une notification spécifique comme lue
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/NotificationId'
+      responses:
+        '200':
+          description: Notification marquée comme lue
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "Notification marquée comme lue"
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+    delete:
+      tags:
+        - Notifications
+      summary: Supprimer une notification
+      description: Supprime une notification du système
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/NotificationId'
+      responses:
+        '200':
+          description: Notification supprimée avec succès
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "Notification supprimée avec succès"
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /notifications/mark-all-read:
+    put:
+      tags:
+        - Notifications
+      summary: Marquer toutes les notifications comme lues
+      description: Marque toutes les notifications non lues comme lues
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Toutes les notifications marquées comme lues
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "Toutes les notifications marquées comme lues"
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /notifications/unread-count:
+    get:
+      tags:
+        - Notifications
+      summary: Obtenir le nombre de notifications non lues
+      description: Retourne le nombre de notifications non lues par sévérité
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Nombre de notifications non lues récupéré
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      total:
+                        type: integer
+                        example: 5
+                      critical:
+                        type: integer
+                        example: 2
+                      warning:
+                        type: integer
+                        example: 3
+                      info:
+                        type: integer
+                        example: 0
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  # ============================================
+  # UTILISATEURS ENDPOINTS (ADMIN ONLY)
+  # ============================================
+  /users:
+    get:
+      tags:
+        - Utilisateurs
+      summary: Lister tous les utilisateurs
+      description: Retourne la liste de tous les utilisateurs (Admin uniquement)
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Search'
+        - $ref: '#/components/parameters/Role'
+      responses:
+        '200':
+          description: Utilisateurs récupérés avec succès
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/User'
+                  pagination:
+                    $ref: '#/components/schemas/Pagination'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+    post:
+      tags:
+        - Utilisateurs
+      summary: Créer un utilisateur
+      description: Crée un nouvel utilisateur (Admin uniquement)
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserCreate'
+            example:
+              username: "nouvel_utilisateur"
+              email: "user@exemple.com"
+              password: "Password123!"
+              role: "USER"
+      responses:
+        '201':
+          description: Utilisateur créé avec succès
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "Utilisateur créé avec succès"
+                  data:
+                    $ref: '#/components/schemas/User'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+  /users/{id}:
+    get:
+      tags:
+        - Utilisateurs
+      summary: Obtenir un utilisateur spécifique
+      description: Retourne les détails d'un utilisateur par son ID (Admin uniquement)
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/UserId'
+      responses:
+        '200':
+          description: Utilisateur récupéré avec succès
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: '#/components/schemas/User'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+    put:
+      tags:
+        - Utilisateurs
+      summary: Mettre à jour un utilisateur
+      description: Modifie les informations d'un utilisateur (Admin uniquement)
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/UserId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserUpdate'
+            example:
+              username: "utilisateur_modifie"
+              email: "modified@exemple.com"
+              role: "ADMIN"
+              isActive: true
+      responses:
+        '200':
+          description: Utilisateur mis à jour avec succès
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "Utilisateur mis à jour avec succès"
+                  data:
+                    $ref: '#/components/schemas/User'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+    delete:
+      tags:
+        - Utilisateurs
+      summary: Supprimer un utilisateur
+      description: Supprime un utilisateur du système (Admin uniquement)
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/UserId'
+      responses:
+        '200':
+          description: Utilisateur supprimé avec succès
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "Utilisateur supprimé avec succès"
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+# ============================================
+# COMPONENTS DEFINITIONS
+# ============================================
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Token JWT d'authentification
+
+  parameters:
+    Page:
+      in: query
+      name: page
+      description: Numéro de page pour la pagination
+      required: false
+      schema:
+        type: integer
+        minimum: 1
+        default: 1
+    Limit:
+      in: query
+      name: limit
+      description: Nombre d'éléments par page
+      required: false
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 20
+    Search:
+      in: query
+      name: search
+      description: Terme de recherche
+      required: false
+      schema:
+        type: string
+    HealthStatus:
+      in: query
+      name: healthStatus
+      description: Filtre par statut de santé
+      required: false
+      schema:
+        type: string
+        enum: [Good, Warning, Critical]
+    SheepId:
+      in: path
+      name: id
+      description: ID de l'animal
+      required: true
+      schema:
+        type: string
+        example: "64f8a1b2c3d4e5f6a7b8c9d0"
+    DeviceId:
+      in: path
+      name: deviceId
+      description: ID de l'appareil IoT
+      required: true
+      schema:
+        type: string
+        example: "C001"
+    StartDate:
+      in: query
+      name: startDate
+      description: Date de début (format ISO 8601)
+      required: false
+      schema:
+        type: string
+        format: date-time
+    EndDate:
+      in: query
+      name: endDate
+      description: Date de fin (format ISO 8601)
+      required: false
+      schema:
+        type: string
+        format: date-time
+    Period:
+      in: query
+      name: period
+      description: Période pour les statistiques
+      required: false
+      schema:
+        type: string
+        enum: [1h, 24h, 7d, 30d]
+        default: "24h"
+    GeofenceId:
+      in: path
+      name: id
+      description: ID de la géofence
+      required: true
+      schema:
+        type: string
+        example: "64f8a1b2c3d4e5f6a7b8c9d0"
+    NotificationId:
+      in: path
+      name: id
+      description: ID de la notification
+      required: true
+      schema:
+        type: string
+        example: "64f8a1b2c3d4e5f6a7b8c9d0"
+    UserId:
+      in: path
+      name: id
+      description: ID de l'utilisateur
+      required: true
+      schema:
+        type: string
+        example: "64f8a1b2c3d4e5f6a7b8c9d0"
+    UnreadOnly:
+      in: query
+      name: unreadOnly
+      description: Filtrer uniquement les notifications non lues
+      required: false
+      schema:
+        type: boolean
+        default: false
+    Severity:
+      in: query
+      name: severity
+      description: Filtre par sévérité
+      required: false
+      schema:
+        type: string
+        enum: [CRITICAL, WARNING, INFO]
+    Type:
+      in: query
+      name: type
+      description: Filtre par type de notification
+      required: false
+      schema:
+        type: string
+    ActiveOnly:
+      in: query
+      name: activeOnly
+      description: Filtrer uniquement les violations actives
+      required: false
+      schema:
+        type: boolean
+        default: true
+    Role:
+      in: query
+      name: role
+      description: Filtre par rôle d'utilisateur
+      required: false
+      schema:
+        type: string
+        enum: [ADMIN, USER]
+
+  schemas:
+    # Authentification Schemas
+    UserRegistration:
+      type: object
+      required:
+        - username
+        - email
+        - password
+        - role
+      properties:
+        username:
+          type: string
+          minLength: 3
+          maxLength: 50
+          description: Nom d'utilisateur unique
+          example: "jean_dupont"
+        email:
+          type: string
+          format: email
+          description: Adresse email valide
+          example: "jean@ferme.com"
+        password:
+          type: string
+          minLength: 8
+          description: Mot de passe (min 8 caractères)
+          example: "Password123!"
+        role:
+          type: string
+          enum: [ADMIN, USER]
+          description: Rôle de l'utilisateur
+          example: "ADMIN"
+
+    UserLogin:
+      type: object
+      required:
+        - email
+        - password
+      properties:
+        email:
+          type: string
+          format: email
+          description: Adresse email
+          example: "jean@ferme.com"
+        password:
+          type: string
+          description: Mot de passe
+          example: "Password123!"
+
+    AuthResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        message:
+          type: string
+          example: "Connexion réussie"
+        user:
+          $ref: '#/components/schemas/UserProfile'
+        token:
+          type: string
+          description: Token JWT
+          example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+
+    UserProfile:
+      type: object
+      properties:
+        id:
+          type: string
+          example: "64f8a1b2c3d4e5f6a7b8c9d0"
+        username:
+          type: string
+          example: "jean_dupont"
+        email:
+          type: string
+          format: email
+          example: "jean@ferme.com"
+        role:
+          type: string
+          enum: [ADMIN, USER]
+          example: "ADMIN"
+        createdAt:
+          type: string
+          format: date-time
+          example: "2023-09-15T10:30:00.000Z"
+        lastLogin:
+          type: string
+          format: date-time
+          example: "2023-09-20T14:25:00.000Z"
+
+    # Animaux Schemas
+    Sheep:
+      type: object
+      properties:
+        id:
+          type: string
+          example: "64f8a1b2c3d4e5f6a7b8c9d0"
+        sheepId:
+          type: string
+          description: Identifiant unique de l'animal
+          example: "SHEEP001"
+        breed:
+          type: string
+          description: Race de l'animal
+          example: "Merinos"
+        age:
+          type: integer
+          description: Âge en années
+          example: 3
+        weight:
+          type: number
+          format: float
+          description: Poids en kg
+          example: 75.5
+        gender:
+          type: string
+          enum: [male, female]
+          example: "male"
+        healthStatus:
+          type: string
+          enum: [Good, Warning, Critical]
+          example: "Good"
+        location:
+          $ref: '#/components/schemas/Location'
+        deviceId:
+          type: string
+          description: ID du collier IoT
+          example: "C001"
+        medicalHistory:
+          type: array
+          items:
+            $ref: '#/components/schemas/MedicalRecord'
+        createdAt:
+          type: string
+          format: date-time
+          example: "2023-09-15T10:30:00.000Z"
+        updatedAt:
+          type: string
+          format: date-time
+          example: "2023-09-20T14:25:00.000Z"
+        isActive:
+          type: boolean
+          example: true
+
+    SheepCreate:
+      type: object
+      required:
+        - sheepId
+        - breed
+        - age
+        - weight
+        - gender
+        - deviceId
+      properties:
+        sheepId:
+          type: string
+          example: "SHEEP002"
+        breed:
+          type: string
+          example: "Suffolk"
+        age:
+          type: integer
+          example: 2
+        weight:
+          type: number
+          format: float
+          example: 68.2
+        gender:
+          type: string
+          enum: [male, female]
+          example: "female"
+        deviceId:
+          type: string
+          example: "C002"
+
+    SheepUpdate:
+      type: object
+      properties:
+        breed:
+          type: string
+          example: "Merinos"
+        age:
+          type: integer
+          example: 4
+        weight:
+          type: number
+          format: float
+          example: 78.0
+        healthStatus:
+          type: string
+          enum: [Good, Warning, Critical]
+          example: "Warning"
+
+    Location:
+      type: object
+      properties:
+        lat:
+          type: number
+          format: float
+          description: Latitude
+          example: 33.885
+        lng:
+          type: number
+          format: float
+          description: Longitude
+          example: -5.54
+        accuracy:
+          type: number
+          format: float
+          description: Précision GPS en mètres
+          example: 3.5
+        timestamp:
+          type: string
+          format: date-time
+          example: "2023-09-15T10:30:00.000Z"
+
+    LocationUpdate:
+      type: object
+      required:
+        - lat
+        - lng
+      properties:
+        lat:
+          type: number
+          format: float
+          example: 33.886
+        lng:
+          type: number
+          format: float
+          example: -5.541
+        accuracy:
+          type: number
+          format: float
+          example: 5.2
+        timestamp:
+          type: string
+          format: date-time
+          example: "2023-09-15T10:30:00.000Z"
+
+    MedicalRecord:
+      type: object
+      required:
+        - type
+        - description
+        - veterinarian
+        - date
+      properties:
+        type:
+          type: string
+          enum: [vaccination, treatment, checkup, surgery, other]
+          example: "vaccination"
+        description:
+          type: string
+          example: "Vaccin contre la fièvre aphteuse"
+        veterinarian:
+          type: string
+          example: "Dr. Martin"
+        date:
+          type: string
+          format: date-time
+          example: "2023-09-15T10:30:00.000Z"
+        notes:
+          type: string
+          example: "Réaction normale observée"
+        medications:
+          type: array
+          items:
+            type: string
+          example: ["Vaccin", "Anti-inflammatoire"]
+
+    # Télémétrie Schemas
+    TelemetryData:
+      type: object
+      required:
+        - deviceId
+        - timestamp
+        - location
+        - battery
+      properties:
+        deviceId:
+          type: string
+          example: "C001"
+        timestamp:
+          type: string
+          format: date-time
+          example: "2023-09-15T10:30:00.000Z"
+        location:
+          $ref: '#/components/schemas/Location'
+        battery:
+          type: integer
+          minimum: 0
+          maximum: 100
+          description: Niveau de batterie en pourcentage
+          example: 85
+        temperature:
+          type: number
+          format: float
+          description: Température corporelle en °C
+          example: 38.5
+        heartRate:
+          type: integer
+          description: Fréquence cardiaque en BPM
+          example: 75
+        activity:
+          type: string
+          enum: [idle, walking, running, grazing, resting]
+          example: "walking"
+        signalStrength:
+          type: integer
+          description: Force du signal RSSI en dBm
+          example: -65
+        steps:
+          type: integer
+          description: Nombre de pas
+          example: 1250
+
+    TelemetryStatistics:
+      type: object
+      properties:
+        totalDevices:
+          type: integer
+          example: 150
+        activeDevices:
+          type: integer
+          example: 142
+        avgBattery:
+          type: number
+          format: float
+          example: 78.5
+        avgTemperature:
+          type: number
+          format: float
+          example: 38.6
+        avgHeartRate:
+          type: number
+          format: float
+          example: 72.3
+        lowBatteryCount:
+          type: integer
+          example: 8
+        offlineCount:
+          type: integer
+          example: 3
+        dataPoints:
+          type: integer
+          example: 15420
+
+    # Géofences Schemas
+    Geofence:
+      type: object
+      properties:
+        id:
+          type: string
+          example: "64f8a1b2c3d4e5f6a7b8c9d0"
+        name:
+          type: string
+          example: "Pâturage Nord"
+        description:
+          type: string
+          example: "Zone principale de pâturage"
+        coords:
+          type: array
+          items:
+            type: array
+            items:
+              type: number
+              minItems: 2
+              maxItems: 2
+          description: Coordonnées GPS [lat, lng] du polygone
+          example:
+            - [33.885, -5.540]
+            - [33.886, -5.540]
+            - [33.886, -5.541]
+            - [33.885, -5.541]
+        color:
+          type: string
+          pattern: "^#[0-9A-Fa-f]{6}$"
+          example: "#10b981"
+        isActive:
+          type: boolean
+          example: true
+        createdAt:
+          type: string
+          format: date-time
+          example: "2023-09-15T10:30:00.000Z"
+        updatedAt:
+          type: string
+          format: date-time
+          example: "2023-09-20T14:25:00.000Z"
+
+    GeofenceCreate:
+      type: object
+      required:
+        - name
+        - coords
+      properties:
+        name:
+          type: string
+          example: "Pâturage Nord"
+        description:
+          type: string
+          example: "Zone principale de pâturage"
+        coords:
+          type: array
+          items:
+            type: array
+            items:
+              type: number
+              minItems: 2
+              maxItems: 2
+          example:
+            - [33.885, -5.540]
+            - [33.886, -5.540]
+            - [33.886, -5.541]
+            - [33.885, -5.541]
+        color:
+          type: string
+          pattern: "^#[0-9A-Fa-f]{6}$"
+          example: "#10b981"
+        isActive:
+          type: boolean
+          example: true
+
+    GeofenceUpdate:
+      type: object
+      properties:
+        name:
+          type: string
+          example: "Pâturage Nord Modifié"
+        description:
+          type: string
+          example: "Zone principale mise à jour"
+        coords:
+          type: array
+          items:
+            type: array
+            items:
+              type: number
+              minItems: 2
+              maxItems: 2
+        color:
+          type: string
+          pattern: "^#[0-9A-Fa-f]{6}$"
+          example: "#10b981"
+        isActive:
+          type: boolean
+          example: false
+
+    GeofenceCheck:
+      type: object
+      required:
+        - sheepId
+        - location
+      properties:
+        sheepId:
+          type: string
+          example: "SHEEP001"
+        location:
+          $ref: '#/components/schemas/Location'
+
+    GeofenceCheckResult:
+      type: object
+      properties:
+        sheepId:
+          type: string
+          example: "SHEEP001"
+        location:
+          $ref: '#/components/schemas/Location'
+        isInside:
+          type: boolean
+          example: true
+        geofences:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+                example: "64f8a1b2c3d4e5f6a7b8c9d0"
+              name:
+                type: string
+                example: "Pâturage Nord"
+              isInside:
+                type: boolean
+                example: true
+        timestamp:
+          type: string
+          format: date-time
+          example: "2023-09-15T10:30:00.000Z"
+
+    GeofenceViolation:
+      type: object
+      properties:
+        id:
+          type: string
+          example: "64f8a1b2c3d4e5f6a7b8c9d0"
+        sheepId:
+          type: string
+          example: "SHEEP001"
+        geofenceId:
+          type: string
+          example: "64f8a1b2c3d4e5f6a7b8c9d0"
+        geofenceName:
+          type: string
+          example: "Pâturage Nord"
+        violationType:
+          type: string
+          enum: [EXIT, ENTRY]
+          example: "EXIT"
+        location:
+          $ref: '#/components/schemas/Location'
+        isActive:
+          type: boolean
+          example: true
+        createdAt:
+          type: string
+          format: date-time
+          example: "2023-09-15T10:30:00.000Z"
+        resolvedAt:
+          type: string
+          format: date-time
+          example: "2023-09-15T11:30:00.000Z"
+
+    # Notifications Schemas
+    Notification:
+      type: object
+      properties:
+        id:
+          type: string
+          example: "64f8a1b2c3d4e5f6a7b8c9d0"
+        type:
+          type: string
+          enum: [LOW_BATTERY, HEALTH_WARNING, GEOFENCE_VIOLATION, DEVICE_OFFLINE, BEHAVIOR_ANOMALY]
+          example: "LOW_BATTERY"
+        title:
+          type: string
+          example: "Batterie faible"
+        message:
+          type: string
+          example: "L'appareil C001 a une batterie faible (15%)"
+        severity:
+          type: string
+          enum: [CRITICAL, WARNING, INFO]
+          example: "WARNING"
+        sheepId:
+          type: string
+          example: "SHEEP001"
+        deviceId:
+          type: string
+          example: "C001"
+        isRead:
+          type: boolean
+          example: false
+        createdAt:
+          type: string
+          format: date-time
+          example: "2023-09-15T10:30:00.000Z"
+        readAt:
+          type: string
+          format: date-time
+          example: "2023-09-15T11:00:00.000Z"
+
+    NotificationCreate:
+      type: object
+      required:
+        - type
+        - title
+        - message
+        - severity
+      properties:
+        type:
+          type: string
+          enum: [LOW_BATTERY, HEALTH_WARNING, GEOFENCE_VIOLATION, DEVICE_OFFLINE, BEHAVIOR_ANOMALY]
+          example: "LOW_BATTERY"
+        title:
+          type: string
+          example: "Batterie faible"
+        message:
+          type: string
+          example: "L'appareil C001 a une batterie faible (15%)"
+        severity:
+          type: string
+          enum: [CRITICAL, WARNING, INFO]
+          example: "WARNING"
+        sheepId:
+          type: string
+          example: "SHEEP001"
+        deviceId:
+          type: string
+          example: "C001"
+
+    # Utilisateurs Schemas
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+          example: "64f8a1b2c3d4e5f6a7b8c9d0"
+        username:
+          type: string
+          example: "jean_dupont"
+        email:
+          type: string
+          format: email
+          example: "jean@ferme.com"
+        role:
+          type: string
+          enum: [ADMIN, USER]
+          example: "ADMIN"
+        isActive:
+          type: boolean
+          example: true
+        createdAt:
+          type: string
+          format: date-time
+          example: "2023-09-15T10:30:00.000Z"
+        lastLogin:
+          type: string
+          format: date-time
+          example: "2023-09-20T14:25:00.000Z"
+
+    UserCreate:
+      type: object
+      required:
+        - username
+        - email
+        - password
+        - role
+      properties:
+        username:
+          type: string
+          minLength: 3
+          maxLength: 50
+          example: "nouvel_utilisateur"
+        email:
+          type: string
+          format: email
+          example: "user@exemple.com"
+        password:
+          type: string
+          minLength: 8
+          example: "Password123!"
+        role:
+          type: string
+          enum: [ADMIN, USER]
+          example: "USER"
+        isActive:
+          type: boolean
+          example: true
+
+    UserUpdate:
+      type: object
+      properties:
+        username:
+          type: string
+          example: "utilisateur_modifie"
+        email:
+          type: string
+          format: email
+          example: "modified@exemple.com"
+        role:
+          type: string
+          enum: [ADMIN, USER]
+          example: "ADMIN"
+        isActive:
+          type: boolean
+          example: true
+
+    # Common Schemas
+    Pagination:
+      type: object
+      properties:
+        page:
+          type: integer
+          example: 1
+        limit:
+          type: integer
+          example: 20
+        total:
+          type: integer
+          example: 150
+        pages:
+          type: integer
+          example: 8
+
+    Error:
+      type: object
+      required:
+        - success
+        - error
+      properties:
+        success:
+          type: boolean
+          example: false
+        error:
+          type: object
+          properties:
+            code:
+              type: string
+              example: "VALIDATION_ERROR"
+            message:
+              type: string
+              example: "Les données fournies sont invalides"
+            details:
+              type: array
+              items:
+                type: object
+                properties:
+                  field:
+                    type: string
+                    example: "email"
+                  message:
+                    type: string
+                    example: "L'email est invalide"
+
+  responses:
+    BadRequest:
+      description: Requête invalide
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            success: false
+            error:
+              code: "VALIDATION_ERROR"
+              message: "Les données fournies sont invalides"
+              details:
+                - field: "email"
+                  message: "L'email est invalide"
+
+    Unauthorized:
+      description: Non autorisé
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            success: false
+            error:
+              code: "UNAUTHORIZED"
+              message: "Token JWT manquant ou invalide"
+
+    Forbidden:
+      description: Accès interdit
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            success: false
+            error:
+              code: "FORBIDDEN"
+              message: "Droits insuffisants pour accéder à cette ressource"
+
+    NotFound:
+      description: Ressource non trouvée
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            success: false
+            error:
+              code: "NOT_FOUND"
+              message: "La ressource demandée n'existe pas"
+
+    Conflict:
+      description: Conflit de données
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            success: false
+            error:
+              code: "CONFLICT"
+              message: "Un utilisateur avec cet email existe déjà"
+
+    InternalServerError:
+      description: Erreur serveur interne
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            success: false
+            error:
+              code: "INTERNAL_ERROR"
+              message: "Une erreur interne est survenue"

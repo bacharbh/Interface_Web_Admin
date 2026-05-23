@@ -1,0 +1,89 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500&display=swap');
+
+:root {
+    /* Brand */
+    --brand-primary: #1D9E75;
+    --brand-dark: #0F6E56;
+    --brand-light: #E1F5EE;
+
+    /* Sidebar */
+    --sidebar-bg: #1a1a18;
+    --sidebar-text: rgba(255, 255, 255, 0.55);
+    --sidebar-text-active: #ffffff;
+    --sidebar-active-bg: #1D9E75;
+    --sidebar-border: rgba(255, 255, 255, 0.07);
+    --sidebar-hover: rgba(255, 255, 255, 0.05);
+
+    /* Page surface */
+    --page-bg: #f5f4f0;
+    --page-bg-dark: #11110f;
+    --card-bg: #ffffff;
+    --card-bg-dark: #171715;
+    --card-border: #e8e6e0;
+    --card-border-dark: rgba(255, 255, 255, 0.08);
+
+    /* Semantic */
+    --danger: #E24B4A;
+    --danger-bg: #FCEBEB;
+    --warning: #EF9F27;
+    --warning-bg: #FAEEDA;
+    --success: #1D9E75;
+    --success-bg: #E1F5EE;
+
+    /* Text */
+    --text-primary: #1a1a18;
+    --text-secondary: #6b6966;
+    --text-muted: #a8a5a0;
+
+    /* Back-compat aliases used by existing utilities */
+    --color-primary-light: #8ee7c9;
+    --color-primary: var(--brand-primary);
+    --color-primary-dark: var(--brand-dark);
+    --color-danger: var(--danger);
+    --color-warning: var(--warning);
+    --color-surface-light: #fbfbf8;
+    --color-surface: var(--page-bg);
+    --color-surface-dark: var(--page-bg-dark);
+    --color-surface-accent: #eef6ef;
+    --color-alert-high: var(--danger);
+    --color-alert-medium: var(--warning);
+    --color-alert-low: var(--success);
+    --status-ok: var(--success);
+    --status-warn: var(--warning);
+    --status-critical: var(--danger);
+    --muted: var(--text-secondary);
+    --color-battery-full: var(--success);
+    --color-battery-low: var(--danger);
+    --card-bg-strong: var(--card-bg);
+    --glass-bg: rgba(255, 255, 255, 0.78);
+
+    --radius-sm: 8px;
+    --radius-md: 10px;
+    --radius-lg: 12px;
+}
+
+.dark {
+    --page-bg: #11110f;
+    --card-bg: #171715;
+    --card-border: rgba(255, 255, 255, 0.08);
+    --text-primary: #f5f4f0;
+    --text-secondary: rgba(245, 244, 240, 0.72);
+    --text-muted: rgba(245, 244, 240, 0.45);
+    --glass-bg: rgba(23, 23, 21, 0.8);
+}
+
+html,
+body {
+    font-family: 'Inter', sans-serif;
+    background: var(--page-bg);
+    color: var(--text-primary);
+}
+
+body {
+    line-height: 1.5;
+}
+
+* {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}

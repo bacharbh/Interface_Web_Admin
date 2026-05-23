@@ -1,0 +1,471 @@
+name: Smart Shepherd CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+  release:
+    types: [ published ]
+
+env:
+  NODE_VERSION: '18'
+  DOCKER_REGISTRY: ghcr.io
+  FRONTEND_IMAGE_NAME: smart-shepherd-frontend
+  BACKEND_IMAGE_NAME: smart-shepherd-backend
+
+jobs:
+  # ============================================
+  # SECURITY SCAN JOB
+  # ============================================
+  security-scan:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
+      packages: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies (Backend)
+        working-directory: ./backend
+        run: npm ci
+
+      - name: Install dependencies (Frontend)
+        working-directory: ./
+        run: npm ci
+
+      - name: Run npm audit (Backend)
+        working-directory: ./backend
+        run: npm audit --audit-level=moderate
+        continue-on-error: true
+
+      - name: Run npm audit (Frontend)
+        run: npm audit --audit-level=moderate
+        continue-on-error: true
+
+      - name: Run Snyk to check for vulnerabilities
+        uses: snyk/actions/node@master
+        continue-on-error: true
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        with:
+          args: --severity-threshold=high
+
+      - name: Upload Snyk results to GitHub Security tab
+        uses: github/codeql-action/upload-sarif@v2
+        if: always()
+        with:
+          sarif_file: snyk.sarif
+
+  # ============================================
+  # CI JOB - Lint, Tests, Coverage
+  # ============================================
+  ci:
+    name: Continuous Integration
+    runs-on: ubuntu-latest
+    needs: security-scan
+
+    services:
+      mongodb:
+        image: mongo:6.0
+        env:
+          MONGO_INITDB_ROOT_USERNAME: admin
+          MONGO_INITDB_ROOT_PASSWORD: password
+        ports:
+          - 27017:27017
+        options: >-
+          --health-cmd "mongosh --eval 'db.runCommand({ping: 1})'"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+      mosquitto:
+        image: eclipse-mosquitto:2.0
+        ports:
+          - 1883:1883
+          - 9001:9001
+        options: >-
+          --health-cmd "mosquitto_pub -h localhost -t test -m 'health-check'"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Cache backend dependencies
+        uses: actions/cache@v3
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-
+
+      - name: Install backend dependencies
+        working-directory: ./backend
+        run: npm ci
+
+      - name: Install frontend dependencies
+        run: npm ci
+
+      - name: Lint backend code
+        working-directory: ./backend
+        run: npm run lint
+
+      - name: Lint frontend code
+        run: npm run lint
+
+      - name: Type check backend
+        working-directory: ./backend
+        run: npm run type-check || true
+
+      - name: Type check frontend
+        run: npm run type-check || true
+
+      - name: Run backend unit tests
+        working-directory: ./backend
+        run: npm run test:unit
+        env:
+          MONGODB_URI: mongodb://admin:password@localhost:27017/smart-shepherd-test?authSource=admin
+          JWT_SECRET: test-jwt-secret
+          MQTT_BROKER_URL: mqtt://localhost:1883
+
+      - name: Run backend integration tests
+        working-directory: ./backend
+        run: npm run test:integration
+        env:
+          MONGODB_URI: mongodb://admin:password@localhost:27017/smart-shepherd-test?authSource=admin
+          JWT_SECRET: test-jwt-secret
+          MQTT_BROKER_URL: mqtt://localhost:1883
+
+      - name: Run frontend unit tests
+        run: npm run test:unit
+        env:
+          CI: true
+
+      - name: Generate backend coverage report
+        working-directory: ./backend
+        run: npm run test:coverage
+
+      - name: Generate frontend coverage report
+        run: npm run test:coverage
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v3
+        with:
+          files: ./backend/coverage/lcov.info,./coverage/lcov.info
+          flags: unittests
+          name: codecov-umbrella
+          fail_ci_if_error: false
+
+      - name: Build frontend
+        run: npm run build
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: build-artifacts
+          path: |
+            dist/
+            backend/dist/
+          retention-days: 7
+
+  # ============================================
+  # BUILD JOB - Docker Multi-Stage
+  # ============================================
+  build:
+    name: Build Docker Images
+    runs-on: ubuntu-latest
+    needs: ci
+    if: github.event_name == 'push' || github.event_name == 'release'
+
+    outputs:
+      frontend-tag: ${{ steps.meta-frontend.outputs.tags }}
+      backend-tag: ${{ steps.meta-backend.outputs.tags }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.DOCKER_REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata for frontend
+        id: meta-frontend
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.DOCKER_REGISTRY }}/${{ github.repository }}/${{ env.FRONTEND_IMAGE_NAME }}
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=sha,prefix={{branch}}-
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      - name: Extract metadata for backend
+        id: meta-backend
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.DOCKER_REGISTRY }}/${{ github.repository }}/${{ env.BACKEND_IMAGE_NAME }}
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=sha,prefix={{branch}}-
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      - name: Download build artifacts
+        uses: actions/download-artifact@v3
+        with:
+          name: build-artifacts
+          path: ./artifacts
+
+      - name: Build and push frontend image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile.frontend
+          push: true
+          tags: ${{ steps.meta-frontend.outputs.tags }}
+          labels: ${{ steps.meta-frontend.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          platforms: linux/amd64,linux/arm64
+
+      - name: Build and push backend image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./backend
+          file: ./backend/Dockerfile
+          push: true
+          tags: ${{ steps.meta-backend.outputs.tags }}
+          labels: ${{ steps.meta-backend.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          platforms: linux/amd64,linux/arm64
+
+      - name: Generate SBOM for frontend
+        uses: anchore/sbom-action@v0
+        with:
+          image: ${{ env.DOCKER_REGISTRY }}/${{ github.repository }}/${{ env.FRONTEND_IMAGE_NAME }}:${{ steps.meta-frontend.outputs.version }}
+          format: spdx-json
+          output-file: sbom-frontend.spdx.json
+
+      - name: Generate SBOM for backend
+        uses: anchore/sbom-action@v0
+        with:
+          image: ${{ env.DOCKER_REGISTRY }}/${{ github.repository }}/${{ env.BACKEND_IMAGE_NAME }}:${{ steps.meta-backend.outputs.version }}
+          format: spdx-json
+          output-file: sbom-backend.spdx.json
+
+      - name: Upload SBOM artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: sbom-artifacts
+          path: |
+            sbom-frontend.spdx.json
+            sbom-backend.spdx.json
+          retention-days: 30
+
+  # ============================================
+  # DEPLOY JOB - DigitalOcean/AWS
+  # ============================================
+  deploy:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    needs: build
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    environment: production
+
+    strategy:
+      matrix:
+        provider: [digitalocean, aws]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup deployment tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y jq curl
+
+      - name: Deploy to DigitalOcean
+        if: matrix.provider == 'digitalocean'
+        run: |
+          echo "Deploying to DigitalOcean..."
+          
+          # Install doctl
+          curl -sL https://github.com/digitalocean/doctl/releases/download/v1.96.0/doctl-1.96.0-linux-amd64.tar.gz | tar xz
+          sudo mv doctl /usr/local/bin
+          
+          # Authenticate with DigitalOcean
+          doctl auth init --access-token ${{ secrets.DIGITALOCEAN_TOKEN }}
+          
+          # Create or update app
+          doctl apps create --spec .do/app-spec.yaml \
+            --wait \
+            --access-token ${{ secrets.DIGITALOCEAN_TOKEN }} || \
+          doctl apps update --spec .do/app-spec.yaml \
+            --wait \
+            --access-token ${{ secrets.DIGITALOCEAN_TOKEN }}
+
+      - name: Deploy to AWS
+        if: matrix.provider == 'aws'
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Deploy to AWS ECS
+        if: matrix.provider == 'aws'
+        run: |
+          echo "Deploying to AWS ECS..."
+          
+          # Update ECS service
+          aws ecs update-service \
+            --cluster smart-shepherd \
+            --service smart-shepherd-service \
+            --force-new-deployment \
+            --region ${{ secrets.AWS_REGION }}
+
+      - name: Deploy to AWS Lambda (Backend)
+        if: matrix.provider == 'aws'
+        run: |
+          echo "Deploying backend to AWS Lambda..."
+          
+          # Update Lambda function
+          aws lambda update-function-code \
+            --function-name smart-shepherd-backend \
+            --image-uri ${{ needs.build.outputs.backend-tag }} \
+            --region ${{ secrets.AWS_REGION }}
+
+      - name: Wait for deployment
+        run: |
+          echo "Waiting for deployment to be ready..."
+          sleep 30
+
+      - name: Run smoke tests
+        run: |
+          echo "Running smoke tests..."
+          
+          # Test API health
+          curl -f ${{ secrets.API_URL }}/api/health || exit 1
+          
+          # Test frontend
+          curl -f ${{ secrets.FRONTEND_URL }}/ || exit 1
+
+      - name: Notify deployment status
+        uses: 8398a7/action-slack@v3
+        if: always()
+        with:
+          status: ${{ job.status }}
+          channel: '#deployments'
+          text: |
+            Deployment to ${{ matrix.provider }} ${{ job.status }}
+            Frontend: ${{ needs.build.outputs.frontend-tag }}
+            Backend: ${{ needs.build.outputs.backend-tag }}
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+
+  # ============================================
+  # STAGING DEPLOY JOB
+  # ============================================
+  deploy-staging:
+    name: Deploy to Staging
+    runs-on: ubuntu-latest
+    needs: build
+    if: github.ref == 'refs/heads/develop' && github.event_name == 'push'
+    environment: staging
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Deploy to staging
+        run: |
+          echo "Deploying to staging environment..."
+          
+          # Deploy to staging (could be Vercel, Netlify, etc.)
+          curl -X POST \
+            -H "Authorization: Bearer ${{ secrets.STAGING_DEPLOY_TOKEN }}" \
+            -H "Content-Type: application/json" \
+            -d '{
+              "frontend_tag": "${{ needs.build.outputs.frontend-tag }}",
+              "backend_tag": "${{ needs.build.outputs.backend-tag }}"
+            }' \
+            ${{ secrets.STAGING_DEPLOY_URL }}
+
+      - name: Run integration tests on staging
+        run: |
+          echo "Running integration tests on staging..."
+          
+          # Wait for deployment
+          sleep 60
+          
+          # Run integration tests
+          npm run test:integration:staging
+
+  # ============================================
+  # CLEANUP JOB
+  # ============================================
+  cleanup:
+    name: Cleanup Resources
+    runs-on: ubuntu-latest
+    needs: [deploy, deploy-staging]
+    if: always()
+
+    steps:
+      - name: Cleanup old Docker images
+        run: |
+          echo "Cleaning up old Docker images..."
+          # Remove old images from registry (keep last 10 versions)
+          # Implementation depends on registry API
+
+      - name: Cleanup old artifacts
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const artifacts = await github.rest.actions.listWorkflowRunArtifacts({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              run_id: context.runId,
+            });
+            
+            // Keep only last 5 artifacts
+            const artifactsToDelete = artifacts.data.artifacts.slice(5);
+            
+            for (const artifact of artifactsToDelete) {
+              await github.rest.actions.deleteArtifact({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                artifact_id: artifact.id,
+              });
+            }

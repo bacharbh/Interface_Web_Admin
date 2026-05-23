@@ -1,0 +1,74 @@
+name: smart-shepherd
+services:
+  # Frontend Service
+  - name: frontend
+    source_dir: .
+    github:
+      repo: smartshepherd/smart-shepherd
+      branch: main
+    run_command: npm run build
+    source_dir: /app/dist
+    output_dir: /app/dist
+    environment_slug: node-js
+    instance_count: 1
+    instance_size_slug: basic-xxs
+    http_port: 8080
+    routes:
+      - path: /
+    envs:
+      - key: NODE_ENV
+        value: production
+      - key: VITE_API_URL
+        value: ${API_URL}
+      - key: VITE_MQTT_URL
+        value: ${MQTT_URL}
+
+  # Backend Service
+  - name: backend
+    source_dir: ./backend
+    github:
+      repo: smartshepherd/smart-shepherd
+      branch: main
+    run_command: npm run build
+    source_dir: /app/dist
+    output_dir: /app/dist
+    environment_slug: node-js
+    instance_count: 1
+    instance_size_slug: basic-xxs
+    http_port: 5000
+    routes:
+      - path: /api
+    envs:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 5000
+      - key: MONGODB_URI
+        value: ${MONGODB_URI}
+      - key: JWT_SECRET
+        value: ${JWT_SECRET}
+      - key: MQTT_BROKER_URL
+        value: ${MQTT_BROKER_URL}
+      - key: REDIS_URL
+        value: ${REDIS_URL}
+
+databases:
+  # MongoDB Database
+  - name: smart-shepherd-db
+    engine: MongoDB
+    version: "6"
+    size: db-s-basic
+    region: nyc3
+
+domains:
+  # Main Domain
+  - name: smartshepherd.com
+    type: PRIMARY
+    service: frontend
+    path: /
+    
+  # API Subdomain
+  - name: api.smartshepherd.com
+    type: PRIMARY
+    service: backend
+    path: /

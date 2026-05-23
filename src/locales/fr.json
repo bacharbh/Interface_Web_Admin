@@ -1,0 +1,44 @@
+{
+  "common": {
+    "loading": "Chargement...",
+    "error": "Erreur",
+    "sync": "Synchroniser",
+    "retrain": "Réentraîner l'IA",
+    "details": "Voir détail",
+    "close": "Fermer",
+    "all": "Tous",
+    "health": "Santé",
+    "gps": "GPS",
+    "battery": "Batterie",
+    "save": "Enregistrer",
+    "cancel": "Annuler",
+    "notify_vet": "Notifier le vétérinaire",
+    "mark_treated": "Marquer comme traité"
+  },
+  "dashboard": {
+    "title": "Prédictions de santé",
+    "subtitle": "Système d'analyse prédictive basé sur des réseaux neuronaux LSTM.",
+    "risk_index": "Indice de risque",
+    "ml_alerts": "Alertes ML",
+    "system_confidence": "Confiance système",
+    "ai_population": "Population IA",
+    "risk_distribution": "Distribution géographique des risques",
+    "vigilance_levels": "Niveaux de vigilance",
+    "timeline": "Timeline des anomalies (24h)",
+    "risk_evolution": "Évolution du score de risque LSTM",
+    "registry": "Registre détaillé des anomalies",
+    "active": "actifs",
+    "animals": "animaux"
+  },
+  "clinical": {
+    "title": "Analyse Clinique Détaillée",
+    "vitals": "Constantes vitales",
+    "heart_rate": "FC Cardiaque",
+    "temperature": "Température",
+    "activity": "Activité",
+    "hydration": "Hydratation",
+    "diagnosis": "Diagnostic IA",
+    "reliability": "Fiabilité",
+    "normal": "Normal"
+  }
+}

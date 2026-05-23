@@ -1,0 +1,265 @@
+/**
+ * Local AI Service - Intelligent Health Analysis without External API
+ * Provides high-confidence analysis when Anthropic API is unavailable
+ */
+
+class LocalAIAnalysisService {
+    /**
+     * Generate risk level based on telemetry data
+     */
+    static calculateRiskLevel(animal) {
+        const issues = [];
+        let riskScore = 0;
+
+        // Temperature analysis (normal: 38.5-39.5°C for sheep)
+        if (animal.temperature) {
+            if (animal.temperature > 40.5) {
+                issues.push('FEVER_HIGH');
+                riskScore += 35;
+            } else if (animal.temperature > 39.8) {
+                issues.push('FEVER_MILD');
+                riskScore += 15;
+            } else if (animal.temperature < 37.5) {
+                issues.push('HYPOTHERMIA');
+                riskScore += 25;
+            }
+        }
+
+        // Heart rate analysis (normal: 70-80 bpm for sheep)
+        if (animal.bpm) {
+            if (animal.bpm > 100) {
+                issues.push('TACHYCARDIA');
+                riskScore += 20;
+            } else if (animal.bpm < 50) {
+                issues.push('BRADYCARDIA');
+                riskScore += 20;
+            }
+        }
+
+        // Activity level (0-100%)
+        if (animal.activity !== undefined) {
+            if (animal.activity > 80) {
+                issues.push('HIGH_ACTIVITY');
+                riskScore += 10; // Could be panic/stress
+            } else if (animal.activity < 10) {
+                issues.push('LOW_ACTIVITY');
+                riskScore += 15; // Depression/lethargy
+            }
+        }
+
+        // Battery status
+        if (animal.battery !== undefined && animal.battery < 15) {
+            issues.push('LOW_BATTERY');
+            riskScore += 5; // Will lose tracking soon
+        }
+
+        // GPS status
+        if (animal.gps_signal < 3) {
+            issues.push('GPS_WEAK');
+            riskScore += 3;
+        }
+
+        // Determine risk level
+        if (riskScore >= 50) return 'CRITICAL';
+        if (riskScore >= 30) return 'HIGH';
+        if (riskScore >= 15) return 'MEDIUM';
+        return 'LOW';
+    }
+
+    /**
+     * Generate human-readable analysis summary
+     */
+    static generateSummary(animals) {
+        if (!animals || animals.length === 0) {
+            return 'Aucune donnée d\'animal disponible pour l\'analyse.';
+        }
+
+        const criticalAnimals = animals.filter(
+            (a) => this.calculateRiskLevel(a) === 'CRITICAL'
+        );
+        const highRiskAnimals = animals.filter(
+            (a) => this.calculateRiskLevel(a) === 'HIGH'
+        );
+        const avgTemp =
+            animals.reduce((sum, a) => sum + (a.temperature || 0), 0) / animals.length;
+        const avgBpm =
+            animals.reduce((sum, a) => sum + (a.bpm || 0), 0) / animals.length;
+        const avgActivity =
+            animals.reduce((sum, a) => sum + (a.activity || 0), 0) / animals.length;
+
+        let summary = '';
+
+        // Critical analysis
+        if (criticalAnimals.length > 0) {
+            summary += `⚠️ ${criticalAnimals.length} animal(aux) en état critique : ${criticalAnimals
+                .map((a) => a.name)
+                .join(', ')}. `;
+            summary += `Intervention urgente recommandée. `;
+        }
+
+        // High risk analysis
+        if (highRiskAnimals.length > 0) {
+            summary += `⚠️ ${highRiskAnimals.length} animal(aux) à surveiller : ${highRiskAnimals
+                .map((a) => a.name)
+                .join(', ')}. `;
+        }
+
+        // Temperature analysis
+        if (avgTemp > 39.8) {
+            summary += `🌡️ Température moyenne élevée (${avgTemp.toFixed(1)}°C) : possibile fièvre collective. `;
+        } else if (avgTemp < 37.8) {
+            summary += `❄️ Température moyenne basse (${avgTemp.toFixed(1)}°C) : vérifier conditions environnementales. `;
+        } else {
+            summary += `✅ Températures normales. `;
+        }
+
+        // Heart rate analysis
+        if (avgBpm > 90) {
+            summary += `💓 Fréquence cardiaque élevée (${Math.round(
+                avgBpm
+            )} bpm) : stress possible. `;
+        } else if (avgBpm < 60) {
+            summary += `💓 Fréquence cardiaque basse : état de repos. `;
+        }
+
+        // Activity analysis
+        if (avgActivity > 70) {
+            summary += `🏃 Activité élevée : surveillance recommandée. `;
+        } else if (avgActivity < 20) {
+            summary += `😴 Activité basse : comportement normal ou détresse. `;
+        }
+
+        if (summary.length === 0) {
+            summary = '✅ Troupeau en bonne santé. Continuer le suivi régulier.';
+        }
+
+        return summary;
+    }
+
+    /**
+     * Identify which animals are at risk
+     */
+    static identifyRiskAnimals(animals) {
+        const riskMap = {};
+        const riskAnimals = [];
+
+        animals.forEach((animal) => {
+            const level = this.calculateRiskLevel(animal);
+            if (level !== 'LOW') {
+                riskAnimals.push(animal.collar_id);
+                riskMap[animal.collar_id] = level;
+            }
+        });
+
+        return riskAnimals;
+    }
+
+    /**
+     * Generate actionable recommendations
+     */
+    static generateSuggestions(animals) {
+        const suggestions = [];
+        const issues = new Set();
+
+        animals.forEach((animal) => {
+            // Collect all issues
+            if (animal.temperature > 40.5) issues.add('FEVER');
+            if (animal.temperature < 37.5) issues.add('HYPOTHERMIA');
+            if (animal.bpm > 100) issues.add('TACHYCARDIA');
+            if (animal.battery < 15) issues.add('BATTERY');
+            if (animal.gps_signal < 3) issues.add('GPS');
+            if (animal.activity > 80) issues.add('STRESS');
+            if (animal.activity < 10) issues.add('LETHARGY');
+        });
+
+        // Generate specific suggestions
+        if (issues.has('FEVER')) {
+            suggestions.push(
+                '🏥 Vérifier la température rectale des animaux fébriles et consulter un vétérinaire si persistance'
+            );
+            suggestions.push(
+                '💧 Assurer hydratation adéquate et accès à l\'ombre pour thermorégulation'
+            );
+        }
+
+        if (issues.has('HYPOTHERMIA')) {
+            suggestions.push(
+                '🔥 Fournir abri supplémentaire et isolation thermique pour animaux hypothermiques'
+            );
+            suggestions.push(
+                '👨‍⚕️ Surveiller signes de détresse respiratoire'
+            );
+        }
+
+        if (issues.has('TACHYCARDIA')) {
+            suggestions.push(
+                '😰 Identifier sources de stress (prédateurs, changements environnementaux) et éliminer'
+            );
+            suggestions.push(
+                '🧘 Laisser période calme pour normalisation FC'
+            );
+        }
+
+        if (issues.has('STRESS')) {
+            suggestions.push(
+                '📍 Vérifier comportement - activité élevée peut indiquer fuite ou prédateur'
+            );
+            suggestions.push(
+                '🔔 Activer alertes de géofence'
+            );
+        }
+
+        if (issues.has('LETHARGY')) {
+            suggestions.push(
+                '⚕️ Apathie peut indiquer maladie : observation rapprochée recommandée'
+            );
+        }
+
+        if (issues.has('BATTERY')) {
+            suggestions.push(
+                '🔋 Colliers faible batterie détectés : planifier recharge ou remplacement urgent'
+            );
+        }
+
+        if (issues.has('GPS')) {
+            suggestions.push(
+                '📡 Signal GPS faible : vérifier ligne de vue ou recalibrer antenne'
+            );
+        }
+
+        // Default suggestions if no specific issues
+        if (suggestions.length === 0) {
+            suggestions.push(
+                '✅ Continuer suivi de santé régulier'
+            );
+            suggestions.push(
+                '📊 Consulter tendances historiques pour détection anomalies précoces'
+            );
+            suggestions.push(
+                '🔔 Activer alertes intelligentes pour notifications proactives'
+            );
+        }
+
+        return suggestions.slice(0, 5); // Return max 5 suggestions
+    }
+
+    /**
+     * Main analysis method - matches Anthropic API response format
+     */
+    static analyzeAnimals(animals) {
+        const riskLevel = animals.length > 0
+            ? this.identifyRiskAnimals(animals).length > 0
+                ? this.calculateRiskLevel(animals[0])
+                : 'LOW'
+            : 'LOW';
+
+        return {
+            summary: this.generateSummary(animals),
+            riskLevel: riskLevel,
+            riskAnimalIds: this.identifyRiskAnimals(animals),
+            suggestions: this.generateSuggestions(animals),
+        };
+    }
+}
+
+export default LocalAIAnalysisService;

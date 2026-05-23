@@ -1,0 +1,22 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets: ['alertmanager:9093']
+
+rule_files:
+  - "alert_rules.yml"
+
+scrape_configs:
+  # Scraping Node.js custom metrics via prom-client
+  - job_name: 'smart-shepherd-backend'
+    metrics_path: '/api/metrics'
+    static_configs:
+      - targets: ['backend:5000']
+        
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
