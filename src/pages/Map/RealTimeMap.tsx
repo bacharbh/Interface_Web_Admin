@@ -96,8 +96,12 @@ const InvalidateMapSize = () => {
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
-      map.invalidateSize();
-    }, 0);
+      try {
+        map.invalidateSize();
+      } catch (e) {
+        // ignore
+      }
+    }, 100);
 
     return () => window.clearTimeout(timer);
   }, [map]);
@@ -210,14 +214,14 @@ const GeomanControls = ({
       }
     };
 
-    mapInst.on('pm:create', onCreate);
-    mapInst.on('pm:edit', onEdit);
-    mapInst.on('pm:remove', onRemove);
+    mapInst.on('pm:create' as any, onCreate as any);
+    mapInst.on('pm:edit' as any, onEdit as any);
+    mapInst.on('pm:remove' as any, onRemove as any);
 
     return () => {
-      mapInst.off('pm:create', onCreate);
-      mapInst.off('pm:edit', onEdit);
-      mapInst.off('pm:remove', onRemove);
+      mapInst.off('pm:create' as any, onCreate as any);
+      mapInst.off('pm:edit' as any, onEdit as any);
+      mapInst.off('pm:remove' as any, onRemove as any);
     };
   }, [map, onZoneCreated, onZoneEdited, onZoneDeleted]);
 
@@ -341,6 +345,7 @@ const RealTimeMap = React.memo(({
   onViewportChange,
 }: RealTimeMapProps) => {
   const { theme } = useTheme();
+  const mapRef = React.useRef<any>(null);
   const farmConfig = useFarmConfig();
   const [activeLayer, setActiveLayer] = useState(theme === 'dark' ? 'dark' : 'street');
   const [showWeather, setShowWeather] = useState(false);
@@ -501,12 +506,13 @@ const RealTimeMap = React.memo(({
   }
 
   return (
-    <div className="relative h-full min-h-[520px] overflow-hidden rounded-[10px] border border-[var(--card-border)] bg-white dark:bg-[var(--card-bg)]">
+    <div className="flex flex-1 relative h-full min-h-[520px] overflow-hidden rounded-[10px] border border-[var(--card-border)] bg-white dark:bg-[var(--card-bg)]">
       <MapContainer
         center={initialCenter}
         zoom={14}
         className="w-full"
         zoomControl={false}
+        {...({ whenCreated: (m: any) => { mapRef.current = m } } as any)}
         style={{ height: '100%', minHeight: '400px', width: '100%', position: 'relative' }}
       >
         <MapViewSync animalBounds={animalBounds} initialCenter={initialCenter} />
@@ -583,9 +589,8 @@ const RealTimeMap = React.memo(({
           spiderfyOnMaxZoom={true}
           // Handle cluster click to show popup with members
           eventHandlers={{
-            clusterclick: (ev) => {
+            clusterclick: (ev: any) => {
               try {
-                // @ts-ignore -- cluster type from plugin
                 const cluster = ev.layer;
                 const childMarkers = cluster.getAllChildMarkers();
                 const items = childMarkers.map((m: any) => {

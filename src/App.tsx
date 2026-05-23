@@ -4,6 +4,7 @@ import { useAuth, USER_ROLES } from './contexts/AuthContext';
 import { MqttProvider } from './contexts/MqttContext';
 import AppLayout from './components/layout/AppLayout';
 import { devLog } from './utils/devLogger';
+import DevErrorBoundary from './components/ErrorBoundary'
 import { useDataRefresh } from './hooks/useDataRefresh';
 import Dashboard from './pages/Dashboard/Dashboard_OPTIMIZED';
 import MapMonitor from './pages/Map/MapMonitor';
@@ -351,63 +352,65 @@ function App() {
 
   return (
     <>
-      <Routes>
-        {/* LOGIN ROUTE */}
-        <Route path="/login" element={user ? <Navigate to="/dashboard" replace /> : <Login />} />
+      <DevErrorBoundary>
+        <Routes>
+          {/* LOGIN ROUTE */}
+          <Route path="/login" element={user ? <Navigate to="/dashboard" replace /> : <Login />} />
 
-        {/* APP ROUTES - Protected Layout */}
-        <Route
-          element={
-            user ? (
-              <AuthenticatedAppWrapper />
-            ) : (
-              <Navigate to="/login" replace />
-            )
-          }
-        >
-          <Route index element={<Navigate to="/dashboard" replace />} />
-          <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/map" element={<ErrorBoundary fallback={<MapError />}><MapMonitor /></ErrorBoundary>} />
-          <Route path="/animals" element={<Animals />} />
-          <Route path="/animals/:id" element={<AnimalDetail />} />
-          <Route path="/animal/:id" element={<AnimalProfile />} />
-          <Route path="/compare" element={<CompareView />} />
-          <Route path="/agenda" element={<AgendaView />} />
-          <Route path="/alerts" element={<ErrorBoundary fallback={<AlertError />}><Alerts /></ErrorBoundary>} />
-          <Route path="/anomalies" element={<Anomalies />} />
-          <Route path="/analytics" element={<ErrorBoundary fallback={<ChartError />}><Analytics /></ErrorBoundary>} />
-          <Route path="/ai-dashboard" element={
-            <React.Suspense fallback={
-              <div className="flex flex-col items-center justify-center h-[60vh] gap-5">
-                <div className="relative w-16 h-16">
-                  <div className="absolute inset-0 border-4 border-primary/20 rounded-full"></div>
-                  <div className="absolute inset-0 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+          {/* APP ROUTES - Protected Layout */}
+          <Route
+            element={
+              user ? (
+                <AuthenticatedAppWrapper />
+              ) : (
+                <Navigate to="/login" replace />
+              )
+            }
+          >
+            <Route index element={<Navigate to="/dashboard" replace />} />
+            <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/map" element={<ErrorBoundary fallback={<MapError />}><MapMonitor /></ErrorBoundary>} />
+            <Route path="/animals" element={<Animals />} />
+            <Route path="/animals/:id" element={<AnimalDetail />} />
+            <Route path="/animal/:id" element={<AnimalProfile />} />
+            <Route path="/compare" element={<CompareView />} />
+            <Route path="/agenda" element={<AgendaView />} />
+            <Route path="/alerts" element={<ErrorBoundary fallback={<AlertError />}><Alerts /></ErrorBoundary>} />
+            <Route path="/anomalies" element={<Anomalies />} />
+            <Route path="/analytics" element={<ErrorBoundary fallback={<ChartError />}><Analytics /></ErrorBoundary>} />
+            <Route path="/ai-dashboard" element={
+              <React.Suspense fallback={
+                <div className="flex flex-col items-center justify-center h-[60vh] gap-5">
+                  <div className="relative w-16 h-16">
+                    <div className="absolute inset-0 border-4 border-primary/20 rounded-full"></div>
+                    <div className="absolute inset-0 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+                  </div>
+                  <p className="text-[11px] font-normal text-gray-500 tracking-wide animate-pulse">Initialisation du moteur IA...</p>
                 </div>
-                <p className="text-[11px] font-normal text-gray-500 tracking-wide animate-pulse">Initialisation du moteur IA...</p>
-              </div>
-            }>
-              <AIPredictionDashboard />
-            </React.Suspense>
-          } />
+              }>
+                <AIPredictionDashboard />
+              </React.Suspense>
+            } />
 
-          {/* Admin Only Routes */}
-          {(normalizeRole(user?.role) === 'super_admin' || normalizeRole(user?.role) === 'admin') && (
-            <>
-              <Route path="/users" element={<Users />} />
-              <Route path="/hardware" element={<Hardware />} />
-              <Route path="/settings" element={<Settings />} />
-              <Route path="/admin/ai-settings" element={<AISettings />} />
-              <Route path="/admin/labelling" element={<LabellingPage />} />
-            </>
-          )}
+            {/* Admin Only Routes */}
+            {(normalizeRole(user?.role) === 'super_admin' || normalizeRole(user?.role) === 'admin') && (
+              <>
+                <Route path="/users" element={<Users />} />
+                <Route path="/hardware" element={<Hardware />} />
+                <Route path="/settings" element={<Settings />} />
+                <Route path="/admin/ai-settings" element={<AISettings />} />
+                <Route path="/admin/labelling" element={<LabellingPage />} />
+              </>
+            )}
 
-          {/* Fallback for authenticated users */}
-          <Route path="*" element={<Navigate to="/dashboard" replace />} />
-        </Route>
+            {/* Fallback for authenticated users */}
+            <Route path="*" element={<Navigate to="/dashboard" replace />} />
+          </Route>
 
-        {/* Global Fallback for non-authenticated users */}
-        <Route path="*" element={<Navigate to="/login" replace />} />
-      </Routes>
+          {/* Global Fallback for non-authenticated users */}
+          <Route path="*" element={<Navigate to="/login" replace />} />
+        </Routes>
+      </DevErrorBoundary>
     </>
   );
 }

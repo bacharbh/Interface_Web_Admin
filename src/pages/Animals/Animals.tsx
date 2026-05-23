@@ -446,8 +446,8 @@ export default function Animals() {
     }
 
     return [...list].sort((a, b) => {
-      let av: any = sortBy === 'healthScore' ? a.healthScore.score : a[sortBy as keyof EnrichedAnimal];
-      let bv: any = sortBy === 'healthScore' ? b.healthScore.score : b[sortBy as keyof EnrichedAnimal];
+      let av: any = sortBy === 'healthScore' ? a.healthScore.score : (a as any)[sortBy];
+      let bv: any = sortBy === 'healthScore' ? b.healthScore.score : (b as any)[sortBy];
 
       if (typeof av === 'string') av = av.toLowerCase();
       if (typeof bv === 'string') bv = bv.toLowerCase();

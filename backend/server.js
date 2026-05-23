@@ -105,7 +105,8 @@ app.use(cors({
     }
     return callback(new Error('Not allowed by CORS'));
   },
-  credentials: true
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE']
 }));
 
 // Rate limiting
@@ -155,6 +156,19 @@ app.use('/api/ai', aiPredictionRoutes);
 app.use('/api/ai', aiAnalysisRoutes);
 app.use('/api/reports', reportsRoutes);
 app.use('/api/agenda', agendaRoutes);
+
+// New TS-based routers (compiled or run via ts-node in development)
+// These provide compatibility endpoints required by the frontend without
+// renaming or changing the existing sheep routes.
+const usersRouter = require('./src/routes/users')
+const animalsRouter = require('./src/routes/animals')
+const aiRouter = require('./src/routes/ai')
+const notesRouter = require('./src/routes/notes')
+
+app.use('/api/users', usersRouter)
+app.use('/api/animals', animalsRouter)
+app.use('/api/ai', aiRouter)
+app.use('/api/animals/:id/notes', notesRouter)
 
 // Enhanced health check endpoint
 app.get('/api/health', async (req, res) => {
