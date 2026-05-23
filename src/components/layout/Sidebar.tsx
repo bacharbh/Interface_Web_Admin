@@ -107,8 +107,8 @@ const Sidebar: React.FC<SidebarProps> = ({ onClose }) => {
                     <>
                       <item.icon className={`h-[15px] w-[15px] shrink-0 ${isActive ? 'text-white' : 'text-white/80'}`} />
                       <span className="min-w-0 flex-1 truncate font-medium">{item.name}</span>
-                      {item.live && <span className="h-1.5 w-1.5 rounded-full bg-[var(--success)]" />}
-                      {item.badge && unreadCount > 0 && (
+                      {(item as any).live && <span className="h-1.5 w-1.5 rounded-full bg-[var(--success)]" />}
+                      {(item as any).badge && unreadCount > 0 && (
                         <span className="min-w-[28px] rounded-full bg-[var(--danger)] px-1.5 py-0.5 text-center text-[9px] font-medium leading-none text-white">
                           {unreadCount > 99 ? '99+' : unreadCount}
                         </span>

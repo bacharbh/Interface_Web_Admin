@@ -60,7 +60,7 @@ import AnomalyHeatmap from '../widgets/AnomalyHeatmap';
 import api from '../../services/api.js';
 import { useIoTStore } from '../../hooks/useIoTStore';
 import SeverityBadge from '../ui/SeverityBadge';
-import KPICard from '../ui/KPICard';
+import KPICard from '../ui/KpiCard';
 import Button from '../ui/Button';
 
 

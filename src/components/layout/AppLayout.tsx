@@ -7,6 +7,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import logger from '../../utils/logger';
 import { devLog } from '../../utils/devLogger';
 import { isDevMockUserActive } from '../../utils/authStorage';
+import DevBanner from '../../components/DevBanner';
 import { useMqtt } from '../../contexts/MqttContext';
 import { useIoTStore } from '../../hooks/useIoTStore';
 import telemetryService from '../../services/telemetryService';
@@ -132,11 +133,7 @@ const AppLayout: React.FC = () => {
       {/* Toast Notifications */}
       <ToastProvider />
 
-      {isDevMockUserActive() && (
-        <div className="border-b border-[var(--card-border)] bg-[var(--warning-bg)] px-4 py-2 text-center text-[11px] font-medium uppercase tracking-[0.18em] text-[var(--warning)]">
-          DEV MODE - Mock user active; tokens stay out of localStorage and this banner never ships to production.
-        </div>
-      )}
+      {import.meta.env.DEV && isDevMockUserActive() && <DevBanner />}
 
       {/* Global Search Overlay (portal) */}
       <GlobalSearch open={searchOpen} onClose={() => setSearchOpen(false)} />

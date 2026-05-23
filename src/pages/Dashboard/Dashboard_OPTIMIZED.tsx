@@ -622,7 +622,7 @@ export default function Dashboard() {
           label="Charge ingestion"
           value={historicData?.animals?.length > 0
             ? `${((historicData.animals[historicData.animals.length - 1] || 0) / 2).toFixed(0)}%`
-            : (kpis && typeof kpis.ingestionRate === 'number' ? `${Math.round(kpis.ingestionRate)}%` : 'N/A — capteur non connecté')}
+            : (kpis && typeof (kpis as any).ingestionRate === 'number' ? `${Math.round((kpis as any).ingestionRate)}%` : 'N/A — capteur non connecté')}
           sub="Flux de télémétrie"
         />
       </div>
