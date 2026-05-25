@@ -121,6 +121,7 @@ const MiniMapPreview: React.FC<MiniMapPreviewProps> = ({
         const devices: Record<string, any> = {};
         response.data.forEach((animal: any) => {
           const id = animal.collar_id || animal.id || `device_${Date.now()}`;
+          const refreshedAt = new Date().toISOString();
           devices[id] = {
             id,
             collar_id: animal.collar_id || animal.id,
@@ -133,6 +134,9 @@ const MiniMapPreview: React.FC<MiniMapPreviewProps> = ({
             health: animal.health || 'Good',
             status: animal.status || 'SAFE',
             activity: animal.activity || 0,
+            lastSeen: animal.lastSeen || animal.lastUpdate || animal.updatedAt || refreshedAt,
+            lastUpdate: animal.lastUpdate || animal.lastSeen || animal.updatedAt || refreshedAt,
+            updatedAt: animal.updatedAt || animal.lastUpdate || animal.lastSeen || refreshedAt,
             timestamp: Date.now(),
           };
         });
@@ -157,24 +161,19 @@ const MiniMapPreview: React.FC<MiniMapPreviewProps> = ({
   );
 
   const { inZoneCount, outOfZoneCount } = useMemo(() => {
+    if (geofencePositions.length === 0) {
+      return { inZoneCount: validAnimals.length, outOfZoneCount: 0 };
+    }
+
     let inZone = 0;
     let outOfZone = 0;
 
     validAnimals.forEach(({ animal, coord }) => {
-      if (geofencePositions.length > 0) {
-        const isInside = isPointInPolygon(coord, geofencePositions);
-        if (isInside) {
-          inZone++;
-        } else {
-          outOfZone++;
-        }
+      const isInside = isPointInPolygon(coord, geofencePositions);
+      if (isInside) {
+        inZone++;
       } else {
-        // Fallback to animal status if no geofence is provided
-        if (animal.status === 'alert') {
-          outOfZone++;
-        } else {
-          inZone++;
-        }
+        outOfZone++;
       }
     });
 

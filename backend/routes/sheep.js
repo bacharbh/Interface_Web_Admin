@@ -23,31 +23,36 @@ const sheepSchema = Joi.object({
 // Get all sheep with pagination and filtering
 router.get('/', async (req, res) => {
   try {
+    const hasPagination = req.query.page !== undefined || req.query.limit !== undefined;
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 10;
     const skip = (page - 1) * limit;
 
     // Build filter
     const filter = { isActive: true };
-    
+
     if (req.query.healthStatus) {
       filter.healthStatus = req.query.healthStatus;
     }
-    
+
     if (req.query.breed) {
       filter.breed = req.query.breed;
     }
-    
+
     if (req.query.gender) {
       filter.gender = req.query.gender;
     }
 
-    const sheep = await Sheep.find(filter)
-      .sort({ lastSeen: -1 })
-      .skip(skip)
-      .limit(limit);
+    const sheepQuery = Sheep.find(filter).sort({ lastSeen: -1 });
+    const sheep = hasPagination
+      ? await sheepQuery.skip(skip).limit(limit)
+      : await sheepQuery;
 
     const total = await Sheep.countDocuments(filter);
+
+    if (!hasPagination) {
+      return res.json(sheep);
+    }
 
     res.json({
       sheep,
@@ -67,7 +72,7 @@ router.get('/', async (req, res) => {
 router.get('/:id', async (req, res) => {
   try {
     const sheep = await Sheep.findOne({ sheepId: req.params.id, isActive: true });
-    
+
     if (!sheep) {
       return res.status(404).json({ error: 'Sheep not found' });
     }
@@ -151,14 +156,14 @@ router.put('/:id', authMiddleware, async (req, res) => {
 router.patch('/:id/location', async (req, res) => {
   try {
     const { coordinates } = req.body;
-    
+
     if (!Array.isArray(coordinates) || coordinates.length !== 2) {
       return res.status(400).json({ error: 'Invalid coordinates format' });
     }
 
     const sheep = await Sheep.findOneAndUpdate(
       { sheepId: req.params.id, isActive: true },
-      { 
+      {
         location: { type: 'Point', coordinates },
         lastSeen: new Date()
       },
@@ -190,13 +195,13 @@ router.patch('/:id/location', async (req, res) => {
 router.post('/:id/medical', authMiddleware, async (req, res) => {
   try {
     const { condition, treatment, veterinarian, notes } = req.body;
-    
+
     if (!condition || !treatment) {
       return res.status(400).json({ error: 'Condition and treatment are required' });
     }
 
     const sheep = await Sheep.findOne({ sheepId: req.params.id, isActive: true });
-    
+
     if (!sheep) {
       return res.status(404).json({ error: 'Sheep not found' });
     }

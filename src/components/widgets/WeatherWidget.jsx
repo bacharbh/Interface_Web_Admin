@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Cloud, Sun, CloudRain, Wind, Droplets, Thermometer, Loader2, AlertTriangle, RotateCcw, X, Calendar, ChevronRight } from 'lucide-react';
 import { getCurrentWeather } from '../../services/weatherService';
 import { useFarmConfig } from '../../hooks/useFarmConfig';
+import { devLog } from '../../utils/devLogger';
 
 const WeatherWidget = () => {
   const [weather, setWeather] = useState(null);
@@ -13,27 +14,31 @@ const WeatherWidget = () => {
   const [loadingForecast, setLoadingForecast] = useState(false);
   const { farmLat, farmLng, farmName } = useFarmConfig();
 
-  const getBrowserPosition = useCallback(() => new Promise((resolve, reject) => {
-    if (!navigator.geolocation) {
-      reject(new Error('La géolocalisation du navigateur n’est pas disponible.'));
-      return;
+  const getCoordinates = useCallback(() => {
+    const fallback = { lat: 36.8, lng: 10.18 };
+
+    if (farmLat !== null && farmLng !== null) {
+      return Promise.resolve({ lat: farmLat, lng: farmLng });
     }
 
-    navigator.geolocation.getCurrentPosition(
-      (position) => resolve({ lat: position.coords.latitude, lng: position.coords.longitude }),
-      (geoError) => reject(new Error(geoError.message || 'La permission de géolocalisation a été refusée.')),
-      { enableHighAccuracy: false, timeout: 10000, maximumAge: 5 * 60 * 1000 }
-    );
-  }), []);
+    return new Promise((resolve) => {
+      if (!navigator.geolocation) {
+        resolve(fallback);
+        return;
+      }
+
+      navigator.geolocation.getCurrentPosition(
+        (position) => resolve({ lat: position.coords.latitude, lng: position.coords.longitude }),
+        () => resolve(fallback),
+        { enableHighAccuracy: false, timeout: 10000, maximumAge: 5 * 60 * 1000 }
+      );
+    });
+  }, [farmLat, farmLng]);
 
   const resolveCoords = useCallback(async () => {
-    if (farmLat !== null && farmLng !== null) {
-      return { lat: farmLat, lng: farmLng, source: farmName };
-    }
-
-    const geo = await getBrowserPosition();
-    return { ...geo, source: 'Position actuelle' };
-  }, [farmLat, farmLng, farmName, getBrowserPosition]);
+    const coords = await getCoordinates();
+    return { ...coords, source: farmName || 'Position de secours' };
+  }, [farmName, getCoordinates]);
 
   const loadWeather = useCallback(async () => {
     setLoading(true);
@@ -51,7 +56,7 @@ const WeatherWidget = () => {
       });
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Impossible de charger la météo en ce moment.';
-      console.error('Erreur météo:', err);
+      devLog('[Weather] fallback used:', message);
       setWeather(null);
       setError(message);
     } finally {

@@ -199,13 +199,16 @@ Réponds maintenant le JSON uniquement.`;
     } catch (error) {
         console.error('AI Analysis error:', error.response?.data || error.message);
 
-        // Return error response with HTTP status
-        const statusCode = error.response?.status || 500;
-        const errorMessage = error.response?.data?.error?.message || error.message || 'Failed to generate analysis';
-
-        res.status(statusCode).json({
-            success: false,
-            error: errorMessage,
+        return res.status(200).json({
+            success: true,
+            data: {
+                summary: 'Analyse indisponible',
+                riskLevel: 'LOW',
+                riskAnimalIds: [],
+                suggestions: []
+            },
+            fallback: true,
+            isSimulated: true,
             timestamp: new Date().toISOString(),
         });
     }

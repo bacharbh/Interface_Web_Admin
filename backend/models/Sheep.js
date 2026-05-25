@@ -6,16 +6,42 @@
 import mongoose from 'mongoose';
 
 const sheepSchema = new mongoose.Schema({
+  name: {
+    type: String,
+    trim: true
+  },
   sheepId: {
     type: String,
     required: true,
     unique: true,
     trim: true
   },
+  collarId: {
+    type: String,
+    unique: true,
+    sparse: true,
+    trim: true
+  },
+  race: {
+    type: String,
+    trim: true
+  },
   breed: {
     type: String,
     required: true,
     enum: ['Merino', 'Suffolk', 'Dorper', 'Hampshire', 'Rambouillet', 'Other']
+  },
+  status: {
+    type: String,
+    enum: ['healthy', 'warning', 'critical']
+  },
+  battery: {
+    type: Number,
+    min: 0,
+    max: 100
+  },
+  temperature: {
+    type: Number
   },
   age: {
     type: Number,
@@ -27,6 +53,12 @@ const sheepSchema = new mongoose.Schema({
     type: Number,
     required: true,
     min: 0
+  },
+  lat: {
+    type: Number
+  },
+  lng: {
+    type: Number
   },
   gender: {
     type: String,
@@ -57,6 +89,10 @@ const sheepSchema = new mongoose.Schema({
     type: Boolean,
     default: true
   },
+  active: {
+    type: Boolean,
+    default: true
+  },
   deviceId: {
     type: String,
     unique: true,
@@ -83,7 +119,7 @@ sheepSchema.index({ location: '2dsphere' });
 sheepSchema.index({ sheepId: 1 });
 sheepSchema.index({ deviceId: 1 });
 
-sheepSchema.pre('save', function(next) {
+sheepSchema.pre('save', function (next) {
   this.updatedAt = Date.now();
   next();
 });

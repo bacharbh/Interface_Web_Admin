@@ -25,31 +25,10 @@ const geofenceSchema = Joi.object({
 });
 
 // In-memory storage for geofences (in production, use MongoDB)
-let geofences = [
-  {
-    id: 'default-pasture',
-    name: 'Main Pasture',
-    description: 'Primary grazing area for all sheep',
-    geometry: {
-      type: 'Polygon',
-      coordinates: [[
-        [-74.0060, 40.7128], // NYC coordinates as example
-        [-74.0050, 40.7128],
-        [-74.0050, 40.7138],
-        [-74.0060, 40.7138],
-        [-74.0060, 40.7128]
-      ]]
-    },
-    isActive: true,
-    alertThreshold: 1,
-    notificationChannels: ['websocket'],
-    createdAt: new Date(),
-    updatedAt: new Date()
-  }
-];
+let geofences = [];
 
 // Get all geofences
-router.get('/', authMiddleware, async (req, res) => {
+router.get('/', async (req, res) => {
   try {
     const activeGeofences = geofences.filter(g => g.isActive);
     res.json({ geofences: activeGeofences });
@@ -62,7 +41,7 @@ router.get('/', authMiddleware, async (req, res) => {
 router.get('/:id', authMiddleware, async (req, res) => {
   try {
     const geofence = geofences.find(g => g.id === req.params.id && g.isActive);
-    
+
     if (!geofence) {
       return res.status(404).json({ error: 'Geofence not found' });
     }
@@ -107,7 +86,7 @@ router.post('/', authMiddleware, authorize('admin', 'operator'), async (req, res
 router.put('/:id', authMiddleware, authorize('admin', 'operator'), async (req, res) => {
   try {
     const index = geofences.findIndex(g => g.id === req.params.id);
-    
+
     if (index === -1) {
       return res.status(404).json({ error: 'Geefence not found' });
     }
@@ -140,7 +119,7 @@ router.put('/:id', authMiddleware, authorize('admin', 'operator'), async (req, r
 router.delete('/:id', authMiddleware, authorize('admin'), async (req, res) => {
   try {
     const index = geofences.findIndex(g => g.id === req.params.id);
-    
+
     if (index === -1) {
       return res.status(404).json({ error: 'Geofence not found' });
     }
@@ -162,7 +141,7 @@ router.delete('/:id', authMiddleware, authorize('admin'), async (req, res) => {
 router.post('/check', async (req, res) => {
   try {
     const { sheepId, coordinates } = req.body;
-    
+
     if (!coordinates || !Array.isArray(coordinates) || coordinates.length !== 2) {
       return res.status(400).json({ error: 'Invalid coordinates format' });
     }
@@ -181,7 +160,7 @@ router.post('/check', async (req, res) => {
 
     for (const geofence of geofences.filter(g => g.isActive)) {
       const isWithin = isPointInPolygon([longitude, latitude], geofence.geometry.coordinates[0]);
-      
+
       if (isWithin) {
         withinGeofences.push({
           geofenceId: geofence.id,
@@ -220,7 +199,7 @@ router.post('/check', async (req, res) => {
 router.get('/violations', authMiddleware, async (req, res) => {
   try {
     const { startDate, endDate, sheepId } = req.query;
-    
+
     // In a real implementation, this would query a violations collection
     // For now, return a placeholder response
     const violations = {
@@ -250,8 +229,8 @@ function isPointInPolygon(point, polygon) {
     const [xj, yj] = polygon[j];
 
     const intersect = ((yi > y) !== (yj > y))
-        && (x < (xj - xi) * (y - yi) / (yj - yi) + xi);
-    
+      && (x < (xj - xi) * (y - yi) / (yj - yi) + xi);
+
     if (intersect) inside = !inside;
   }
 

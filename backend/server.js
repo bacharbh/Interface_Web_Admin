@@ -7,6 +7,7 @@ import { createServer } from 'http';
 import { Server } from 'socket.io';
 import mongoose from 'mongoose';
 import winston from 'winston';
+import Sheep from './models/Sheep.js';
 
 // Import cache system
 import { initRedis, cacheMiddleware, clearCacheMiddleware } from './middleware/cache.js';
@@ -142,6 +143,41 @@ const wsErrorHandler = { getStatus: () => ({ connectedClients: 0 }) };
 
 // API routes with error monitoring & CACHING
 app.use('/api/auth', authRoutes);
+
+const serializeSheep = (sheep) => {
+  const plain = typeof sheep?.toObject === 'function' ? sheep.toObject() : sheep;
+  const coordinates = Array.isArray(plain?.location?.coordinates) ? plain.location.coordinates : [];
+  const lat = typeof plain?.lat === 'number' ? plain.lat : coordinates[1];
+  const lng = typeof plain?.lng === 'number' ? plain.lng : coordinates[0];
+
+  return {
+    ...plain,
+    collar_id: plain.collar_id || plain.collarId || plain.sheepId,
+    name: plain.name || plain.sheepId,
+    breed: plain.breed || plain.race || 'Other',
+    health: plain.health || plain.status || (plain.healthStatus === 'healthy' ? 'good' : plain.healthStatus === 'under_observation' ? 'warning' : 'critical'),
+    status: plain.status || plain.healthStatus || 'healthy',
+    battery: typeof plain.battery === 'number' ? plain.battery : 100,
+    temperature: typeof plain.temperature === 'number' ? plain.temperature : 38,
+    lat,
+    lng,
+    lastUpdate: plain.lastUpdate || plain.lastSeen || plain.updatedAt || plain.createdAt || new Date().toISOString(),
+    active: typeof plain.active === 'boolean' ? plain.active : plain.isActive,
+  };
+};
+
+app.get('/api/animals', async (req, res) => {
+  try {
+    const filter = { isActive: true };
+    if (req.query.breed) filter.breed = req.query.breed;
+    if (req.query.gender) filter.gender = req.query.gender;
+
+    const animals = await Sheep.find(filter).sort({ lastSeen: -1 });
+    return res.json(animals.map(serializeSheep));
+  } catch (error) {
+    return res.status(500).json({ error: 'Error fetching animals data' });
+  }
+});
 
 // Caching with Redis:
 app.use('/api/sheep', clearCacheMiddleware('/api/sheep'), cacheMiddleware(30), sheepRoutes);

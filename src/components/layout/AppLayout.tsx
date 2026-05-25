@@ -10,6 +10,8 @@ import { isDevMockUserActive } from '../../utils/authStorage';
 import DevBanner from '../../components/DevBanner';
 import { useMqtt } from '../../contexts/MqttContext';
 import { useIoTStore } from '../../hooks/useIoTStore';
+import { PERSISTENCE_MODE } from '../../services/animalsService';
+import animalsService from '../../services/animalsService';
 import telemetryService from '../../services/telemetryService';
 import ToastProvider from '../ui/ToastProvider';
 import TopBar from './TopBar';
@@ -75,10 +77,15 @@ const AppLayout: React.FC = () => {
     devLog('[AppLayout] Initializing data...');
     try {
       const [devicesData, alertsData] = await Promise.all([
-        telemetryService.getAnimals().catch(err => {
-          logger.warn('[AppLayout] getAnimals failed:', err);
-          return [];
-        }),
+        (PERSISTENCE_MODE === 'api'
+          ? animalsService.getAll().catch(err => {
+            logger.warn('[AppLayout] getAll failed:', err);
+            return [];
+          })
+          : telemetryService.getAnimals().catch(err => {
+            logger.warn('[AppLayout] getAnimals failed:', err);
+            return [];
+          })),
         telemetryService.getAlerts().catch(err => {
           logger.warn('[AppLayout] getAlerts failed:', err);
           return [];
@@ -91,7 +98,16 @@ const AppLayout: React.FC = () => {
       const devicesMap: Record<string, any> = {};
       if (Array.isArray(devicesData)) {
         devicesData.forEach(d => {
-          if (d && d.collar_id) devicesMap[d.collar_id] = d;
+          if (d && d.collar_id) {
+            const refreshedAt = new Date().toISOString();
+            devicesMap[d.collar_id] = {
+              ...d,
+              lastSeen: d.lastSeen || d.lastUpdate || d.updatedAt || refreshedAt,
+              lastUpdate: d.lastUpdate || d.lastSeen || d.updatedAt || refreshedAt,
+              updatedAt: d.updatedAt || d.lastUpdate || d.lastSeen || refreshedAt,
+              timestamp: Date.now(),
+            };
+          }
         });
       }
 
@@ -113,8 +129,24 @@ const AppLayout: React.FC = () => {
       }
 
       const start = async () => {
-        // Load offline data first for immediate view
-        await useIoTStore.getState().loadOfflineData();
+        if (PERSISTENCE_MODE === 'api' && typeof indexedDB !== 'undefined') {
+          try {
+            await new Promise<void>((resolve) => {
+              const request = indexedDB.deleteDatabase('SmartShepherdDB');
+              request.onsuccess = () => resolve();
+              request.onerror = () => resolve();
+              request.onblocked = () => resolve();
+            });
+          } catch (error) {
+            devLog('[AppLayout] IndexedDB cleanup skipped:', error);
+          }
+        }
+
+        if (PERSISTENCE_MODE !== 'api') {
+          // Keep offline fallback only for local persistence mode.
+          await useIoTStore.getState().loadOfflineData();
+        }
+
         // Then try to fetch live data
         initData();
       };

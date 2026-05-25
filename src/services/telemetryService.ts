@@ -6,8 +6,10 @@ import { IAnimal } from '../types';
  */
 const telemetryService = {
   getAnimals: async (): Promise<IAnimal[]> => {
-    const response = await api.get('/sheep');
-    return response.data; // Expecting Array<IAnimal>
+    const response = await api.get('/sheep', { params: { limit: 1000 } });
+    if (Array.isArray(response.data)) return response.data;
+    if (Array.isArray(response.data?.sheep)) return response.data.sheep;
+    return []; // Expecting Array<IAnimal>
   },
 
   getAlerts: async (): Promise<any[]> => {
