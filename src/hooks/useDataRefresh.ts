@@ -24,6 +24,7 @@ export function useDataRefresh(intervalMs: number = 5000) {
                     const devices: Record<string, any> = {};
                     response.data.forEach((animal: any) => {
                         const id = animal.collar_id || animal.id || `device_${Math.random()}`;
+                        const refreshedAt = new Date().toISOString();
                         devices[id] = {
                             id,
                             collar_id: animal.collar_id || animal.id,
@@ -36,6 +37,9 @@ export function useDataRefresh(intervalMs: number = 5000) {
                             health: animal.health || 'Good',
                             status: animal.status || 'SAFE',
                             activity: animal.activity || 0,
+                            lastSeen: animal.lastSeen || animal.lastUpdate || animal.updatedAt || refreshedAt,
+                            lastUpdate: animal.lastUpdate || animal.lastSeen || animal.updatedAt || refreshedAt,
+                            updatedAt: animal.updatedAt || animal.lastUpdate || animal.lastSeen || refreshedAt,
                             timestamp: Date.now(),
                         };
                     });

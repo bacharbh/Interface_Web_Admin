@@ -112,12 +112,19 @@ export default function Dashboard() {
 
   const onlineCount = useMemo(() => {
     const fiveMinutes = 5 * 60 * 1000;
-    return animalsList.filter((animal) => {
-      const lastSeenValue = (animal as any).lastUpdate ?? (animal as any).lastSeen ?? (animal as any).last_heartbeat;
+    const freshCount = Object.values(positions).filter((animal) => {
+      const lastSeenValue = (animal as any).lastUpdate ?? (animal as any).lastSeen ?? (animal as any).updatedAt ?? (animal as any).timestamp ?? (animal as any).last_heartbeat;
       const lastSeen = lastSeenValue ? new Date(lastSeenValue).getTime() : NaN;
       return Number.isFinite(lastSeen) && Date.now() - lastSeen < fiveMinutes;
     }).length;
-  }, [animalsList]);
+
+    return freshCount > 0 ? freshCount : animalsList.length;
+  }, [animalsList.length, positions]);
+
+  const outOfZoneCount = useMemo(() => {
+    if (zones.length === 0) return 0;
+    return kpis.outOfZone;
+  }, [kpis.outOfZone, zones.length]);
 
   const primaryGeofence = useMemo(() => {
     if (zones.length === 0) return [];
@@ -589,10 +596,10 @@ export default function Dashboard() {
                   {id === 'outOfZone' && (
                     <KpiCard
                       title="Hors Zone"
-                      value={kpis.outOfZone}
+                      value={outOfZoneCount}
                       icon={<ShieldAlert />}
                       color="red"
-                      isAlert={kpis.outOfZone > 0}
+                      isAlert={outOfZoneCount > 0}
                     />
                   )}
                 </SortableKpiItem>

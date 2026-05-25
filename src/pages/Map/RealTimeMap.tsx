@@ -348,6 +348,7 @@ const RealTimeMap = React.memo(({
   const mapRef = React.useRef<any>(null);
   const farmConfig = useFarmConfig();
   const [activeLayer, setActiveLayer] = useState(theme === 'dark' ? 'dark' : 'street');
+  const [tileUrl, setTileUrl] = useState(TILE_LAYERS[theme === 'dark' ? 'dark' : 'street'].url);
   const [showWeather, setShowWeather] = useState(false);
   const [weatherType, setWeatherType] = useState('precipitation_new');
   const [weatherData, setWeatherData] = useState<WeatherData | null>(null);
@@ -477,6 +478,10 @@ const RealTimeMap = React.memo(({
 
   const tileConfig = TILE_LAYERS[activeLayer as keyof typeof TILE_LAYERS] || TILE_LAYERS.street;
 
+  useEffect(() => {
+    setTileUrl(tileConfig.url);
+  }, [tileConfig.url, activeLayer]);
+
   const filteredAllAnimals = useMemo(() => processedAnimals.filter((animal) => activeFilters[animal.status]), [activeFilters, processedAnimals]);
 
   if (!initialCenter) {
@@ -523,7 +528,14 @@ const RealTimeMap = React.memo(({
         <TileLayer
           key={activeLayer}
           attribution={tileConfig.attribution}
-          url={tileConfig.url}
+          url={tileUrl}
+          eventHandlers={{
+            tileerror: () => {
+              if (activeLayer === 'street' && tileConfig.backupUrl && tileUrl !== tileConfig.backupUrl) {
+                setTileUrl(tileConfig.backupUrl);
+              }
+            }
+          }}
         />
 
         <GeofenceLayer
