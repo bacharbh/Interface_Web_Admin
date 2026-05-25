@@ -157,18 +157,33 @@ app.use('/api/ai', aiAnalysisRoutes);
 app.use('/api/reports', reportsRoutes);
 app.use('/api/agenda', agendaRoutes);
 
-// New TS-based routers (compiled or run via ts-node in development)
-// These provide compatibility endpoints required by the frontend without
-// renaming or changing the existing sheep routes.
-const usersRouter = require('./src/routes/users')
-const animalsRouter = require('./src/routes/animals')
-const aiRouter = require('./src/routes/ai')
-const notesRouter = require('./src/routes/notes')
+// Attempt to load optional TypeScript-based routers if available.
+// These routers live under `backend/src/routes` (TypeScript) and may
+// not be present at runtime. Load them dynamically and skip on error.
+(async () => {
+  try {
+    const load = async (path) => {
+      try {
+        const mod = await import(path);
+        return mod && (mod.default || mod);
+      } catch (_) {
+        return null;
+      }
+    };
 
-app.use('/api/users', usersRouter)
-app.use('/api/animals', animalsRouter)
-app.use('/api/ai', aiRouter)
-app.use('/api/animals/:id/notes', notesRouter)
+    const usersRouter = await load('./src/routes/users.js');
+    const animalsRouter = await load('./src/routes/animals.js');
+    const aiRouter = await load('./src/routes/ai.js');
+    const notesRouter = await load('./src/routes/notes.js');
+
+    if (usersRouter) app.use('/api/users', usersRouter);
+    if (animalsRouter) app.use('/api/animals', animalsRouter);
+    if (aiRouter) app.use('/api/ai', aiRouter);
+    if (notesRouter) app.use('/api/animals/:id/notes', notesRouter);
+  } catch (e) {
+    logger.warn('Optional TS routers not loaded:', e && e.message ? e.message : e);
+  }
+})();
 
 // Enhanced health check endpoint
 app.get('/api/health', async (req, res) => {
