@@ -1,7 +1,9 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { useQueries } from '@tanstack/react-query';
 import { ArrowLeft, Plus, Brain, TrendingUp } from 'lucide-react';
 import { useIoTStore } from '../../hooks/useIoTStore';
+import animalsService, { type TelemetryPoint } from '../../services/animalsService';
 import ComparisonChart from './CompareView/ComparisonChart';
 import ComparisonTable from './CompareView/ComparisonTable';
 import AIAnalysis from './CompareView/AIAnalysis';
@@ -26,20 +28,44 @@ export default function CompareView() {
             .filter(Boolean);
     }, [animalIds, allAnimals]);
 
+    const telemetryRange = useMemo(() => {
+        const end = new Date();
+        const start = new Date(end);
+
+        if (period === '1h') {
+            start.setHours(end.getHours() - 1);
+        } else if (period === '6h') {
+            start.setHours(end.getHours() - 6);
+        } else if (period === '24h') {
+            start.setDate(end.getDate() - 1);
+        } else {
+            start.setDate(end.getDate() - 7);
+        }
+
+        return { from: start.toISOString(), to: end.toISOString(), limit: 500 };
+    }, [period]);
+
+    const telemetryQueries = useQueries({
+        queries: animals.map((animal) => ({
+            queryKey: ['animals', animal.collar_id, 'telemetry', telemetryRange],
+            queryFn: async () => animalsService.getTelemetry(animal.collar_id, telemetryRange),
+            enabled: Boolean(animal.collar_id),
+            staleTime: 30_000,
+        })),
+    });
+
+    const telemetryHistory = useMemo<Record<string, TelemetryPoint[]>>(() => {
+        return animals.reduce<Record<string, TelemetryPoint[]>>((accumulator, animal, index) => {
+            const queryResult = telemetryQueries[index];
+            accumulator[animal.collar_id] = Array.isArray(queryResult?.data) ? queryResult.data : [];
+            return accumulator;
+        }, {});
+    }, [animals, telemetryQueries]);
+
     // State management
     const [metric, setMetric] = useState<'heartRate' | 'temperature' | 'activity'>('heartRate');
     const [period, setPeriod] = useState<'1h' | '6h' | '24h' | '7j'>('24h');
     const [hiddenAnimals, setHiddenAnimals] = useState<string[]>([]);
-
-    // Generate mock history data based on period (1 minute per point)
-    const mockHistory = useMemo(() => {
-        const points = period === '1h' ? 60 : period === '6h' ? 360 : period === '24h' ? 1440 : 10080;
-        const intervalMs = 60 * 1000; // 1 minute
-        return Array.from({ length: points }, (_, i) => ({
-            timestamp: new Date(Date.now() - (points - i) * intervalMs).toISOString(),
-            value: Math.random() * 40 + 70,
-        }));
-    }, [period]);
 
     // Toggle animal visibility in chart
     const toggleAnimal = (collarId: string) => {
@@ -151,7 +177,7 @@ export default function CompareView() {
                 period={period}
                 hiddenAnimals={hiddenAnimals}
                 onToggleAnimal={toggleAnimal}
-                history={mockHistory}
+                telemetryHistory={telemetryHistory}
             />
 
             {/* Comparison Table */}

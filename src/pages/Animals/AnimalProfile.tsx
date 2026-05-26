@@ -29,6 +29,8 @@ import {
 import { AnimatePresence, motion } from 'framer-motion';
 import Button from '../../components/ui/Button';
 import { useIoTStore } from '../../hooks/useIoTStore';
+import animalsService from '../../services/animalsService';
+import { downloadPDFReport } from '../../services/excelExport';
 import VitalBox from './components/VitalBox';
 import MiniGPSMap from './components/MiniGPSMap';
 import {
@@ -269,6 +271,17 @@ const AnimalProfile: React.FC = () => {
     const notesSaveTokenRef = useRef(0);
     const fileInputRef = useRef<HTMLInputElement | null>(null);
 
+    const reportRange = useMemo(() => {
+        const endDate = new Date();
+        const startDate = new Date(endDate);
+        startDate.setDate(startDate.getDate() - 30);
+
+        return {
+            startDate: startDate.toISOString(),
+            endDate: endDate.toISOString(),
+        };
+    }, []);
+
     const medicalHistoryKey = ['animal-medical-history', animalId] as const;
     const documentsKey = ['animal-documents', animalId] as const;
 
@@ -295,16 +308,57 @@ const AnimalProfile: React.FC = () => {
     const handlePrevAnimal = useCallback(() => {
         if (animalIndex > 0) {
             const prevId = animals[animalIndex - 1].collar_id || animals[animalIndex - 1].sheepId;
-            navigate(`/animal/${prevId}`);
+            navigate(`/animals/${prevId}`);
         }
     }, [animalIndex, animals, navigate]);
 
     const handleNextAnimal = useCallback(() => {
         if (animalIndex < animals.length - 1) {
             const nextId = animals[animalIndex + 1].collar_id || animals[animalIndex + 1].sheepId;
-            navigate(`/animal/${nextId}`);
+            navigate(`/animals/${nextId}`);
         }
     }, [animalIndex, animals, navigate]);
+
+    const handlePlanVisit = useCallback(() => {
+        if (!animalId) return;
+        navigate(`/agenda?prefill=${encodeURIComponent(animalId)}&open=create`);
+    }, [animalId, navigate]);
+
+    const handleDownloadReport = useCallback(async () => {
+        if (!animalId) return;
+
+        try {
+            await downloadPDFReport('veterinary', {
+                sheepId: animalId,
+                startDate: reportRange.startDate,
+                endDate: reportRange.endDate,
+            });
+            toast.success('Rapport PDF téléchargé.');
+        } catch (error) {
+            toast.error(error instanceof Error ? error.message : 'Impossible de générer le rapport PDF.');
+        }
+    }, [animalId, reportRange.endDate, reportRange.startDate]);
+
+    const archiveMutation = useMutation({
+        mutationFn: () => animalsService.archive(animalId),
+        onSuccess: async () => {
+            await queryClient.invalidateQueries({ queryKey: ['animals'] });
+            toast.success('Animal archivé.');
+            navigate('/animals', { replace: true });
+        },
+        onError: (error) => {
+            toast.error(error instanceof Error ? error.message : 'Impossible d’archiver l’animal.');
+        },
+    });
+
+    const handleArchiveAnimal = useCallback(() => {
+        if (!animalId || archiveMutation.isPending) return;
+
+        const confirmed = window.confirm(`Archiver ${animal.name} ?`);
+        if (!confirmed) return;
+
+        archiveMutation.mutate();
+    }, [animal.name, animalId, archiveMutation]);
 
     const handleHistoryReset = useCallback(() => {
         setHistoryForm(createDefaultHistoryForm());
@@ -906,10 +960,10 @@ const AnimalProfile: React.FC = () => {
                     </div>
 
                     <div className="flex items-center gap-2">
-                        <Button variant="secondary" size="sm" className="text-blue-600 dark:text-blue-400">
+                        <Button variant="secondary" size="sm" className="text-blue-600 dark:text-blue-400" onClick={handlePlanVisit}>
                             📅 Planifier visite
                         </Button>
-                        <Button variant="secondary" size="sm" className="text-green-600 dark:text-green-400">
+                        <Button variant="secondary" size="sm" className="text-green-600 dark:text-green-400" onClick={handleDownloadReport}>
                             📊 Rapport
                         </Button>
                         <div className="relative group">
@@ -917,7 +971,7 @@ const AnimalProfile: React.FC = () => {
                                 <MoreVertical className="w-5 h-5" />
                             </Button>
                             <div className="absolute right-0 mt-1 w-48 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg hidden group-hover:block py-1 z-50">
-                                <Button variant="ghost" size="sm" className="w-full px-4 py-2 justify-start text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10">
+                                <Button variant="ghost" size="sm" onClick={handleArchiveAnimal} className="w-full px-4 py-2 justify-start text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10">
                                     <Archive className="w-4 h-4" />
                                     Archiver l'animal
                                 </Button>

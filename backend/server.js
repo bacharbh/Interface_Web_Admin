@@ -25,6 +25,7 @@ import aiPredictionRoutes from './routes/aiPrediction.js';
 import aiAnalysisRoutes from './routes/ai.js';
 import reportsRoutes from './routes/reports.js';
 import agendaRoutes from './routes/agenda.js';
+import labellingRoutes from './routes/labelling.js';
 
 import aiService from './services/aiHealthPrediction.js';
 import { initializeMQTT } from './services/mqttService.js';
@@ -192,6 +193,7 @@ app.use('/api/ai', aiPredictionRoutes);
 app.use('/api/ai', aiAnalysisRoutes);
 app.use('/api/reports', reportsRoutes);
 app.use('/api/agenda', agendaRoutes);
+app.use('/api/labelling', labellingRoutes);
 
 // Attempt to load optional TypeScript-based routers if available.
 // These routers live under `backend/src/routes` (TypeScript) and may
