@@ -83,47 +83,13 @@ export default defineConfig({
   build: {
     rollupOptions: {
       output: {
-        manualChunks(id) {
-          if (!id.includes('node_modules')) return;
-
-          // 1. Isolate TensorFlow to prevent it from blocking the main thread
-          if (id.includes('@tensorflow')) {
-            return 'tensorflow';
-          }
-
-          // 2. React Core
-          if (id.includes('react') || id.includes('react-dom') || id.includes('react-router')) {
-            return 'react-vendor';
-          }
-
-          // 3. Mapping libraries
-          if (id.includes('react-leaflet') || id.includes('leaflet')) {
-            return 'map-vendor';
-          }
-
-          // 4. Charts & Data visualization
-          if (id.includes('chart.js') || id.includes('react-chartjs-2') || id.includes('chartjs-plugin-annotation')) {
-            return 'chart-vendor';
-          }
-
-          // 5. Real-time & Data Fetching
-          if (id.includes('mqtt')) {
-            return 'mqtt-vendor';
-          }
-
-          if (id.includes('framer-motion')) {
-            return 'motion-vendor';
-          }
-
-          if (id.includes('lucide-react')) {
-            return 'icons-vendor';
-          }
-
-          if (id.includes('axios') || id.includes('@tanstack/react-query')) {
-            return 'data-vendor';
-          }
-
-          return 'vendor';
+        manualChunks: {
+          'vendor-map': ['leaflet', 'react-leaflet', 'react-leaflet-draw'],
+          'vendor-charts': ['recharts', 'chart.js', 'react-chartjs-2', 'chartjs-plugin-annotation'],
+          'vendor-react': ['react', 'react-dom', 'react-router-dom', 'framer-motion', '@tanstack/react-query'],
+          'vendor-data': ['axios'],
+          'vendor-icons': ['lucide-react'],
+          'vendor-mqtt': ['mqtt'],
         }
       }
     }

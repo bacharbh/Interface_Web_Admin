@@ -1,6 +1,5 @@
-import React from 'react';
-import { FeatureGroup, Polygon } from 'react-leaflet';
-import { EditControl } from 'react-leaflet-draw';
+import React, { useEffect } from 'react';
+import { FeatureGroup, Polygon, useMap } from 'react-leaflet';
 import { IGeofenceZone } from '../../types';
 
 const DEFAULT_ZONE_COLOR = '#16a34a';
@@ -23,114 +22,116 @@ const GeofenceLayer = ({
   onZoneDeleted,
   breachedZoneIds
 }: GeofenceLayerProps) => {
+  const map = useMap();
 
-  const extractCoordinates = (layer: any): [number, number][] | null => {
-    const geoJson = layer?.toGeoJSON?.();
-    const ring = geoJson?.geometry?.coordinates?.[0];
+  useEffect(() => {
+    const mapInst = map as L.Map & {
+      pm?: {
+        addControls: (options: {
+          position?: 'topleft' | 'topright' | 'bottomleft' | 'bottomright';
+          drawPolygon?: boolean;
+          editMode?: boolean;
+          dragMode?: boolean;
+          cutPolygon?: boolean;
+          drawMarker?: boolean;
+          drawCircle?: boolean;
+        }) => void;
+      };
+    };
 
-    if (!Array.isArray(ring) || ring.length < 3) {
-      return null;
-    }
-
-    return ring.map(([lng, lat]: [number, number]) => [lat, lng]);
-  };
-
-  const _onCreated = (e: any) => {
-    const { layer } = e;
-    const coords = extractCoordinates(layer);
-
-    if (!coords) {
-      layer.remove();
+    if (!mapInst.pm) {
       return;
     }
 
-    layer.remove();
+    try {
+      mapInst.pm.addControls({
+        position: 'topright',
+        drawPolygon: true,
+        editMode: true,
+        dragMode: false,
+        cutPolygon: false,
+        drawMarker: false,
+        drawCircle: false,
+      });
+    } catch {
+      return;
+    }
 
-    onZoneCreated({
-      id: Date.now(),
-      name: 'Nouvelle zone',
-      coords,
-      color: DEFAULT_ZONE_COLOR,
-      type: DEFAULT_ZONE_TYPE,
-    });
-  };
+    const extractCoords = (layer: L.Layer): [number, number][] | null => {
+      const toGeoJSON = (layer as L.Layer & { toGeoJSON: () => GeoJSON.Feature }).toGeoJSON;
+      if (!toGeoJSON) return null;
+      const geo = toGeoJSON();
+      const coordinates = (geo.geometry as GeoJSON.Polygon | undefined)?.coordinates?.[0];
+      if (!Array.isArray(coordinates) || coordinates.length < 3) return null;
+      return coordinates.map(([lng, lat]) => [lat, lng]);
+    };
 
-  const _onEdited = (e: any) => {
-    const updatedZones = zones.map((zone) => ({ ...zone }));
-
-    e.layers.eachLayer((layer: any) => {
-      const id = Number(layer?.options?.id);
-      const coords = extractCoordinates(layer);
-
-      if (!id || !coords) {
+    const onCreate = (event: { layer: L.Layer }) => {
+      const coords = extractCoords(event.layer);
+      if (!coords) {
+        event.layer.remove();
         return;
       }
 
-      const zoneIdx = updatedZones.findIndex((zone) => zone.id === id);
-      if (zoneIdx !== -1) {
-        updatedZones[zoneIdx] = {
-          ...updatedZones[zoneIdx],
+      onZoneCreated({
+        id: Date.now(),
+        name: 'Nouvelle zone',
+        coords,
+        color: DEFAULT_ZONE_COLOR,
+        type: DEFAULT_ZONE_TYPE,
+      });
+    };
+
+    const onEdit = (event: { layers: { eachLayer: (callback: (layer: L.Layer) => void) => void } }) => {
+      const updatedZones: EditableZone[] = [];
+
+      event.layers.eachLayer((layer) => {
+        const coords = extractCoords(layer);
+        if (!coords) return;
+
+        const zoneId = Number((layer as L.Layer & { options?: { id?: number } }).options?.id);
+        if (!zoneId) return;
+
+        updatedZones.push({
+          id: zoneId,
+          name: 'Zone',
           coords,
-        };
+          color: DEFAULT_ZONE_COLOR,
+          type: DEFAULT_ZONE_TYPE,
+        });
+      });
+
+      if (updatedZones.length > 0) {
+        onZoneEdited(updatedZones);
       }
-    });
+    };
 
-    onZoneEdited(updatedZones);
-  };
+    const onRemove = (event: { layers: { eachLayer: (callback: (layer: L.Layer) => void) => void } }) => {
+      const removedIds: number[] = [];
 
-  const _onDeleted = (e: any) => {
-    const deletedIds: number[] = [];
+      event.layers.eachLayer((layer) => {
+        const zoneId = Number((layer as L.Layer & { options?: { id?: number } }).options?.id);
+        if (zoneId) removedIds.push(zoneId);
+      });
 
-    e.layers.eachLayer((layer: any) => {
-      const id = Number(layer?.options?.id);
-      if (id) {
-        deletedIds.push(id);
+      if (removedIds.length > 0) {
+        onZoneDeleted(removedIds);
       }
-    });
+    };
 
-    if (deletedIds.length > 0) {
-      onZoneDeleted(deletedIds);
-    }
-  };
+    mapInst.on('pm:create' as any, onCreate as any);
+    mapInst.on('pm:edit' as any, onEdit as any);
+    mapInst.on('pm:remove' as any, onRemove as any);
+
+    return () => {
+      mapInst.off('pm:create' as any, onCreate as any);
+      mapInst.off('pm:edit' as any, onEdit as any);
+      mapInst.off('pm:remove' as any, onRemove as any);
+    };
+  }, [map, onZoneCreated, onZoneEdited, onZoneDeleted]);
 
   return (
     <FeatureGroup>
-      <EditControl
-        position="topright"
-        onCreated={_onCreated}
-        onEdited={_onEdited}
-        onDeleted={_onDeleted}
-        draw={{
-          rectangle: false,
-          polyline: false,
-          circle: false,
-          circlemarker: false,
-          marker: false,
-          polygon: {
-            allowIntersection: false,
-            drawError: {
-              color: '#e1e1e1',
-              message: '<strong>Erreur:<strong> Intersections non autorisées!',
-            },
-            showArea: true,
-            shapeOptions: {
-              color: DEFAULT_ZONE_COLOR,
-              fillColor: DEFAULT_ZONE_COLOR,
-              fillOpacity: 0.12,
-              weight: 2,
-            },
-          },
-        }}
-        edit={{
-          edit: {
-            selectedPathOptions: {
-              color: '#16a34a',
-              fillOpacity: 0.2,
-            },
-          },
-          remove: true
-        }}
-      />
       {zones.map((zone) => {
         const isBreached = breachedZoneIds.includes(zone.id);
         const color = zone.color || DEFAULT_ZONE_COLOR;

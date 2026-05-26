@@ -249,7 +249,7 @@ const AnimalProfile: React.FC = () => {
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
     const queryClient = useQueryClient();
-    const { devices } = useIoTStore((state) => ({ devices: state.devices }));
+    const devices = useIoTStore((state) => state.devices);
 
     const animals = useMemo(() => Object.values(devices), [devices]);
 
@@ -298,12 +298,16 @@ const AnimalProfile: React.FC = () => {
     });
 
     useEffect(() => {
+        if (!animalId) {
+            return;
+        }
+
         setNotesDraft((animal as any)?.notes ?? '');
         setNotesSaveState('idle');
         setLastSavedAt((animal as any)?.notesUpdatedAt ? new Date((animal as any).notesUpdatedAt) : null);
         setHistoryForm(createDefaultHistoryForm());
         setDocumentError(null);
-    }, [animalId, animal]);
+    }, [animalId]);
 
     const handlePrevAnimal = useCallback(() => {
         if (animalIndex > 0) {
@@ -354,11 +358,11 @@ const AnimalProfile: React.FC = () => {
     const handleArchiveAnimal = useCallback(() => {
         if (!animalId || archiveMutation.isPending) return;
 
-        const confirmed = window.confirm(`Archiver ${animal.name} ?`);
+        const confirmed = window.confirm(`Archiver ${animal?.name ?? 'cet animal'} ?`);
         if (!confirmed) return;
 
         archiveMutation.mutate();
-    }, [animal.name, animalId, archiveMutation]);
+    }, [animal?.name, animalId, archiveMutation]);
 
     const handleHistoryReset = useCallback(() => {
         setHistoryForm(createDefaultHistoryForm());
