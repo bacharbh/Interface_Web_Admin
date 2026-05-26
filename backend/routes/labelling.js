@@ -1,5 +1,6 @@
 import express from 'express';
 import Joi from 'joi';
+import mongoose from 'mongoose';
 import Label from '../models/Label.js';
 import authMiddleware from '../middleware/auth.js';
 
@@ -7,7 +8,7 @@ const router = express.Router();
 
 const diagnoseSchema = Joi.object({
     animalId: Joi.string().required(),
-    outcome: Joi.string().valid('Healthy', 'Fever', 'Respiratory illness', 'Digestive disorder', 'Injury', 'Unknown').required(),
+    outcome: Joi.string().trim().required(),
     confirmedByVet: Joi.boolean().default(false),
     symptomOnsetTime: Joi.number().integer().min(0).optional(),
     notes: Joi.string().allow('').optional(),
@@ -22,6 +23,27 @@ const toDate = (value, fallback) => {
     if (!value) return fallback;
     const parsed = new Date(value);
     return Number.isNaN(parsed.getTime()) ? fallback : parsed;
+};
+
+const normalizeOutcome = (value) => {
+    const normalized = String(value || '').trim().toLowerCase();
+
+    switch (normalized) {
+        case 'healthy': return 'Healthy';
+        case 'fever': return 'Fever';
+        case 'respiratory illness': return 'Respiratory illness';
+        case 'digestive disorder': return 'Digestive disorder';
+        case 'injury': return 'Injury';
+        default: return 'Unknown';
+    }
+};
+
+const resolveLabelledBy = (userId) => {
+    if (typeof userId === 'string' && mongoose.Types.ObjectId.isValid(userId)) {
+        return userId;
+    }
+
+    return new mongoose.Types.ObjectId();
 };
 
 router.post('/diagnose', authMiddleware, async (req, res) => {
@@ -43,11 +65,11 @@ router.post('/diagnose', authMiddleware, async (req, res) => {
             tenantId: req.user?.tenantId || req.user?.id || 'default',
             windowStart,
             windowEnd,
-            outcome: value.outcome,
+            outcome: normalizeOutcome(value.outcome),
             confirmedByVet: value.confirmedByVet,
             symptomOnsetTime,
             notes: value.notes?.trim() || '',
-            labelledBy: req.user?.id,
+            labelledBy: resolveLabelledBy(req.user?.id),
             modelVersion: process.env.LABELLING_MODEL_VERSION || 'manual-labelling-v1',
         });
 
