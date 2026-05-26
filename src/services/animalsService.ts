@@ -14,6 +14,33 @@ export interface TelemetryPoint {
     rssi: number
 }
 
+export interface TelemetryQueryParams {
+    from?: string
+    to?: string
+    limit?: number
+}
+
+interface TelemetryHistoryEnvelope {
+    data?: TelemetryPoint[]
+    telemetry?: TelemetryPoint[]
+    history?: TelemetryPoint[]
+}
+
+const parseTelemetryPayload = (payload: unknown): TelemetryPoint[] => {
+    if (Array.isArray(payload)) {
+        return payload as TelemetryPoint[]
+    }
+
+    if (payload && typeof payload === 'object') {
+        const response = payload as TelemetryHistoryEnvelope
+        if (Array.isArray(response.data)) return response.data
+        if (Array.isArray(response.telemetry)) return response.telemetry
+        if (Array.isArray(response.history)) return response.history
+    }
+
+    return []
+}
+
 const animalsService = {
     getAll: async () => {
         const res = await api.get('/animals')
@@ -25,9 +52,14 @@ const animalsService = {
         return res.data
     },
 
-    getTelemetry: async (id: string, params?: { from?: string; to?: string; limit?: number }) => {
-        const res = await api.get(`/animals/${id}/telemetry`, { params })
-        return res.data as TelemetryPoint[]
+    getTelemetry: async (id: string, params?: TelemetryQueryParams) => {
+        const res = await api.get(`/telemetry/${id}/history`, { params })
+        return parseTelemetryPayload(res.data)
+    },
+
+    archive: async (id: string) => {
+        const res = await api.delete(`/sheep/${id}`)
+        return res.data as { message?: string }
     }
 }
 

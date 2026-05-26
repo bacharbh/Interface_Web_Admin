@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Routes, Route, Navigate, useNavigate } from 'react-router-dom';
+import { Routes, Route, Navigate, useNavigate, useParams } from 'react-router-dom';
 import { useAuth, USER_ROLES } from './contexts/AuthContext';
 import { MqttProvider } from './contexts/MqttContext';
 import AppLayout from './components/layout/AppLayout';
@@ -24,6 +24,12 @@ import LabellingPage from './pages/Admin/LabellingPage';
 import { Eye, EyeOff, Loader2, Lock, User } from 'lucide-react';
 
 const normalizeRole = (role) => (role ?? '').trim().toLowerCase();
+
+const LegacyAnimalRedirect = () => {
+  const { id } = useParams();
+
+  return <Navigate to={id ? `/animals/${id}` : '/animals'} replace />;
+};
 
 // ============================================
 // ERROR BOUNDARY - Capture toutes les erreurs React
@@ -336,8 +342,8 @@ function App() {
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/map" element={<MapMonitor />} />
           <Route path="/animals" element={<Animals />} />
-          <Route path="/animals/:id" element={<AnimalDetail />} />
-          <Route path="/animal/:id" element={<AnimalProfile />} />
+          <Route path="/animals/:id" element={<AnimalProfile />} />
+          <Route path="/animal/:id" element={<LegacyAnimalRedirect />} />
           <Route path="/compare" element={<CompareView />} />
           <Route path="/agenda" element={<AgendaView />} />
           <Route path="/alerts" element={<Alerts />} />

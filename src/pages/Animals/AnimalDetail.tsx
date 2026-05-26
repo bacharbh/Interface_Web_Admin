@@ -29,6 +29,31 @@ L.Icon.Default.mergeOptions({
   shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
 });
 
+function TileLayerWithFallback() {
+  const [useFallback, setUseFallback] = useState(false);
+
+  if (useFallback) {
+    return (
+      <TileLayer
+        url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
+        attribution='&copy; <a href="https://carto.com/">CARTO</a>'
+        subdomains="abcd"
+        maxZoom={19}
+      />
+    );
+  }
+
+  return (
+    <TileLayer
+      url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+      attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+      eventHandlers={{
+        tileerror: () => setUseFallback(true),
+      }}
+    />
+  );
+}
+
 // ─── Helpers ──────────────────────────────────────────────────────────────
 const healthColor = (h: string) => ({
   Good: { text: 'text-green-500', bg: 'bg-green-50 dark:bg-green-500/10', border: 'border-green-200 dark:border-green-500/20' },
@@ -504,10 +529,7 @@ export default function AnimalDetail() {
                 zoomControl={false}
                 scrollWheelZoom={false}
               >
-                <TileLayer
-                  url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                  attribution=""
-                />
+                <TileLayerWithFallback />
                 {recentHistory.length > 1 && (
                   <Polyline
                     positions={recentHistory.map(h => [h.lat, h.lng] as [number, number])}

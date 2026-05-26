@@ -5,7 +5,7 @@ import { useMapWorker } from '../../hooks/useMapWorker';
 import { useNavigate } from 'react-router-dom';
 import {
   Activity, Bell, MapPin, ShieldAlert, Cpu, Battery,
-  Radio, TrendingUp, Thermometer, Gauge, Save, RotateCcw, GripVertical
+  TrendingUp, Thermometer, Gauge, Save, RotateCcw, GripVertical
 } from 'lucide-react';
 import { SkeletonCard, SkeletonChart } from '../../components/ui/Skeleton';
 import LiveBadge from '../../components/ui/LiveBadge';
@@ -368,7 +368,7 @@ export default function Dashboard() {
 
   // Memoized chart options
   const chartOptions = useMemo<ChartOptions<'line'>>(() => {
-    const annotationOptions = simulationStartLabel
+    const chartAnnotations = simulationStartLabel
       ? {
         line1: {
           type: 'line' as const,
@@ -392,6 +392,8 @@ export default function Dashboard() {
       }
       : undefined;
 
+    const annotations = import.meta.env.DEV ? chartAnnotations : {};
+
     return {
       responsive: true,
       maintainAspectRatio: false,
@@ -401,7 +403,7 @@ export default function Dashboard() {
       },
       plugins: {
         legend: { display: false },
-        annotation: { annotations: annotationOptions },
+        annotation: { annotations },
         tooltip: {
           backgroundColor: '#111827',
           padding: 12,
@@ -486,23 +488,6 @@ export default function Dashboard() {
             {isChartPaused ? '▶️' : '⏸️'} {isChartPaused ? 'Reprendre' : 'Pause'}
           </Button>
 
-          <Button
-            onClick={toggleSimulation}
-            variant={isSimulation ? 'primary' : 'secondary'}
-            className={`px-4 py-2 rounded-xl label-xs transition-all flex items-center gap-2 border ${isSimulation
-              ? 'bg-primary/10 border-primary/20 text-primary animate-pulse'
-              : 'bg-white dark:bg-card-dark border-gray-200 dark:border-gray-800 text-gray-600 dark:text-gray-400'
-              }`}
-          >
-            <Radio className="w-3.5 h-3.5" />
-            {isSimulation && import.meta.env.DEV ? (
-              <span className="inline-flex items-center gap-2">
-                <span className="h-2 w-2 rounded-full bg-[var(--warning)] animate-pulse" />
-                Simulation
-              </span>
-            ) : 'Temps réel'}
-          </Button>
-
           <div className="flex items-center gap-2 bg-white dark:bg-card-dark px-4 py-2 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm">
             <LiveBadge isConnected={isConnected} isOfflineData={isOfflineData} />
             <span className="label-xs">
@@ -532,25 +517,7 @@ export default function Dashboard() {
         </div>
       )}
 
-      {/* Quick Overview */}
-      <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
-        <section className="lg:col-span-3 bg-white dark:bg-card-dark p-5 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800 flex flex-col gap-4">
-          <h3 className="title-sm text-gray-900 dark:text-white flex items-center gap-2">
-            <MapPin className="w-4 h-4 text-primary" /> Aperçu géographique en direct
-          </h3>
-          <MiniMapPreview
-            animals={mapPreviewAnimals}
-            geofence={primaryGeofence}
-            onExpand={() => navigate('/map')}
-          />
-        </section>
-
-        <aside className="lg:col-span-2">
-          <WeatherWidget />
-        </aside>
-      </div>
-
-      {/* Main Grid */}
+      {/* KPI Row */}
       <section>
         <DndContext
           sensors={sensors}
@@ -561,7 +528,7 @@ export default function Dashboard() {
             items={layout}
             strategy={rectSortingStrategy}
           >
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5 mb-4">
               {layout.map((id) => (
                 <SortableKpiItem key={id} id={id}>
                   {id === 'total' && (
@@ -610,19 +577,21 @@ export default function Dashboard() {
       </section>
 
       {/* Secondary Metrics */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5 mb-4">
         <MiniKpi
           icon={<Battery className="text-amber-500" />}
           label="Niveau batterie"
           value={avgBatteryValue}
           sub={`${lowBatteryDevices.length} critiques (<${BATTERY_LOW_THRESHOLD}%)`}
           isAlert={lowBatteryDevices.length > 0}
+          accentColor="#EF9F27"
         />
         <MiniKpi
           icon={<Thermometer className="text-orange-500" />}
           label="Santé troupeau"
           value={avgTemperature}
           sub="Température moyenne"
+          accentColor="#1D9E75"
         />
         <MiniKpi
           icon={<Gauge className="text-blue-500" />}
@@ -631,7 +600,26 @@ export default function Dashboard() {
             ? `${((historicData.animals[historicData.animals.length - 1] || 0) / 2).toFixed(0)}%`
             : (kpis && typeof (kpis as any).ingestionRate === 'number' ? `${Math.round((kpis as any).ingestionRate)}%` : 'N/A — capteur non connecté')}
           sub="Flux de télémétrie"
+          accentColor="#1D9E75"
         />
+      </div>
+
+      {/* Quick Overview */}
+      <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_300px] gap-3.5 mb-4 items-start">
+        <section className="bg-white dark:bg-card-dark p-4 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800 flex flex-col gap-3">
+          <h3 className="title-sm text-gray-900 dark:text-white flex items-center gap-2">
+            <MapPin className="w-4 h-4 text-primary" /> Aperçu géographique en direct
+          </h3>
+          <MiniMapPreview
+            animals={mapPreviewAnimals}
+            geofence={primaryGeofence}
+            onExpand={() => navigate('/map')}
+          />
+        </section>
+
+        <aside className="w-full">
+          <WeatherWidget />
+        </aside>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -647,7 +635,7 @@ export default function Dashboard() {
               </span>
             </div>
           </div>
-          <div className="h-[300px]">
+          <div className="pt-2 h-[180px]">
             {chartData && chartData.labels?.length > 0 ? (
               <Line options={chartOptions} data={chartData} />
             ) : (
@@ -664,7 +652,7 @@ export default function Dashboard() {
             <h3 className="title-sm text-gray-900 dark:text-white flex items-center gap-2">
               <Bell className="w-4 h-4 text-amber-500" /> Flux d'alertes
             </h3>
-            <span className="bg-amber-100 dark:bg-amber-500/10 text-amber-600 label-xs px-2 py-0.5 rounded-full">
+            <span className="bg-[#f5f4f0] border border-[#e8e6e0] text-[#888] text-[11px] px-2 py-0.5 rounded-full">
               {unreadCount} nouvelles
             </span>
           </div>
@@ -770,12 +758,19 @@ interface MiniKpiProps {
   value: string;
   sub: string;
   isAlert?: boolean;
+  accentColor?: string;
 }
 
-function MiniKpi({ icon, label, value, sub, isAlert }: MiniKpiProps) {
+function MiniKpi({ icon, label, value, sub, isAlert, accentColor = '#e8e6e0' }: MiniKpiProps) {
   return (
-    <div className={`bg-white dark:bg-card-dark p-4 rounded-2xl border transition-all flex items-center gap-4 ${isAlert ? 'border-amber-200 dark:border-amber-500/30' : 'border-gray-100 dark:border-gray-800'
-      }`}>
+    <div
+      className="bg-white dark:bg-card-dark rounded-[8px] border transition-all flex items-center gap-3.5"
+      style={{
+        border: '0.5px solid #e8e6e0',
+        borderLeft: `3px solid ${accentColor}`,
+        padding: '14px 16px'
+      }}
+    >
       <div className={`p-2.5 rounded-xl ${isAlert ? 'bg-amber-50 dark:bg-amber-500/10' : 'bg-gray-50 dark:bg-gray-800/50'
         }`}>
         {React.cloneElement(icon as React.ReactElement, { size: 16 })}

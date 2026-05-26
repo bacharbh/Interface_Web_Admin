@@ -1,4 +1,4 @@
-import React, { memo, useEffect, useMemo, useRef } from 'react';
+import React, { memo, useEffect, useMemo, useRef, useState } from 'react';
 import { CircleMarker, MapContainer, Polygon, TileLayer, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import { Maximize2 } from 'lucide-react';
@@ -100,6 +100,32 @@ const getStatusColor = (status: 'normal' | 'warning' | 'alert') => {
       return 'var(--color-primary, #34c38f)';
   }
 };
+
+// Swaps the tile layer to CartoCDN on first OSM error
+function TileLayerWithFallback() {
+  const [useFallback, setUseFallback] = useState(false);
+
+  if (useFallback) {
+    return (
+      <TileLayer
+        url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
+        attribution='&copy; <a href="https://carto.com/">CARTO</a>'
+        subdomains="abcd"
+        maxZoom={19}
+      />
+    );
+  }
+
+  return (
+    <TileLayer
+      url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+      attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+      eventHandlers={{
+        tileerror: () => setUseFallback(true),
+      }}
+    />
+  );
+}
 
 const MiniMapPreview: React.FC<MiniMapPreviewProps> = ({
   animals = [],
@@ -270,7 +296,7 @@ const MiniMapPreview: React.FC<MiniMapPreviewProps> = ({
     <div
       className="w-full relative shadow-sm border border-slate-100 dark:border-slate-800/80 bg-white dark:bg-card-dark select-none z-0 overflow-hidden"
       style={{
-        height: '280px',
+        height: '240px',
         borderRadius: '12px'
       }}
     >
@@ -294,10 +320,7 @@ const MiniMapPreview: React.FC<MiniMapPreviewProps> = ({
         className="w-full h-full"
         style={{ height: '100%', width: '100%' }}
       >
-        <TileLayer
-          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-        />
+        <TileLayerWithFallback />
 
         {memoizedPolygon}
         {memoizedMarkers}

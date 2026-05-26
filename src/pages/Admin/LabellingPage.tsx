@@ -1,21 +1,25 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  CheckCircle2, 
-  ChevronRight, 
-  History, 
-  Stethoscope, 
+import toast from 'react-hot-toast';
+import {
+  CheckCircle2,
+  ChevronRight,
+  History,
+  Loader2,
+  Stethoscope,
   BrainCircuit,
   Trophy,
   Filter
 } from 'lucide-react';
-import { 
-  Chart as ChartJS, 
-  CategoryScale, 
-  LinearScale, 
-  PointElement, 
-  LineElement, 
-  Title, 
-  Tooltip, 
+import { useMutation } from '@tanstack/react-query';
+import labellingService, { type LabellingOutcome } from '../../services/labellingService';
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Title,
+  Tooltip,
   Legend,
   Filler,
   ChartOptions
@@ -43,6 +47,15 @@ interface FlaggedAnimal {
   type: string;
 }
 
+const OUTCOME_OPTIONS: LabellingOutcome[] = [
+  'Healthy',
+  'Fever',
+  'Respiratory illness',
+  'Digestive disorder',
+  'Injury',
+  'Unknown',
+];
+
 const LabellingPage = () => {
   const [flaggedAnimals, setFlaggedAnimals] = useState<FlaggedAnimal[]>([]);
   const [selectedAnimal, setSelectedAnimal] = useState<FlaggedAnimal | null>(null);
@@ -55,6 +68,11 @@ const LabellingPage = () => {
   const [outcome, setOutcome] = useState('Healthy');
   const [isConfirmed, setIsConfirmed] = useState(false);
   const [notes, setNotes] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const diagnoseMutation = useMutation({
+    mutationFn: (payload: Parameters<typeof labellingService.diagnose>[0]) => labellingService.diagnose(payload),
+  });
 
   useEffect(() => {
     // Mock data fetching
@@ -118,12 +136,38 @@ const LabellingPage = () => {
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selectedAnimal) return;
-    console.log('Submitting Label:', { animalId: selectedAnimal.id, outcome, isConfirmed, symptomOnset, notes });
+    if (!selectedAnimal || isSubmitting) return;
+
+    setIsSubmitting(true);
+    try {
+      await diagnoseMutation.mutateAsync({
+        animalId: selectedAnimal.id,
+        outcome: outcome as LabellingOutcome,
+        isConfirmed,
+        symptomOnset,
+        notes: notes.trim(),
+        anomalyDate: selectedAnimal.anomalyDate,
+        severity: selectedAnimal.severity,
+        type: selectedAnimal.type,
+        windowStart: `${selectedAnimal.anomalyDate}T00:00:00.000Z`,
+        windowEnd: `${selectedAnimal.anomalyDate}T23:59:59.999Z`,
+      });
+      toast.success(`Diagnostic soumis pour ${selectedAnimal.name}`);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : `Impossible de soumettre le diagnostic pour ${selectedAnimal.name}`);
+      return;
+    } finally {
+      setIsSubmitting(false);
+    }
+
     setLabelledCount(prev => prev + 1);
-    // Move to next
+    setNotes('');
+    setSymptomOnset(null);
+    setOutcome('Healthy');
+    setIsConfirmed(false);
+    // Move to next animal
     const currentIndex = flaggedAnimals.findIndex(a => a.id === selectedAnimal.id);
     if (currentIndex < flaggedAnimals.length - 1) {
       setSelectedAnimal(flaggedAnimals[currentIndex + 1]);
@@ -142,13 +186,13 @@ const LabellingPage = () => {
             Labelled: <span className="text-primary font-black">{labelledCount}</span> / {totalFlagged} flagged animals this month
           </p>
         </div>
-        
+
         <div className="flex items-center gap-6">
-           <div className="text-right">
-              <p className="text-[10px] font-black uppercase tracking-widest text-gray-400">Farm Leaderboard</p>
-              <p className="text-sm font-bold text-gray-900 dark:text-white">📍 Bergerie du Nord: <span className="text-green-500">92%</span></p>
-           </div>
-           <Trophy className="w-8 h-8 text-amber-500" />
+          <div className="text-right">
+            <p className="text-[10px] font-black uppercase tracking-widest text-gray-400">Farm Leaderboard</p>
+            <p className="text-sm font-bold text-gray-900 dark:text-white">📍 Bergerie du Nord: <span className="text-green-500">92%</span></p>
+          </div>
+          <Trophy className="w-8 h-8 text-amber-500" />
         </div>
       </div>
 
@@ -164,17 +208,15 @@ const LabellingPage = () => {
               <button
                 key={animal.id}
                 onClick={() => setSelectedAnimal(animal)}
-                className={`w-full p-4 rounded-2xl text-left transition-all ${
-                  selectedAnimal?.id === animal.id 
-                    ? 'bg-primary text-white shadow-lg shadow-primary/20 scale-[1.02]' 
+                className={`w-full p-4 rounded-2xl text-left transition-all ${selectedAnimal?.id === animal.id
+                    ? 'bg-primary text-white shadow-lg shadow-primary/20 scale-[1.02]'
                     : 'bg-gray-50 dark:bg-gray-800 hover:bg-gray-100'
-                }`}
+                  }`}
               >
                 <div className="flex justify-between items-start mb-2">
                   <span className="text-xs font-black">{animal.id}</span>
-                  <span className={`px-2 py-0.5 rounded-full text-[8px] font-black ${
-                    animal.severity === 'Critical' ? 'bg-red-500 text-white' : 'bg-orange-100 text-orange-600'
-                  }`}>
+                  <span className={`px-2 py-0.5 rounded-full text-[8px] font-black ${animal.severity === 'Critical' ? 'bg-red-500 text-white' : 'bg-orange-100 text-orange-600'
+                    }`}>
                     {animal.severity}
                   </span>
                 </div>
@@ -193,12 +235,12 @@ const LabellingPage = () => {
             <>
               <div className="h-2/3 p-8 border-b border-gray-100 dark:border-gray-800 relative">
                 <div className="flex justify-between items-center mb-6">
-                   <h3 className="text-sm font-black uppercase tracking-widest text-gray-900 dark:text-white flex items-center gap-2">
-                      <BrainCircuit className="text-primary" /> Visual Diagnostics (48h Window)
-                   </h3>
-                   <div className="text-[10px] font-black text-gray-400 uppercase tracking-widest bg-gray-100 dark:bg-gray-800 px-3 py-1 rounded-full">
-                      Click chart to set symptom onset
-                   </div>
+                  <h3 className="text-sm font-black uppercase tracking-widest text-gray-900 dark:text-white flex items-center gap-2">
+                    <BrainCircuit className="text-primary" /> Visual Diagnostics (48h Window)
+                  </h3>
+                  <div className="text-[10px] font-black text-gray-400 uppercase tracking-widest bg-gray-100 dark:bg-gray-800 px-3 py-1 rounded-full">
+                    Click chart to set symptom onset
+                  </div>
                 </div>
                 <div className="h-[calc(100%-4rem)]">
                   <Line data={chartData} options={chartOptions} />
@@ -209,58 +251,57 @@ const LabellingPage = () => {
                 <div className="space-y-6">
                   <div>
                     <label className="block text-[10px] font-black uppercase tracking-widest text-gray-400 mb-2">Diagnostic Outcome</label>
-                    <select 
+                    <select
                       value={outcome}
                       onChange={(e) => setOutcome(e.target.value)}
                       className="w-full p-4 bg-gray-50 dark:bg-gray-800 border-none rounded-2xl text-sm font-bold"
                     >
-                      <option>Healthy</option>
-                      <option>Fever</option>
-                      <option>Respiratory illness</option>
-                      <option>Digestive disorder</option>
-                      <option>Injury</option>
-                      <option>Unknown</option>
+                      {OUTCOME_OPTIONS.map((option) => <option key={option}>{option}</option>)}
                     </select>
                   </div>
-                  
+
                   <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-800 rounded-2xl">
-                     <div>
-                        <p className="text-xs font-bold text-gray-900 dark:text-white">Confirmed by Veterinarian</p>
-                        <p className="text-[10px] text-gray-500">Official medical record validation</p>
-                     </div>
-                     <input 
-                       type="checkbox" 
-                       checked={isConfirmed}
-                       onChange={(e) => setIsConfirmed(e.target.checked)}
-                       className="w-5 h-5 accent-primary" 
-                     />
+                    <div>
+                      <p className="text-xs font-bold text-gray-900 dark:text-white">Confirmed by Veterinarian</p>
+                      <p className="text-[10px] text-gray-500">Official medical record validation</p>
+                    </div>
+                    <input
+                      type="checkbox"
+                      checked={isConfirmed}
+                      onChange={(e) => setIsConfirmed(e.target.checked)}
+                      className="w-5 h-5 accent-primary"
+                    />
                   </div>
                 </div>
 
                 <div className="space-y-6">
-                   <div>
+                  <div>
                     <label className="block text-[10px] font-black uppercase tracking-widest text-gray-400 mb-2">Observations / Notes</label>
-                    <textarea 
+                    <textarea
                       value={notes}
                       onChange={(e) => setNotes(e.target.value)}
                       className="w-full p-4 bg-gray-50 dark:bg-gray-800 border-none rounded-2xl text-sm font-bold h-24 custom-scrollbar"
                       placeholder="Add clinical observations..."
                     />
                   </div>
-                  
-                  <button 
+
+                  <button
                     type="submit"
-                    className="w-full py-4 bg-primary text-white rounded-2xl font-black uppercase tracking-widest hover:bg-primary-dark transition-all shadow-lg shadow-primary/20 flex items-center justify-center gap-2"
+                    disabled={isSubmitting}
+                    className="w-full py-4 bg-primary text-white rounded-2xl font-black uppercase tracking-widest hover:bg-primary-dark transition-all shadow-lg shadow-primary/20 flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
                   >
-                    <CheckCircle2 size={18} /> Submit Diagnostic
+                    {isSubmitting
+                      ? <><Loader2 size={18} className="animate-spin" /> Envoi en cours...</>
+                      : <><CheckCircle2 size={18} /> Submit Diagnostic</>
+                    }
                   </button>
                 </div>
               </form>
             </>
           ) : (
             <div className="flex-1 flex flex-col items-center justify-center text-center p-20 gap-4">
-               <History className="w-16 h-16 text-gray-200" />
-               <p className="text-lg font-bold text-gray-400">Selectionnez un animal pour commencer le labelling</p>
+              <History className="w-16 h-16 text-gray-200" />
+              <p className="text-lg font-bold text-gray-400">Selectionnez un animal pour commencer le labelling</p>
             </div>
           )}
         </div>

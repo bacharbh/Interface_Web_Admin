@@ -14,6 +14,7 @@ import { Line } from 'react-chartjs-2';
 import { downsampleTimeSeries, Point } from '../../../utils/downsample';
 import { useIoTStore } from '../../../hooks/useIoTStore';
 import { IAnimal } from '../../../types';
+import { TelemetryPoint } from '../../../services/animalsService';
 
 ChartJS.register(
     CategoryScale,
@@ -35,18 +36,13 @@ interface Animal {
     [key: string]: any;
 }
 
-interface HistoryPoint {
-    timestamp: string;
-    value: number;
-}
-
 interface Props {
     animals: Animal[];
     metric: 'heartRate' | 'temperature' | 'activity' | 'speed';
     period: '1h' | '6h' | '24h' | '7j';
     hiddenAnimals: string[];
     onToggleAnimal: (collarId: string) => void;
-    history: HistoryPoint[];
+    telemetryHistory: Record<string, TelemetryPoint[]>;
 }
 
 const ANIMAL_COLORS = ['#1D9E75', '#378ADD', '#EF9F27', '#E24B4A'];
@@ -85,65 +81,86 @@ export default function ComparisonChart({
     period,
     hiddenAnimals,
     onToggleAnimal,
-    history,
+    telemetryHistory,
 }: Props) {
     const metricInfo = getMetricLabel(metric);
     const storeHistory = useIoTStore(state => state.history);
 
-    const chartData = useMemo(() => {
-        // Prepare data for downsampling
-        const rawPoints: Point[] = history.map(h => ({
-            x: new Date(h.timestamp).getTime(),
-            y: h.value
-        }));
+    const resolveMetricValue = (point: TelemetryPoint | IAnimal | undefined) => {
+        if (!point) return undefined;
+        return point[metric as keyof typeof point] as number | undefined;
+    };
 
-        const { sampledData, isCompressed } = downsampleTimeSeries(rawPoints);
+    const getClosestTelemetryValue = (points: TelemetryPoint[], targetTimestamp: number) => {
+        if (points.length === 0) return undefined;
 
-        const labels = sampledData.map(p => {
-            const date = new Date(p.x);
-            return date.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+        const closest = points.reduce((best, current) => {
+            const bestDiff = Math.abs(new Date(best.timestamp).getTime() - targetTimestamp);
+            const currentDiff = Math.abs(new Date(current.timestamp).getTime() - targetTimestamp);
+            return currentDiff < bestDiff ? current : best;
         });
+
+        const closestTimestamp = new Date(closest.timestamp).getTime();
+        if (Math.abs(closestTimestamp - targetTimestamp) > 5 * 60 * 1000) {
+            return undefined;
+        }
+
+        return resolveMetricValue(closest);
+    };
+
+    const combinedTimeline = useMemo(() => {
+        const timestamps = new Set<number>();
+
+        animals.forEach((animal) => {
+            const telemetryPoints = telemetryHistory[animal.collar_id] ?? storeHistory[animal.collar_id] ?? [];
+            telemetryPoints.forEach((point) => {
+                const timestamp = new Date(point.timestamp).getTime();
+                if (Number.isFinite(timestamp)) {
+                    timestamps.add(timestamp);
+                }
+            });
+        });
+
+        const ordered = [...timestamps].sort((left, right) => left - right);
+        const rawPoints: Point[] = ordered.map((timestamp) => ({ x: timestamp, y: 0 }));
+        const { sampledData } = downsampleTimeSeries(rawPoints);
+        return sampledData.map((point) => point.x);
+    }, [animals, storeHistory, telemetryHistory]);
+
+    const chartData = useMemo(() => {
+        const rawPoints: Point[] = combinedTimeline.map((timestamp) => ({ x: timestamp, y: 0 }));
+        const { sampledData, isCompressed } = downsampleTimeSeries(rawPoints);
+        const labels = sampledData.map((point) => new Date(point.x).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }));
 
         const datasets = animals
             .filter(a => !hiddenAnimals.includes(a.collar_id))
             .map((animal, idx) => {
-                const animalIdHash = getHashCode(animal.collar_id);
+                const telemetryPoints = telemetryHistory[animal.collar_id] ?? [];
                 const animalStoreHistory = storeHistory[animal.collar_id] || [];
 
                 return {
                     label: `${animal.name} #${animal.collar_id}`,
-                    data: sampledData.map((p, pointIdx) => {
-                        // 1. Try to find real data in Zustand store
+                    data: sampledData.map((point) => {
+                        const telemetryValue = getClosestTelemetryValue(telemetryPoints, point.x);
+                        if (telemetryValue !== undefined) {
+                            return telemetryValue;
+                        }
+
                         if (animalStoreHistory.length > 0) {
-                            // Find the point closest in time (within a 5-minute window)
-                            const closest = animalStoreHistory.reduce((prev, curr) => {
-                                const currTime = new Date(curr.lastUpdate || 0).getTime();
-                                const prevTime = new Date(prev.lastUpdate || 0).getTime();
-                                return Math.abs(currTime - p.x) < Math.abs(prevTime - p.x) ? curr : prev;
+                            const closest = animalStoreHistory.reduce((best, current) => {
+                                const bestTime = new Date(best.lastUpdate || 0).getTime();
+                                const currentTime = new Date(current.lastUpdate || 0).getTime();
+                                return Math.abs(currentTime - point.x) < Math.abs(bestTime - point.x) ? current : best;
                             });
 
-                            const closestTime = new Date(closest.lastUpdate || 0).getTime();
-                            if (Math.abs(closestTime - p.x) < 300000) { // 5 minutes tolerance
-                                const val = closest[metric as keyof IAnimal] as number;
-                                if (val !== undefined && val !== null) return val;
+                            const storedValue = resolveMetricValue(closest);
+                            if (storedValue !== undefined) {
+                                return storedValue;
                             }
                         }
 
-                        // 2. Fallback to deterministic seeded random data
                         const baseValue = (animal[metric] as number) || (metricInfo.min + metricInfo.max) / 2;
-                        const seed = animalIdHash + pointIdx;
-                        const randomValue = seedRandom(seed);
-                        
-                        // Scale variation based on metric
-                        let variationRange = 10;
-                        if (metric === 'temperature') variationRange = 0.5;
-                        if (metric === 'activity') variationRange = 20;
-                        if (metric === 'speed') variationRange = 2;
-                        
-                        let finalValue = baseValue + (randomValue - 0.5) * variationRange;
-                        
-                        // 3. Clamp to realistic ranges
-                        return Math.min(Math.max(finalValue, metricInfo.min), metricInfo.max);
+                        return Math.min(Math.max(baseValue, metricInfo.min), metricInfo.max);
                     }),
                     borderColor: ANIMAL_COLORS[idx % ANIMAL_COLORS.length],
                     backgroundColor: ANIMAL_COLORS[idx % ANIMAL_COLORS.length] + '18',
@@ -157,7 +174,7 @@ export default function ComparisonChart({
             });
 
         return { labels, datasets, isCompressed };
-    }, [animals, metric, hiddenAnimals, history]);
+    }, [animals, combinedTimeline, hiddenAnimals, metric, metricInfo.max, metricInfo.min, storeHistory, telemetryHistory]);
 
     const options = {
         responsive: true,

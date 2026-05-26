@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Routes, Route, Navigate, useNavigate } from 'react-router-dom';
+import { Routes, Route, Navigate, useNavigate, useParams } from 'react-router-dom';
 import { useAuth, USER_ROLES } from './contexts/AuthContext';
 import { MqttProvider } from './contexts/MqttContext';
 import AppLayout from './components/layout/AppLayout';
@@ -84,6 +84,12 @@ const AlertError = () => (
     <p className="mt-2 text-sm">Les alertes n’ont pas pu être rendues. Le reste du dashboard continue de fonctionner.</p>
   </div>
 );
+
+const LegacyAnimalRedirect = () => {
+  const { id } = useParams<{ id: string }>();
+
+  return <Navigate to={id ? `/animals/${id}` : '/animals'} replace />;
+};
 
 // ============================================
 // LOGIN COMPONENT
@@ -371,8 +377,8 @@ function App() {
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/map" element={<ErrorBoundary fallback={<MapError />}><MapMonitor /></ErrorBoundary>} />
             <Route path="/animals" element={<Animals />} />
-            <Route path="/animals/:id" element={<AnimalDetail />} />
-            <Route path="/animal/:id" element={<AnimalProfile />} />
+            <Route path="/animals/:id" element={<AnimalProfile />} />
+            <Route path="/animal/:id" element={<LegacyAnimalRedirect />} />
             <Route path="/compare" element={<CompareView />} />
             <Route path="/agenda" element={<AgendaView />} />
             <Route path="/alerts" element={<ErrorBoundary fallback={<AlertError />}><Alerts /></ErrorBoundary>} />

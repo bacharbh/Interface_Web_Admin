@@ -9,6 +9,7 @@ const BREEDS = ['Merino', 'Rambouillet', 'Suffolk', 'Dorper', 'Hampshire', 'Othe
 const TYPES = ['Bélier', 'Brebis', 'Agneau', 'Mouton'];
 
 const getConnectionUri = () => process.env.DB_URL || process.env.MONGODB_URI || 'mongodb://localhost:27017/smart-shepherd';
+const force = process.argv.includes('--force');
 
 const generateAnimals = (count: number) =>
     Array.from({ length: count }, (_, index) => {
@@ -31,11 +32,11 @@ const generateAnimals = (count: number) =>
             temperature: Number((38 + Math.random() * 2).toFixed(1)),
             weight: Math.floor(Math.random() * 40) + 40,
             age: Math.floor(Math.random() * 8) + 1,
-            lat: 36.8 + (Math.random() - 0.5) * 0.1,
-            lng: 10.18 + (Math.random() - 0.5) * 0.1,
+            lat: 36.4 + (Math.random() - 0.5) * 0.05,
+            lng: 9.8 + (Math.random() - 0.5) * 0.05,
             location: {
                 type: 'Point',
-                coordinates: [10.18 + (Math.random() - 0.5) * 0.1, 36.8 + (Math.random() - 0.5) * 0.1],
+                coordinates: [9.8 + (Math.random() - 0.5) * 0.05, 36.4 + (Math.random() - 0.5) * 0.05],
             },
             lastSeen: new Date(),
             lastUpdate: new Date(),
@@ -51,9 +52,14 @@ const seed = async () => {
 
     const existing = await Sheep.countDocuments();
     if (existing > 0) {
-        console.log(`✓ Database already has ${existing} animals — skipping seed`);
-        await mongoose.disconnect();
-        process.exit(0);
+        if (force) {
+            await Sheep.deleteMany({});
+            console.log('✓ Cleared existing animals');
+        } else {
+            console.log(`✓ Database already has ${existing} animals — skipping seed`);
+            await mongoose.disconnect();
+            process.exit(0);
+        }
     }
 
     const animals = generateAnimals(200);

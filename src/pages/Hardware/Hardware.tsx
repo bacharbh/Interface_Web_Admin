@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Cpu, Battery, Wifi, Activity, Search, RefreshCw, Layers, Radio, AlertTriangle, CheckCircle } from 'lucide-react';
 import Button from '../../components/ui/Button';
 import { useIoTStore } from '../../hooks/useIoTStore';
@@ -60,6 +61,7 @@ interface HardwareItem {
 }
 
 const Hardware = () => {
+  const navigate = useNavigate();
   const devicesMap = useIoTStore(state => state.devices);
   const [searchTerm, setSearchTerm] = useState('');
   const [filter, setFilter] = useState<HardwareStatus | 'ALL'>('ALL');
@@ -176,7 +178,11 @@ const Hardware = () => {
                 {filtered.slice(0, 50).map((device) => {
                   const sig = getSignalStrength(device.signal);
                   return (
-                    <tr key={device.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/20 transition-colors">
+                    <tr
+                      key={device.id}
+                      className="cursor-pointer hover:bg-slate-50/50 dark:hover:bg-slate-800/20 transition-colors"
+                      onClick={() => navigate(`/animals/${device.id}`)}
+                    >
                       <td className="px-6 py-3.5">
                         <div className="flex items-center gap-3">
                           <div className="w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-800 flex items-center justify-center">
@@ -233,7 +239,16 @@ const Hardware = () => {
                         </span>
                       </td>
                       <td className="px-6 py-3.5">
-                        <Button variant="ghost" className="label-xs font-black text-primary px-3 py-1.5 rounded-lg">Détails</Button>
+                        <Button
+                          variant="ghost"
+                          className="label-xs font-black text-primary px-3 py-1.5 rounded-lg"
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            navigate(`/animals/${device.id}`);
+                          }}
+                        >
+                          Détails →
+                        </Button>
                       </td>
                     </tr>
                   );

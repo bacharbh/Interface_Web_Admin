@@ -1,8 +1,6 @@
 import { Router } from 'express'
-const { getUsers, createUser, updateUser, deleteUser } = require('../controllers/users.controller')
-
-// Reuse existing middleware from backend/middleware/auth.js via TS wrapper
-const { authenticate, requireRole } = require('../middleware/auth')
+import { getUsers, createUser, updateUser, deleteUser } from '../controllers/users.controller.js'
+import { authenticate, requireRole } from '../middleware/auth.js'
 
 const router = Router()
 
@@ -11,4 +9,5 @@ router.post('/', authenticate, requireRole('admin'), createUser)
 router.put('/:id', authenticate, requireRole('admin'), updateUser)
 router.delete('/:id', authenticate, requireRole('admin'), deleteUser)
 
-export = router
+export default router
+

@@ -71,6 +71,12 @@ const AgendaView: React.FC = () => {
         if (prefill) setPrefillAnimal(prefill);
     }, [prefill]);
 
+    useEffect(() => {
+        if (params.get('open') === 'create') {
+            setModalOpen(true);
+        }
+    }, [params]);
+
     const { events } = useAgendaEvents(monthAnchor);
 
     const animalsQuery = useQuery<AnimalOption[]>({
@@ -296,31 +302,66 @@ const AgendaView: React.FC = () => {
                 </div>
             )}
 
-            {view === 'list' && (
-                <div className="space-y-4">
-                    {['Aujourd\'hui', 'Cette semaine', 'Mois prochain'].map((section) => (
-                        <div key={section} className="rounded-2xl border bg-white p-4 dark:bg-card-dark">
-                            <h3 className="title-sm mb-3">{section}</h3>
-                            {sortByStart(events).map((event) => (
-                                <div key={event.id} className="flex items-center justify-between gap-4 border-b py-2 last:border-b-0">
-                                    <button type="button" onClick={() => openEditModal(event)} className="flex min-w-0 flex-1 items-center gap-3 text-left">
-                                        <div className="flex h-8 w-8 items-center justify-center rounded-full" style={{ background: EVENT_COLORS[event.type] }} />
-                                        <div className="min-w-0">
-                                            <div className="font-bold text-gray-900 dark:text-white">{event.title}</div>
-                                            <div className="text-xs text-gray-500 dark:text-gray-400">
-                                                {format(parseISO(event.startAt), 'dd/MM/yyyy • HH:mm')} • {event.animalIds.length} animaux
-                                            </div>
+            {view === 'list' && (() => {
+                const now = new Date();
+                const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+                const tomorrowStart = addDays(todayStart, 1);
+
+                const sections: Array<{ label: string; events: AgendaEvent[] }> = [
+                    {
+                        label: 'En cours',
+                        events: sortByStart(
+                            events.filter((event) => {
+                                const start = new Date(event.startAt).getTime();
+                                const end = new Date(event.endAt).getTime();
+                                return start <= now.getTime() && end >= now.getTime();
+                            })
+                        ),
+                    },
+                    {
+                        label: 'À venir',
+                        events: sortByStart(
+                            events.filter((event) => new Date(event.startAt).getTime() >= tomorrowStart.getTime())
+                        ),
+                    },
+                    {
+                        label: 'Passés',
+                        events: sortByStart(
+                            events.filter((event) => new Date(event.endAt).getTime() < todayStart.getTime())
+                        ),
+                    },
+                ];
+
+                return (
+                    <div className="space-y-4">
+                        {sections.map(({ label, events: sectionEvents }) => (
+                            <div key={label} className="rounded-2xl border bg-white p-4 dark:bg-card-dark">
+                                <h3 className="title-sm mb-3">{label}</h3>
+                                {sectionEvents.length === 0 ? (
+                                    <p className="text-sm text-gray-400">Aucun événement.</p>
+                                ) : (
+                                    sectionEvents.map((event) => (
+                                        <div key={event.id} className="flex items-center justify-between gap-4 border-b py-2 last:border-b-0">
+                                            <button type="button" onClick={() => openEditModal(event)} className="flex min-w-0 flex-1 items-center gap-3 text-left">
+                                                <div className="flex h-8 w-8 items-center justify-center rounded-full flex-shrink-0" style={{ background: EVENT_COLORS[event.type] }} />
+                                                <div className="min-w-0">
+                                                    <div className="font-bold text-gray-900 dark:text-white">{event.title}</div>
+                                                    <div className="text-xs text-gray-500 dark:text-gray-400">
+                                                        {format(parseISO(event.startAt), 'dd/MM/yyyy • HH:mm')} • {event.animalIds.length} animaux
+                                                    </div>
+                                                </div>
+                                            </button>
+                                            <span className={`rounded-full px-2 py-1 text-xs ${event.status === 'upcoming' ? 'bg-blue-50 text-blue-700' : event.status === 'done' ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'}`}>
+                                                {event.status}
+                                            </span>
                                         </div>
-                                    </button>
-                                    <span className={`rounded-full px-2 py-1 text-xs ${event.status === 'upcoming' ? 'bg-blue-50 text-blue-700' : event.status === 'done' ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'}`}>
-                                        {event.status}
-                                    </span>
-                                </div>
-                            ))}
-                        </div>
-                    ))}
-                </div>
-            )}
+                                    ))
+                                )}
+                            </div>
+                        ))}
+                    </div>
+                );
+            })()}
 
             <AddEventModal
                 isOpen={isModalOpen}
