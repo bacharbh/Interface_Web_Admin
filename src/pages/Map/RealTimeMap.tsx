@@ -6,6 +6,8 @@ import iconRetinaUrl from 'leaflet/dist/images/marker-icon-2x.png';
 import iconUrl from 'leaflet/dist/images/marker-icon.png';
 import shadowUrl from 'leaflet/dist/images/marker-shadow.png';
 import 'leaflet.heat';
+import '@geoman-io/leaflet-geoman-free';
+import '@geoman-io/leaflet-geoman-free/dist/leaflet-geoman.css';
 import 'leaflet.markercluster/dist/MarkerCluster.css';
 import 'leaflet.markercluster/dist/MarkerCluster.Default.css';
 import AnimalMarker from './AnimalMarker';
@@ -482,7 +484,12 @@ const RealTimeMap = React.memo(({
     setTileUrl(tileConfig.url);
   }, [tileConfig.url, activeLayer]);
 
-  const filteredAllAnimals = useMemo(() => processedAnimals.filter((animal) => activeFilters[animal.status]), [activeFilters, processedAnimals]);
+  const visibleAnimals = useMemo(() => {
+    console.log('[Map] rendering', processedAnimals.length, 'markers');
+    return processedAnimals;
+  }, [processedAnimals]);
+
+  const filteredAllAnimals = useMemo(() => visibleAnimals.filter((animal) => activeFilters[animal.status]), [activeFilters, visibleAnimals]);
 
   if (!initialCenter) {
     return (
@@ -598,6 +605,7 @@ const RealTimeMap = React.memo(({
           iconCreateFunction={createCustomClusterIcon}
           showCoverageOnHover={false}
           maxClusterRadius={60}
+          disableClusteringAtZoom={14}
           spiderfyOnMaxZoom={true}
           // Handle cluster click to show popup with members
           eventHandlers={{

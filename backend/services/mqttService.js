@@ -19,8 +19,15 @@ const logger = winston.createLogger({
 
 export const initializeMQTT = (socketIO) => {
   io = socketIO;
-  
-  const brokerUrl = process.env.MQTT_BROKER_URL || 'mqtts://localhost:8883';
+
+  const brokerUrl = process.env.MQTT_BROKER_URL || process.env.MQTT_BROKER;
+  const mqttEnabled = !!brokerUrl && brokerUrl !== 'disabled';
+
+  if (!mqttEnabled) {
+    logger.info('[MQTT] disabled in this environment');
+    return;
+  }
+
   const username = process.env.MQTT_USERNAME;
   const password = process.env.MQTT_PASSWORD;
 
@@ -62,7 +69,7 @@ export const initializeMQTT = (socketIO) => {
 
   mqttClient.on('connect', () => {
     logger.info('Connected to MQTT broker');
-    
+
     // Subscribe to relevant topics
     subscribeToTopics();
   });
@@ -154,7 +161,7 @@ const handleTelemetryData = async (deviceId, data) => {
 
     // Check for threshold violations and generate alerts
     const alerts = [];
-    
+
     if (data.heartRate && (data.heartRate < 60 || data.heartRate > 120)) {
       alerts.push({
         type: 'heart_rate',
@@ -193,7 +200,7 @@ const handleTelemetryData = async (deviceId, data) => {
 
       // Detect anomalies using local TF.js model
       const anomalyResult = await aiService.detectAnomalies(deviceId);
-      
+
       if (anomalyResult && anomalyResult.isAnomaly) {
         alerts.push({
           type: 'ai_anomaly',

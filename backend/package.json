@@ -9,6 +9,8 @@
     "dev": "nodemon server.js",
     "seed": "ts-node --esm src/seeds/seedAnimals.ts",
     "seed:fresh": "ts-node --esm src/seeds/seedAnimals.ts --force",
+    "seed:users": "ts-node --esm src/seeds/seedUsers.ts",
+    "seed:alerts": "ts-node --esm src/seeds/seedAlerts.ts",
     "test": "jest"
   },
   "dependencies": {
