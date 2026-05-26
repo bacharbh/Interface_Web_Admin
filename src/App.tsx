@@ -149,10 +149,10 @@ const Login = () => {
   };
 
   const isDevMode = import.meta.env.DEV;
-  const heroImageUrl = `${import.meta.env.BASE_URL || '/'}sheep-logo.png`;
+  const heroBackgroundUrl = `${import.meta.env.BASE_URL || '/'}${encodeURIComponent("Capture d'écran 2026-05-26 151859.png")}`;
 
   return (
-    <div className="min-h-screen bg-[var(--page-bg)] lg:grid lg:h-screen lg:grid-cols-[44%_56%] lg:overflow-hidden">
+    <div className="min-h-screen bg-[#f4f7f5] lg:grid lg:grid-cols-2 lg:overflow-hidden">
       <style>{`
         @keyframes login-shake {
           0%, 100% { transform: translateX(0); }
@@ -163,39 +163,38 @@ const Login = () => {
         }
       `}</style>
 
-      <section className="relative flex min-h-[42vh] items-center overflow-hidden bg-[var(--sidebar-bg)] px-6 py-10 text-white sm:px-10 lg:min-h-0 lg:px-12">
-        <div className="absolute inset-0">
-          <img
-            src={heroImageUrl}
-            alt="Troupeau de moutons"
-            className="h-full w-full scale-125 object-cover object-center opacity-20 blur-2xl"
-          />
-          <div className="absolute inset-0 bg-[linear-gradient(135deg,rgba(26,26,24,0.86),rgba(15,110,86,0.72))]" />
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,rgba(255,255,255,0.14),transparent_35%),radial-gradient(circle_at_70%_60%,rgba(255,255,255,0.08),transparent_30%)]" />
-        </div>
-
-        <div className="relative z-10 max-w-xl pl-0 lg:pl-2">
-          <div className="mb-10 flex h-14 w-14 items-center justify-center overflow-hidden rounded-[10px] border border-white/10 bg-white/95">
-            <img src={heroImageUrl} alt="Smart Shepherd" className="h-full w-full object-cover" />
+      <section className="relative min-h-[44vh] overflow-hidden lg:min-h-screen">
+        <div
+          className="absolute inset-0 scale-105 bg-cover bg-center bg-no-repeat blur-[4px]"
+          style={{ backgroundImage: `url(${heroBackgroundUrl})` }}
+          aria-hidden="true"
+        />
+        <div className="absolute inset-0 bg-[#0f766e]/50" aria-hidden="true" />
+        <div className="absolute inset-0 bg-gradient-to-b from-black/15 via-transparent to-black/55" aria-hidden="true" />
+        <div className="relative z-10 flex h-full min-h-[44vh] items-center px-6 py-10 sm:px-10 lg:min-h-screen lg:px-14">
+          <div className="max-w-xl text-white lg:translate-y-[22%]">
+            <div className="mb-6 inline-flex h-20 w-20 items-center justify-center rounded-2xl bg-white shadow-[0_8px_20px_rgba(0,0,0,0.14)]">
+              <img src="/sheep-logo.png" alt="Smart Shepherd" className="h-11 w-11 object-contain" />
+            </div>
+            <h2 className="max-w-lg text-[clamp(2.9rem,4.8vw,5rem)] font-extrabold leading-[0.95] tracking-tight drop-shadow-[0_2px_8px_rgba(0,0,0,0.22)]">
+              Smart Shepherd
+            </h2>
+            <p className="mt-6 max-w-md text-[clamp(1.02rem,1.35vw,1.18rem)] leading-8 text-white/92">
+              La nouvelle ère de la surveillance du bétail par l'IA et l'IoT.
+            </p>
           </div>
-          <p className="text-[10px] uppercase tracking-[0.18em] text-white/40">Artisanal Tech</p>
-          <h1 className="mt-2 text-[32px] font-medium leading-tight tracking-tight text-white">Smart Shepherd</h1>
-          <p className="mt-6 max-w-md text-[15px] leading-7 text-white/78">
-            La nouvelle ère de la surveillance du bétail par l'IA et l'IoT.
-          </p>
         </div>
       </section>
 
-      <section className="flex min-h-[58vh] items-center justify-center bg-[var(--page-bg)] px-6 py-10 sm:px-10 lg:min-h-0 lg:px-12">
-        <div className={`w-full max-w-[420px] lg:translate-y-[-2%] ${isShaking ? 'animate-[login-shake_0.45s_ease-in-out]' : ''}`}>
-          <div className="text-left">
-            <p className="text-[10px] uppercase tracking-[0.18em] text-[var(--text-muted)]">Connexion</p>
-            <h2 className="mt-2 text-[24px] font-medium text-[var(--text-primary)]">Bienvenue</h2>
-            <p className="mt-2 text-[13px] text-[var(--text-secondary)]">Accédez à votre tableau de bord opérationnel.</p>
+      <section className="flex min-h-[56vh] items-center justify-center bg-white px-6 py-10 sm:px-10 lg:min-h-screen lg:px-14">
+        <div className={`w-full max-w-[430px] ${isShaking ? 'animate-[login-shake_0.45s_ease-in-out]' : ''}`}>
+          <div className="text-center">
+            <h3 className="text-[clamp(2.2rem,2.8vw,2.9rem)] font-bold tracking-tight text-[#1f2d44]">Bienvenue</h3>
+            <p className="mt-3 text-[18px] leading-7 text-[#6b7d95]">Connectez-vous à votre tableau de bord</p>
           </div>
 
           <form
-            className="mt-10 space-y-5 rounded-[10px] border border-[var(--card-border)] bg-white p-6 dark:bg-[var(--card-bg)]"
+            className="mt-12 space-y-6"
             onSubmit={(event) => {
               event.preventDefault();
               void handleLogin();
@@ -203,11 +202,11 @@ const Login = () => {
             noValidate
           >
             <div>
-              <label htmlFor="login-identifier" className="mb-2 block text-[11px] font-medium uppercase tracking-[0.05em] text-[var(--text-muted)]">
+              <label htmlFor="login-identifier" className="mb-2 block text-[15px] font-semibold text-[#34424a]">
                 Identifiant
               </label>
               <div className="relative">
-                <User className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-[var(--text-muted)]" aria-hidden="true" />
+                <User className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-[#8aa09a]" aria-hidden="true" />
                 <input
                   id="login-identifier"
                   name="identifier"
@@ -224,22 +223,22 @@ const Login = () => {
                   aria-label="Identifiant"
                   placeholder="Entrez votre identifiant"
                   disabled={isSubmitting}
-                  className="h-14 w-full rounded-[10px] border border-[var(--card-border)] bg-white pl-12 pr-4 text-[14px] text-[var(--text-primary)] outline-none transition placeholder:text-[var(--text-muted)] focus:border-[var(--brand-primary)] focus:ring-4 focus:ring-[rgba(29,158,117,0.12)] disabled:cursor-not-allowed disabled:bg-[#fafaf8] dark:bg-[var(--card-bg)]"
+                  className="h-14 w-full rounded-2xl border border-[#d8e0ea] bg-white pl-12 pr-4 text-[15px] text-[#12221d] shadow-[0_8px_18px_rgba(15,23,42,0.04)] outline-none transition placeholder:text-[#97a6b9] focus:border-[#19c48b] focus:ring-4 focus:ring-[#19c48b]/15 disabled:cursor-not-allowed disabled:bg-[#fbfcfc]"
                 />
               </div>
               {fieldErrors.identifier && (
-                <p id="identifier-error" className="mt-2 text-[12px] text-[var(--danger)]" role="alert">
+                <p id="identifier-error" className="mt-2 text-sm text-red-600" role="alert">
                   {fieldErrors.identifier}
                 </p>
               )}
             </div>
 
             <div>
-              <label htmlFor="login-password" className="mb-2 block text-[11px] font-medium uppercase tracking-[0.05em] text-[var(--text-muted)]">
+              <label htmlFor="login-password" className="mb-2 block text-[15px] font-semibold text-[#34424a]">
                 Mot de passe
               </label>
               <div className="relative">
-                <Lock className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-[var(--text-muted)]" aria-hidden="true" />
+                <Lock className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-[#8aa09a]" aria-hidden="true" />
                 <input
                   id="login-password"
                   name="password"
@@ -256,27 +255,27 @@ const Login = () => {
                   aria-label="Mot de passe"
                   placeholder="Entrez votre mot de passe"
                   disabled={isSubmitting}
-                  className="h-14 w-full rounded-[10px] border border-[var(--card-border)] bg-white pl-12 pr-14 text-[14px] text-[var(--text-primary)] outline-none transition placeholder:text-[var(--text-muted)] focus:border-[var(--brand-primary)] focus:ring-4 focus:ring-[rgba(29,158,117,0.12)] disabled:cursor-not-allowed disabled:bg-[#fafaf8] dark:bg-[var(--card-bg)]"
+                  className="h-14 w-full rounded-2xl border border-[#d8e0ea] bg-white pl-12 pr-14 text-[15px] text-[#12221d] shadow-[0_8px_18px_rgba(15,23,42,0.04)] outline-none transition placeholder:text-[#97a6b9] focus:border-[#19c48b] focus:ring-4 focus:ring-[#19c48b]/15 disabled:cursor-not-allowed disabled:bg-[#fbfcfc]"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword((current) => !current)}
                   aria-label={showPassword ? 'Masquer le mot de passe' : 'Afficher le mot de passe'}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full p-2 text-[var(--text-muted)] transition hover:bg-[#fafaf8] hover:text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[rgba(29,158,117,0.18)]"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full p-2 text-[#8aa09a] transition hover:bg-[#f0f6f4] hover:text-[#12221d] focus:outline-none focus:ring-2 focus:ring-[#19c48b]/20"
                   disabled={isSubmitting}
                 >
                   {showPassword ? <EyeOff className="h-5 w-5" aria-hidden="true" /> : <Eye className="h-5 w-5" aria-hidden="true" />}
                 </button>
               </div>
               {fieldErrors.password && (
-                <p id="password-error" className="mt-2 text-[12px] text-[var(--danger)]" role="alert">
+                <p id="password-error" className="mt-2 text-sm text-red-600" role="alert">
                   {fieldErrors.password}
                 </p>
               )}
             </div>
 
             {generalError && (
-              <p className="rounded-[10px] border border-[var(--danger)] bg-[var(--danger-bg)] px-4 py-3 text-[12px] text-[var(--danger)]" role="alert" aria-live="polite">
+              <p className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700" role="alert" aria-live="polite">
                 {generalError}
               </p>
             )}
@@ -284,7 +283,7 @@ const Login = () => {
             <button
               type="submit"
               disabled={isSubmitting}
-              className="flex h-14 w-full items-center justify-center rounded-[10px] bg-[var(--brand-primary)] px-4 text-[14px] font-medium text-white transition-colors hover:bg-[var(--brand-dark)] focus:outline-none focus:ring-4 focus:ring-[rgba(29,158,117,0.2)] disabled:cursor-not-allowed disabled:opacity-70"
+              className="flex h-14 w-full items-center justify-center rounded-2xl bg-[#19c48b] px-4 text-[15px] font-semibold text-white shadow-[0_18px_30px_rgba(25,196,139,0.24)] transition-all hover:bg-[#13b17d] hover:shadow-[0_20px_38px_rgba(25,196,139,0.34)] focus:outline-none focus:ring-4 focus:ring-[#19c48b]/20 disabled:cursor-not-allowed disabled:opacity-70"
             >
               {isSubmitting ? (
                 <span className="flex items-center gap-2">
@@ -298,8 +297,8 @@ const Login = () => {
 
             {isDevMode && (
               <div className="flex justify-center pt-2">
-                <div className="rounded-full border border-[var(--card-border)] bg-[#fafaf8] px-4 py-2 text-[12px] text-[var(--text-muted)]" aria-label="Identifiants par défaut en environnement de développement">
-                  Identifiants par défaut : <span className="font-medium text-[var(--text-primary)]">admin / admin123</span>
+                <div className="rounded-full border border-[#dbe3ea] bg-[#f2f4f7] px-4 py-2 text-[12px] text-[#7b8794] shadow-[0_8px_18px_rgba(15,23,42,0.04)]" aria-label="Identifiants par défaut en environnement de développement">
+                  Identifiants par défaut : <span className="font-semibold text-[#12221d]">admin / admin123</span>
                 </div>
               </div>
             )}
