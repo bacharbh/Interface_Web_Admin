@@ -14,6 +14,9 @@ export default function CompareView() {
     const location = useLocation();
     const devicesMap = useIoTStore(state => state.devices);
     const allAnimals = useMemo(() => Object.values(devicesMap), [devicesMap]);
+    const [metric, setMetric] = useState<'heartRate' | 'temperature' | 'activity'>('heartRate');
+    const [period, setPeriod] = useState<'1h' | '6h' | '24h' | '7j'>('24h');
+    const [hiddenAnimals, setHiddenAnimals] = useState<string[]>([]);
 
     // Extract IDs from URL
     const animalIds = useMemo(() => {
@@ -61,11 +64,6 @@ export default function CompareView() {
             return accumulator;
         }, {});
     }, [animals, telemetryQueries]);
-
-    // State management
-    const [metric, setMetric] = useState<'heartRate' | 'temperature' | 'activity'>('heartRate');
-    const [period, setPeriod] = useState<'1h' | '6h' | '24h' | '7j'>('24h');
-    const [hiddenAnimals, setHiddenAnimals] = useState<string[]>([]);
 
     // Toggle animal visibility in chart
     const toggleAnimal = (collarId: string) => {

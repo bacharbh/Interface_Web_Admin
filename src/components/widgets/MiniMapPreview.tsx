@@ -103,11 +103,19 @@ const getStatusColor = (status: 'normal' | 'warning' | 'alert') => {
 
 // Swaps the tile layer to CartoCDN on first OSM error
 function TileLayerWithFallback() {
-  const [useFallback, setUseFallback] = useState(false);
+  const [useFallback, setUseFallback] = useState(() => typeof navigator !== 'undefined' && navigator.onLine === false);
+
+  useEffect(() => {
+    const handleOffline = () => setUseFallback(true);
+
+    window.addEventListener('offline', handleOffline);
+    return () => window.removeEventListener('offline', handleOffline);
+  }, []);
 
   if (useFallback) {
     return (
       <TileLayer
+        key="carto"
         url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
         attribution='&copy; <a href="https://carto.com/">CARTO</a>'
         subdomains="abcd"
@@ -118,6 +126,7 @@ function TileLayerWithFallback() {
 
   return (
     <TileLayer
+      key="osm"
       url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
       attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
       eventHandlers={{
