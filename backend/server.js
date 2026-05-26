@@ -41,6 +41,10 @@ const logger = {
 // Configure environment variables
 dotenv.config();
 
+const REDIS_ENABLED = Boolean(process.env.REDIS_URL) && process.env.REDIS_ENABLED === 'true';
+const MQTT_BROKER = process.env.MQTT_BROKER_URL || process.env.MQTT_BROKER;
+const MQTT_ENABLED = Boolean(MQTT_BROKER) && MQTT_BROKER !== 'disabled';
+
 // Initialize Express app
 const app = express();
 const allowedOrigins = [
@@ -74,8 +78,12 @@ const io = new Server(server, {
   }
 });
 
-// Init Redis
-initRedis();
+// Init Redis only when explicitly enabled
+if (REDIS_ENABLED) {
+  initRedis();
+} else {
+  console.warn('[Redis] disabled — set REDIS_ENABLED=true and REDIS_URL to activate');
+}
 
 // Configure logging
 const winstonLogger = winston.createLogger({
@@ -263,7 +271,11 @@ server.listen(PORT, async () => {
   logger.info(`Server running on port ${PORT}`);
 
   // Initialize MQTT service
-  initializeMQTT(io);
+  if (MQTT_ENABLED) {
+    initializeMQTT(io);
+  } else {
+    logger.warn('[MQTT] disabled in this environment');
+  }
 
   // Initialize AI service
   try {

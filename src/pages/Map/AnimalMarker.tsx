@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useRef } from 'react';
 import Button from '../../components/ui/Button';
 import L from 'leaflet';
 import { Marker, Popup } from 'react-leaflet';
+import { useNavigate } from 'react-router-dom';
 import { IAnimal } from '../../types';
 
 interface AnimalMarkerProps {
@@ -14,6 +15,8 @@ interface AnimalMarkerProps {
 const markerIconCache: Record<string, L.DivIcon> = {};
 
 const AnimalMarker = React.memo(({ animal, history = [], isSelected, onSelect }: AnimalMarkerProps) => {
+  const markerRef = useRef<L.Marker | null>(null);
+  const navigate = useNavigate();
   const lat = typeof animal.lat === 'number' ? animal.lat : 0;
   const lng = typeof animal.lng === 'number' ? animal.lng : 0;
   const battery = animal.battery ?? 0;
@@ -74,10 +77,16 @@ const AnimalMarker = React.memo(({ animal, history = [], isSelected, onSelect }:
 
   return (
     <Marker
+      ref={markerRef}
       position={[lat, lng]}
       icon={customIcon}
       eventHandlers={{
-        click: () => onSelect(animal.collar_id),
+        click: () => {
+          onSelect(animal.collar_id);
+          window.setTimeout(() => {
+            markerRef.current?.openPopup();
+          }, 0);
+        },
       }}
     >
       <Popup className="custom-popup" offset={[0, -10]}>
@@ -124,7 +133,13 @@ const AnimalMarker = React.memo(({ animal, history = [], isSelected, onSelect }:
             </div>
           </div>
 
-          <Button variant="secondary" className="mt-4 w-full py-2">Voir détails</Button>
+          <Button
+            variant="secondary"
+            className="mt-4 w-full py-2"
+            onClick={() => navigate(`/animals/${animal.collar_id}`)}
+          >
+            Voir profil →
+          </Button>
         </div>
       </Popup>
     </Marker>

@@ -4,8 +4,17 @@ export let redisClient;
 export let isRedisConnected = false;
 
 export const initRedis = async () => {
+  const redisEnabled = process.env.REDIS_URL && process.env.REDIS_ENABLED === 'true';
+
+  if (!redisEnabled) {
+    redisClient = undefined;
+    isRedisConnected = false;
+    console.log('[Redis] disabled — set REDIS_ENABLED=true to activate');
+    return;
+  }
+
   redisClient = createClient({
-    url: process.env.REDIS_URL || 'redis://localhost:6379'
+    url: process.env.REDIS_URL
   });
 
   redisClient.on('error', (err) => {
@@ -51,7 +60,7 @@ export const cacheMiddleware = (ttlSeconds) => {
     }
 
     res.set('X-Cache', 'MISS');
-    
+
     // Intercepte et surcharge res.json pour capturer la réponse sortante
     const originalJson = res.json.bind(res);
     res.json = (body) => {
@@ -77,7 +86,7 @@ export const cacheMiddleware = (ttlSeconds) => {
 export const clearCacheMiddleware = (pattern) => {
   return async (req, res, next) => {
     next(); // Ne bloque pas le pipeline de requête (fire-and-forget)
-    
+
     const isMutation = ['POST', 'PUT', 'DELETE', 'PATCH'].includes(req.method);
     if (isRedisConnected && isMutation) {
       try {

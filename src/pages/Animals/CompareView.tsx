@@ -1,7 +1,8 @@
-import React, { useState, useMemo } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import React, { useState, useMemo, useEffect } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import useAnimals from '../../hooks/useAnimals';
 import { useQueries } from '@tanstack/react-query';
-import { ArrowLeft, Plus, Brain, TrendingUp } from 'lucide-react';
+import { ArrowLeft, Plus, TrendingUp } from 'lucide-react';
 import { useIoTStore } from '../../hooks/useIoTStore';
 import animalsService, { type TelemetryPoint } from '../../services/animalsService';
 import ComparisonChart from './CompareView/ComparisonChart';
@@ -11,25 +12,32 @@ import AnimalCard from './CompareView/AnimalCard';
 
 export default function CompareView() {
     const navigate = useNavigate();
-    const location = useLocation();
     const devicesMap = useIoTStore(state => state.devices);
     const allAnimals = useMemo(() => Object.values(devicesMap), [devicesMap]);
+    const { data: animalsList = [] } = useAnimals()
+    const [search, setSearch] = useState('')
+    const [selected, setSelected] = useState<string[]>([])
     const [metric, setMetric] = useState<'heartRate' | 'temperature' | 'activity'>('heartRate');
     const [period, setPeriod] = useState<'1h' | '6h' | '24h' | '7j'>('24h');
     const [hiddenAnimals, setHiddenAnimals] = useState<string[]>([]);
 
-    // Extract IDs from URL
-    const animalIds = useMemo(() => {
-        const params = new URLSearchParams(location.search);
-        return params.get('ids')?.split(',').filter(Boolean) || [];
-    }, [location.search]);
+    // Preselect from URL params (/compare?a=ID1&b=ID2)
+    const [params] = useSearchParams()
+    useEffect(() => {
+        const a = params.get('a')
+        const b = params.get('b')
+        if (a && b) setSelected([a, b])
+    }, [params])
 
-    // Get selected animals
+    // Selected animals resolved from the animals list or devices map
     const animals: any[] = useMemo(() => {
-        return animalIds
-            .map((id: string) => allAnimals.find(a => a.collar_id === id))
+        return selected
+            .map((id: string) =>
+                animalsList.find((a: any) => a.collar_id === id || a.id === id) ||
+                allAnimals.find((a: any) => a.collar_id === id || a.id === id)
+            )
             .filter(Boolean);
-    }, [animalIds, allAnimals]);
+    }, [selected, animalsList, allAnimals]);
 
     const telemetryRange = useMemo(() => {
         const end = new Date();
@@ -50,9 +58,9 @@ export default function CompareView() {
 
     const telemetryQueries = useQueries({
         queries: animals.map((animal) => ({
-            queryKey: ['animals', animal.collar_id, 'telemetry', telemetryRange],
-            queryFn: async () => animalsService.getTelemetry(animal.collar_id, telemetryRange),
-            enabled: Boolean(animal.collar_id),
+            queryKey: ['animals', animal.collar_id || animal.id, 'telemetry', telemetryRange],
+            queryFn: async () => animalsService.getTelemetry(animal.collar_id || animal.id, telemetryRange),
+            enabled: Boolean(animal.collar_id || animal.id),
             staleTime: 30_000,
         })),
     });
@@ -60,7 +68,8 @@ export default function CompareView() {
     const telemetryHistory = useMemo<Record<string, TelemetryPoint[]>>(() => {
         return animals.reduce<Record<string, TelemetryPoint[]>>((accumulator, animal, index) => {
             const queryResult = telemetryQueries[index];
-            accumulator[animal.collar_id] = Array.isArray(queryResult?.data) ? queryResult.data : [];
+            const id = animal.collar_id || animal.id
+            accumulator[id] = Array.isArray(queryResult?.data) ? queryResult.data : [];
             return accumulator;
         }, {});
     }, [animals, telemetryQueries]);
@@ -74,23 +83,7 @@ export default function CompareView() {
         );
     };
 
-    if (animals.length === 0) {
-        return (
-            <div className="max-w-7xl mx-auto space-y-6 animate-fade-in p-6">
-                <button
-                    onClick={() => navigate(-1)}
-                    className="flex items-center gap-2 label-sm font-bold text-primary hover:opacity-75 transition-opacity"
-                >
-                    <ArrowLeft className="w-4 h-4" /> Retour
-                </button>
-                <div className="text-center py-24 flex flex-col items-center gap-4">
-                    <div className="w-20 h-20 bg-primary/5 rounded-full flex items-center justify-center text-4xl">🐑</div>
-                    <p className="label-sm font-black text-gray-400 tracking-widest">Sélectionnez des animaux</p>
-                    <p className="text-gray-400 text-xs">Retournez à la liste pour en choisir au moins 2.</p>
-                </div>
-            </div>
-        );
-    }
+    // If no animals selected yet, show selector UI below (do not early-return)
 
     return (
         <div className="max-w-7xl mx-auto space-y-6 animate-fade-in pb-8">
@@ -122,10 +115,49 @@ export default function CompareView() {
                 </button>
             </div>
 
-            {/* Summary Cards */}
+            {/* Animal selector (show when fewer than 2 selected) */}
+            {selected.length < 2 && (
+                <div className="bg-white dark:bg-card-dark p-4 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800 space-y-4">
+                    <h3 className="title-sm">Sélectionner {2 - selected.length} animal(s) à comparer</h3>
+                    <input
+                        placeholder="Rechercher un animal..."
+                        value={search}
+                        onChange={e => setSearch(e.target.value)}
+                        className="w-full p-2 rounded-md border border-gray-200"
+                    />
+                    <div style={{ maxHeight: 300, overflowY: 'auto' }}>
+                        {(animalsList || [])
+                            .filter((a: any) => (a.name || '').toLowerCase().includes(search.toLowerCase()))
+                            .slice(0, 20)
+                            .map((animal: any) => {
+                                const id = animal.collar_id || animal.id || ''
+                                const isSelected = selected.includes(id)
+                                return (
+                                    <div
+                                        key={id}
+                                        onClick={() => setSelected(prev => prev.includes(id) ? prev.filter(x => x !== id) : (prev.length < 2 ? [...prev, id] : prev))}
+                                        style={{
+                                            padding: 10,
+                                            cursor: 'pointer',
+                                            borderBottom: '1px solid #f0f0f0',
+                                            background: isSelected ? '#e1f5ee' : 'white'
+                                        }}
+                                    >
+                                        <strong>{animal.name}</strong>
+                                        <span style={{ color: '#888', fontSize: 12, marginLeft: 8 }}>
+                                            {animal.breed || animal.race} · Batterie {animal.battery ?? '—'}%
+                                        </span>
+                                    </div>
+                                )
+                            })}
+                    </div>
+                </div>
+            )}
+
+            {/* Summary Cards for selected animals */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                 {animals.map((animal, idx) => (
-                    <AnimalCard key={animal.collar_id} animal={animal} index={idx} />
+                    <AnimalCard key={animal.collar_id || animal.id} animal={animal} index={idx} />
                 ))}
             </div>
 
@@ -168,21 +200,23 @@ export default function CompareView() {
                 </div>
             </div>
 
-            {/* Comparison Chart */}
-            <ComparisonChart
-                animals={animals}
-                metric={metric}
-                period={period}
-                hiddenAnimals={hiddenAnimals}
-                onToggleAnimal={toggleAnimal}
-                telemetryHistory={telemetryHistory}
-            />
+            {/* Comparison area: only show when two animals selected */}
+            {animals.length === 2 && (
+                <>
+                    <ComparisonChart
+                        animals={animals}
+                        metric={metric}
+                        period={period}
+                        hiddenAnimals={hiddenAnimals}
+                        onToggleAnimal={toggleAnimal}
+                        telemetryHistory={telemetryHistory}
+                    />
 
-            {/* Comparison Table */}
-            <ComparisonTable animals={animals} metric={metric} />
+                    <ComparisonTable animals={animals} metric={metric} />
 
-            {/* AI Analysis */}
-            <AIAnalysis animals={animals} />
+                    <AIAnalysis animals={animals} />
+                </>
+            )}
         </div>
     );
 }

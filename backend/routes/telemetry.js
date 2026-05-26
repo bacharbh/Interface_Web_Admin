@@ -1,6 +1,7 @@
 import express from 'express';
 import Joi from 'joi';
 import Sheep from '../models/Sheep.js';
+import TelemetryData from '../models/TelemetryData.js';
 import authMiddleware from '../middleware/auth.js';
 
 const router = express.Router();
@@ -15,10 +16,10 @@ const localLastAlertState = new Map();
  */
 async function hasAlertStateChanged(sheepId, alertType, isActive) {
   const key = `alert_state:${sheepId}:${alertType}`;
-  
+
   try {
     let lastState;
-    
+
     if (isRedisConnected) {
       const cached = await redisClient.get(key);
       lastState = cached === null ? null : cached === 'true';
@@ -38,7 +39,7 @@ async function hasAlertStateChanged(sheepId, alertType, isActive) {
     } else {
       localLastAlertState.set(key, isActive);
     }
-    
+
     return true;
   } catch (err) {
     console.error('Error checking alert state in Redis:', err);
@@ -199,6 +200,32 @@ router.get('/latest', authMiddleware, async (req, res) => {
     res.json({ telemetry: telemetryData });
   } catch (error) {
     res.status(500).json({ error: 'Error fetching telemetry data' });
+  }
+});
+
+// Get telemetry history for analytics/dashboard pages
+router.get('/history', authMiddleware, async (req, res) => {
+  try {
+    const { from, to, limit = 200, deviceId, sheepId } = req.query;
+    const query = {};
+
+    if (deviceId) query.deviceId = deviceId;
+    if (sheepId) query.sheepId = sheepId;
+
+    if (from || to) {
+      query.timestamp = {};
+      if (from) query.timestamp.$gte = new Date(from);
+      if (to) query.timestamp.$lte = new Date(to);
+    }
+
+    const data = await TelemetryData.find(query)
+      .sort({ timestamp: -1 })
+      .limit(Number(limit))
+      .lean();
+
+    res.json(data);
+  } catch (error) {
+    res.status(500).json({ error: 'Erreur telemetry history' });
   }
 });
 

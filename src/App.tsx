@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import { Routes, Route, Navigate, useNavigate, useParams } from 'react-router-dom';
 import { useAuth, USER_ROLES } from './contexts/AuthContext';
 import { MqttProvider } from './contexts/MqttContext';
@@ -6,24 +6,25 @@ import AppLayout from './components/layout/AppLayout';
 import { devLog } from './utils/devLogger';
 import DevErrorBoundary from './components/ErrorBoundary'
 import { useDataRefresh } from './hooks/useDataRefresh';
-import Dashboard from './pages/Dashboard/Dashboard_OPTIMIZED';
-import MapMonitor from './pages/Map/MapMonitor';
-import Users from './pages/Users/Users';
-import Animals from './pages/Animals/Animals';
-import AnimalDetail from './pages/Animals/AnimalDetail';
-import AnimalProfile from './pages/Animals/AnimalProfile';
-import CompareView from './pages/Animals/CompareView';
-import AgendaView from './pages/Agenda/AgendaView';
-import Alerts from './pages/Alerts/Alerts';
-import Anomalies from './pages/Anomalies/Anomalies';
-import Analytics from './pages/Analytics/Analytics';
-import Hardware from './pages/Hardware/Hardware';
-import Settings from './pages/Settings/Settings';
-import AISettings from './pages/Admin/AISettings';
 import AIAnalysis from './components/ai/AIAnalysis';
-const AIPredictionDashboard = React.lazy(() => import('./components/ai/AIPredictionDashboard'));
-import LabellingPage from './pages/Admin/LabellingPage';
 import { Eye, EyeOff, Loader2, Lock, User } from 'lucide-react';
+import sheepBg from './assets/sheep-bg.jpg';
+
+const Dashboard = React.lazy(() => import('./pages/Dashboard/Dashboard_OPTIMIZED'));
+const MapMonitor = React.lazy(() => import('./pages/Map/MapMonitor'));
+const Users = React.lazy(() => import('./pages/Users/Users'));
+const Animals = React.lazy(() => import('./pages/Animals/Animals'));
+const AnimalProfile = React.lazy(() => import('./pages/Animals/AnimalProfile'));
+const CompareView = React.lazy(() => import('./pages/Animals/CompareView'));
+const AgendaView = React.lazy(() => import('./pages/Agenda/AgendaView'));
+const Alerts = React.lazy(() => import('./pages/Alerts/Alerts'));
+const Anomalies = React.lazy(() => import('./pages/Anomalies/Anomalies'));
+const Analytics = React.lazy(() => import('./pages/Analytics/Analytics'));
+const Hardware = React.lazy(() => import('./pages/Hardware/Hardware'));
+const Settings = React.lazy(() => import('./pages/Settings/Settings'));
+const AISettings = React.lazy(() => import('./pages/Admin/AISettings'));
+const AIPredictionDashboard = React.lazy(() => import('./components/ai/AIPredictionDashboard'));
+const LabellingPage = React.lazy(() => import('./pages/Admin/LabellingPage'));
 
 const normalizeRole = (role?: string | null) => (role ?? '').trim().toLowerCase();
 
@@ -82,6 +83,19 @@ const AlertError = () => (
   <div className="rounded-2xl border border-slate-200 bg-slate-50 p-6 text-slate-800 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-100">
     <h3 className="text-lg font-bold">Le centre d'alertes est momentanément indisponible</h3>
     <p className="mt-2 text-sm">Les alertes n’ont pas pu être rendues. Le reste du dashboard continue de fonctionner.</p>
+  </div>
+);
+
+const PageSkeleton = () => (
+  <div className="mx-auto max-w-7xl space-y-4 p-6 animate-pulse">
+    <div className="h-10 w-56 rounded-lg bg-gray-200 dark:bg-gray-800" />
+    <div className="h-52 rounded-2xl bg-gray-100 dark:bg-gray-800" />
+    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="h-28 rounded-2xl bg-gray-100 dark:bg-gray-800" />
+      <div className="h-28 rounded-2xl bg-gray-100 dark:bg-gray-800" />
+      <div className="h-28 rounded-2xl bg-gray-100 dark:bg-gray-800" />
+      <div className="h-28 rounded-2xl bg-gray-100 dark:bg-gray-800" />
+    </div>
   </div>
 );
 
@@ -148,9 +162,6 @@ const Login = () => {
     }
   };
 
-  const isDevMode = import.meta.env.DEV;
-  const heroBackgroundUrl = `${import.meta.env.BASE_URL || '/'}${encodeURIComponent("Capture d'écran 2026-05-26 151859.png")}`;
-
   return (
     <div className="min-h-screen bg-[#f4f7f5] lg:grid lg:grid-cols-2 lg:overflow-hidden">
       <style>{`
@@ -163,26 +174,67 @@ const Login = () => {
         }
       `}</style>
 
-      <section className="relative min-h-[44vh] overflow-hidden lg:min-h-screen">
+      <section
+        className="relative overflow-hidden lg:min-h-screen"
+        style={{
+          backgroundImage: `
+            linear-gradient(
+              135deg,
+              rgba(15, 110, 86, 0.72) 0%,
+              rgba(29, 158, 117, 0.60) 100%
+            ),
+            url(${sheepBg})
+          `,
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          backgroundRepeat: 'no-repeat',
+          minHeight: '100vh',
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'flex-end',
+          padding: '2.5rem',
+        }}
+      >
         <div
-          className="absolute inset-0 scale-105 bg-cover bg-center bg-no-repeat blur-[4px]"
-          style={{ backgroundImage: `url(${heroBackgroundUrl})` }}
-          aria-hidden="true"
-        />
-        <div className="absolute inset-0 bg-[#0f766e]/50" aria-hidden="true" />
-        <div className="absolute inset-0 bg-gradient-to-b from-black/15 via-transparent to-black/55" aria-hidden="true" />
-        <div className="relative z-10 flex h-full min-h-[44vh] items-center px-6 py-10 sm:px-10 lg:min-h-screen lg:px-14">
-          <div className="max-w-xl text-white lg:translate-y-[22%]">
-            <div className="mb-6 inline-flex h-20 w-20 items-center justify-center rounded-2xl bg-white shadow-[0_8px_20px_rgba(0,0,0,0.14)]">
-              <img src="/sheep-logo.png" alt="Smart Shepherd" className="h-11 w-11 object-contain" />
-            </div>
-            <h2 className="max-w-lg text-[clamp(2.9rem,4.8vw,5rem)] font-extrabold leading-[0.95] tracking-tight drop-shadow-[0_2px_8px_rgba(0,0,0,0.22)]">
-              Smart Shepherd
-            </h2>
-            <p className="mt-6 max-w-md text-[clamp(1.02rem,1.35vw,1.18rem)] leading-8 text-white/92">
-              La nouvelle ère de la surveillance du bétail par l'IA et l'IoT.
-            </p>
-          </div>
+          style={{
+            position: 'absolute',
+            top: '2rem',
+            left: '2rem',
+            width: '60px',
+            height: '60px',
+            background: 'white',
+            borderRadius: '14px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            fontSize: '28px',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+          }}
+        >
+          <img src="/sheep-logo.png" alt="Smart Shepherd" className="h-11 w-11 object-contain" />
+        </div>
+        <div className="relative z-10 max-w-xl text-white">
+          <h2
+            style={{
+              color: 'white',
+              fontSize: '32px',
+              fontWeight: '700',
+              marginBottom: '8px',
+              textShadow: '0 1px 4px rgba(0,0,0,0.3)',
+            }}
+          >
+            Smart Shepherd
+          </h2>
+          <p
+            style={{
+              color: 'rgba(255,255,255,0.85)',
+              fontSize: '15px',
+              lineHeight: '1.5',
+              maxWidth: '320px',
+            }}
+          >
+            La nouvelle ère de la surveillance du bétail par l'IA et l'IoT.
+          </p>
         </div>
       </section>
 
@@ -295,7 +347,7 @@ const Login = () => {
               )}
             </button>
 
-            {isDevMode && (
+            {import.meta.env.DEV && (
               <div className="flex justify-center pt-2">
                 <div className="rounded-full border border-[#dbe3ea] bg-[#f2f4f7] px-4 py-2 text-[12px] text-[#7b8794] shadow-[0_8px_18px_rgba(15,23,42,0.04)]" aria-label="Identifiants par défaut en environnement de développement">
                   Identifiants par défaut : <span className="font-semibold text-[#12221d]">admin / admin123</span>
@@ -358,63 +410,53 @@ function App() {
   return (
     <>
       <DevErrorBoundary>
-        <Routes>
-          {/* LOGIN ROUTE */}
-          <Route path="/login" element={user ? <Navigate to="/dashboard" replace /> : <Login />} />
+        <Suspense fallback={<PageSkeleton />}>
+          <Routes>
+            {/* LOGIN ROUTE */}
+            <Route path="/login" element={user ? <Navigate to="/dashboard" replace /> : <Login />} />
 
-          {/* APP ROUTES - Protected Layout */}
-          <Route
-            element={
-              user ? (
-                <AuthenticatedAppWrapper />
-              ) : (
-                <Navigate to="/login" replace />
-              )
-            }
-          >
-            <Route index element={<Navigate to="/dashboard" replace />} />
-            <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/map" element={<ErrorBoundary fallback={<MapError />}><MapMonitor /></ErrorBoundary>} />
-            <Route path="/animals" element={<Animals />} />
-            <Route path="/animals/:id" element={<AnimalProfile />} />
-            <Route path="/animal/:id" element={<LegacyAnimalRedirect />} />
-            <Route path="/compare" element={<CompareView />} />
-            <Route path="/agenda" element={<AgendaView />} />
-            <Route path="/alerts" element={<ErrorBoundary fallback={<AlertError />}><Alerts /></ErrorBoundary>} />
-            <Route path="/anomalies" element={<Anomalies />} />
-            <Route path="/analytics" element={<ErrorBoundary fallback={<ChartError />}><Analytics /></ErrorBoundary>} />
-            <Route path="/ai-dashboard" element={
-              <React.Suspense fallback={
-                <div className="flex flex-col items-center justify-center h-[60vh] gap-5">
-                  <div className="relative w-16 h-16">
-                    <div className="absolute inset-0 border-4 border-primary/20 rounded-full"></div>
-                    <div className="absolute inset-0 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
-                  </div>
-                  <p className="text-[11px] font-normal text-gray-500 tracking-wide animate-pulse">Initialisation du moteur IA...</p>
-                </div>
-              }>
-                <AIPredictionDashboard />
-              </React.Suspense>
-            } />
+            {/* APP ROUTES - Protected Layout */}
+            <Route
+              element={
+                user ? (
+                  <AuthenticatedAppWrapper />
+                ) : (
+                  <Navigate to="/login" replace />
+                )
+              }
+            >
+              <Route index element={<Navigate to="/dashboard" replace />} />
+              <Route path="/dashboard" element={<Dashboard />} />
+              <Route path="/map" element={<ErrorBoundary fallback={<MapError />}><MapMonitor /></ErrorBoundary>} />
+              <Route path="/animals" element={<Animals />} />
+              <Route path="/animals/:id" element={<AnimalProfile />} />
+              <Route path="/animal/:id" element={<LegacyAnimalRedirect />} />
+              <Route path="/compare" element={<CompareView />} />
+              <Route path="/agenda" element={<AgendaView />} />
+              <Route path="/alerts" element={<ErrorBoundary fallback={<AlertError />}><Alerts /></ErrorBoundary>} />
+              <Route path="/anomalies" element={<Anomalies />} />
+              <Route path="/analytics" element={<ErrorBoundary fallback={<ChartError />}><Analytics /></ErrorBoundary>} />
+              <Route path="/ai-dashboard" element={<AIPredictionDashboard />} />
 
-            {/* Admin Only Routes */}
-            {(normalizeRole(user?.role) === 'super_admin' || normalizeRole(user?.role) === 'admin') && (
-              <>
-                <Route path="/users" element={<Users />} />
-                <Route path="/hardware" element={<Hardware />} />
-                <Route path="/settings" element={<Settings />} />
-                <Route path="/admin/ai-settings" element={<AISettings />} />
-                <Route path="/admin/labelling" element={<LabellingPage />} />
-              </>
-            )}
+              {/* Admin Only Routes */}
+              {(normalizeRole(user?.role) === 'super_admin' || normalizeRole(user?.role) === 'admin') && (
+                <>
+                  <Route path="/users" element={<Users />} />
+                  <Route path="/hardware" element={<Hardware />} />
+                  <Route path="/settings" element={<Settings />} />
+                  <Route path="/admin/ai-settings" element={<AISettings />} />
+                  <Route path="/admin/labelling" element={<LabellingPage />} />
+                </>
+              )}
 
-            {/* Fallback for authenticated users */}
-            <Route path="*" element={<Navigate to="/dashboard" replace />} />
-          </Route>
+              {/* Fallback for authenticated users */}
+              <Route path="*" element={<Navigate to="/dashboard" replace />} />
+            </Route>
 
-          {/* Global Fallback for non-authenticated users */}
-          <Route path="*" element={<Navigate to="/login" replace />} />
-        </Routes>
+            {/* Global Fallback for non-authenticated users */}
+            <Route path="*" element={<Navigate to="/login" replace />} />
+          </Routes>
+        </Suspense>
       </DevErrorBoundary>
     </>
   );
