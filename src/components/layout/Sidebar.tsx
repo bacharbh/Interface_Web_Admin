@@ -1,18 +1,10 @@
 import React from 'react';
-import { NavLink } from 'react-router-dom';
-import { LayoutDashboard, Map as MapIcon, Users, Activity, Bell, Settings, LogOut, Shield, Cpu, Brain, BarChart3, Stethoscope, AlertTriangle, LucideIcon } from 'lucide-react';
-import { useAuth, USER_ROLES, UserRole } from '../../contexts/AuthContext';
+import { NavLink, useLocation } from 'react-router-dom';
+import { LogOut, Shield, LayoutDashboard, MapPin, PawPrint, Bell, Brain, BarChart3, AlertTriangle, Tag, Cpu, Users, Settings, GitCompare, Calendar } from 'lucide-react';
+import { useAuth } from '../../contexts/AuthContext';
 import { useIoTStore } from '../../hooks/useIoTStore';
 import Button from '../ui/Button';
-
-interface NavItem {
-  name: string;
-  href: string;
-  icon: LucideIcon;
-  roles: string[];
-  live?: boolean;
-  badge?: boolean;
-}
+import { ROUTE_META } from '../../config/routes';
 
 const normalizeRole = (role?: string | null) => (role ?? '').trim().toLowerCase();
 
@@ -25,50 +17,49 @@ const getRoleLabel = (role?: string | null) => {
   return 'Utilisateur';
 };
 
-const navigationGroups = [
-  {
-    label: 'Principal',
-    items: [
-      { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard, roles: ['admin', 'operator', 'viewer', 'super_admin'] },
-      { name: 'Carte live', href: '/map', icon: MapIcon, roles: ['admin', 'operator', 'viewer', 'super_admin'], live: true },
-      { name: 'Troupeau', href: '/animals', icon: Activity, roles: ['admin', 'operator', 'viewer', 'super_admin'] },
-    ],
-  },
-  {
-    label: 'Analyse',
-    items: [
-      { name: 'IA', href: '/ai-dashboard', icon: Brain, roles: ['admin', 'operator', 'viewer', 'super_admin'] },
-      { name: 'Analytique', href: '/analytics', icon: BarChart3, roles: ['admin', 'operator', 'viewer', 'super_admin'] },
-      { name: 'Anomalies', href: '/anomalies', icon: AlertTriangle, roles: ['admin', 'operator', 'viewer', 'super_admin'] },
-    ],
-  },
-  {
-    label: 'Gestion',
-    items: [
-      { name: 'Labelling', href: '/admin/labelling', icon: Stethoscope, roles: ['admin', 'super_admin'] },
-      { name: 'Hardware', href: '/hardware', icon: Cpu, roles: ['admin', 'super_admin'] },
-      { name: 'Alertes', href: '/alerts', icon: Bell, roles: ['admin', 'operator', 'viewer', 'super_admin'], badge: true },
-      { name: 'Utilisateurs', href: '/users', icon: Users, roles: ['admin', 'super_admin'] },
-      { name: 'Paramètres', href: '/settings', icon: Settings, roles: ['admin', 'super_admin'] },
-    ],
-  },
-];
-
 interface SidebarProps {
   onClose?: () => void;
 }
+
+const PILLARS = {
+  operations: { label: 'Opérations', routes: ['/', '/map', '/troupeau', '/alerts', '/troupeau/compare', '/agenda'] },
+  intelligence: { label: 'Intelligence', routes: ['/ai', '/analytics', '/anomalies', '/labelling'] },
+  administration: { label: 'Gestion', routes: ['/hardware', '/users', '/settings'] },
+} as const;
+
+const ICONS = {
+  'layout-dashboard': LayoutDashboard,
+  'map-pin': MapPin,
+  'paw': PawPrint,
+  'bell': Bell,
+  'brain': Brain,
+  'chart-bar': BarChart3,
+  'alert-triangle': AlertTriangle,
+  'tag': Tag,
+  'device-watch': Cpu,
+  'users': Users,
+  'settings': Settings,
+  'git-compare': GitCompare,
+  'calendar': Calendar,
+} as const;
+
+type RouteKey = keyof typeof ROUTE_META;
+
+const getIcon = (icon: string) => ICONS[icon as keyof typeof ICONS] ?? LayoutDashboard;
 
 const Sidebar: React.FC<SidebarProps> = ({ onClose }) => {
   const { logout, user } = useAuth();
   const alerts = useIoTStore(state => state.alerts);
   const unreadCount = alerts.filter(a => !a.read).length;
   const currentRole = normalizeRole(user?.role);
-  const visibleGroups = navigationGroups
-    .map(group => ({
-      ...group,
-      items: group.items.filter(item => item.roles.includes(currentRole)),
+  const location = useLocation();
+  const visiblePillars = Object.entries(PILLARS)
+    .map(([key, pillar]) => ({
+      key,
+      ...pillar,
+      routes: pillar.routes.filter((path) => (key !== 'administration' || ['admin', 'super_admin'].includes(currentRole))),
     }))
-    .filter(group => group.items.length > 0);
+    .filter((pillar) => pillar.routes.length > 0);
 
   return (
     <aside className="flex h-full w-[200px] shrink-0 flex-col border-r border-[var(--sidebar-border)] bg-[var(--sidebar-bg)] text-white">
@@ -85,38 +76,43 @@ const Sidebar: React.FC<SidebarProps> = ({ onClose }) => {
       </div>
 
       <nav className="flex-1 overflow-y-auto px-2 py-2">
-        {visibleGroups.map((group) => (
-          <div key={group.label} className="mb-4">
+        {visiblePillars.map((pillar) => (
+          <div key={pillar.key} className="mb-4">
             <p className="px-2 pb-2 pt-1 text-[10px] uppercase tracking-[0.18em] text-[var(--sidebar-text)]">
-              {group.label}
+              {pillar.label}
             </p>
             <div className="space-y-[2px]">
-              {group.items.map((item) => (
-                <NavLink
-                  key={item.name}
-                  to={item.href}
-                  onClick={onClose}
-                  className={({ isActive }) =>
-                    `group flex items-center gap-2 rounded-[7px] px-2.5 py-[7px] text-[12.5px] transition-colors ${isActive
-                      ? 'bg-[var(--sidebar-active-bg)] text-white'
-                      : 'text-[var(--sidebar-text)] hover:bg-[var(--sidebar-hover)] hover:text-white'
-                    }`
-                  }
-                >
-                  {({ isActive }) => (
-                    <>
-                      <item.icon className={`h-[15px] w-[15px] shrink-0 ${isActive ? 'text-white' : 'text-white/80'}`} />
-                      <span className="min-w-0 flex-1 truncate font-medium">{item.name}</span>
-                      {(item as any).live && <span className="h-1.5 w-1.5 rounded-full bg-[var(--success)]" />}
-                      {(item as any).badge && unreadCount > 0 && (
-                        <span className="min-w-[28px] rounded-full bg-[var(--danger)] px-1.5 py-0.5 text-center text-[9px] font-medium leading-none text-white">
-                          {unreadCount > 99 ? '99+' : unreadCount}
-                        </span>
-                      )}
-                    </>
-                  )}
-                </NavLink>
-              ))}
+              {pillar.routes.map((path) => {
+                const meta = ROUTE_META[path as RouteKey];
+                const Icon = getIcon(meta.icon);
+
+                return (
+                  <NavLink
+                    key={path}
+                    to={path}
+                    onClick={onClose}
+                    className={({ isActive }) =>
+                      `group flex items-center gap-2 rounded-[7px] px-2.5 py-[7px] text-[12.5px] transition-colors ${isActive
+                        ? 'bg-[var(--sidebar-active-bg)] text-white'
+                        : 'text-[var(--sidebar-text)] hover:bg-[var(--sidebar-hover)] hover:text-white'
+                      }`
+                    }
+                  >
+                    {({ isActive }) => (
+                      <>
+                        <Icon className={`h-[15px] w-[15px] shrink-0 ${isActive ? 'text-white' : 'text-white/80'}`} />
+                        <span className="min-w-0 flex-1 truncate font-medium">{meta.title}</span>
+                        {path === '/map' && <span className="h-1.5 w-1.5 rounded-full bg-[var(--success)]" />}
+                        {path === '/alerts' && unreadCount > 0 && (
+                          <span className="min-w-[28px] rounded-full bg-[var(--danger)] px-1.5 py-0.5 text-center text-[9px] font-medium leading-none text-white">
+                            {unreadCount > 99 ? '99+' : unreadCount}
+                          </span>
+                        )}
+                      </>
+                    )}
+                  </NavLink>
+                );
+              })}
             </div>
           </div>
         ))}
