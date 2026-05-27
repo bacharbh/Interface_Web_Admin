@@ -1,5 +1,6 @@
 import React from 'react';
 import { Activity, Battery, Thermometer, Zap, MapPin, LucideIcon } from 'lucide-react';
+import { DataBadge } from '../../../components/ui/DataBadge';
 
 interface KPIs {
   avgBattery: number;
@@ -19,6 +20,7 @@ interface StatItem {
   icon: LucideIcon;
   color: string;
   bg: string;
+  source: 'live' | 'fallback' | 'derived' | 'simulated';
 }
 
 const KPIStats = ({ kpis, prediction }: KPIStatsProps) => {
@@ -28,28 +30,32 @@ const KPIStats = ({ kpis, prediction }: KPIStatsProps) => {
       value: `${kpis.avgBattery}%`,
       icon: Battery,
       color: 'text-primary',
-      bg: 'bg-primary/10'
+      bg: 'bg-primary/10',
+      source: 'live'
     },
     {
       label: 'Temp. Moyenne',
       value: `${kpis.avgTemp}°C`,
       icon: Thermometer,
       color: 'text-amber-500',
-      bg: 'bg-amber-500/10'
+      bg: 'bg-amber-500/10',
+      source: 'live'
     },
     {
       label: 'Animal le plus actif',
       value: `#${kpis.mostActiveId}`,
       icon: Activity,
       color: 'text-blue-500',
-      bg: 'bg-blue-500/10'
+      bg: 'bg-blue-500/10',
+      source: 'derived'
     },
     {
       label: 'Points collectés',
       value: kpis.totalPoints.toLocaleString(),
       icon: MapPin,
       color: 'text-violet-500',
-      bg: 'bg-violet-500/10'
+      bg: 'bg-violet-500/10',
+      source: 'derived'
     }
   ];
 
@@ -58,7 +64,10 @@ const KPIStats = ({ kpis, prediction }: KPIStatsProps) => {
       {stats.map((stat, i) => (
         <div key={stat.label} className="glass p-5 rounded-2xl border border-white/20 dark:border-slate-800/50 flex items-center justify-between shadow-sm hover:shadow-md transition-shadow">
           <div>
-            <p className="label-xs mb-1">{stat.label}</p>
+            <div className="mb-1 flex items-center gap-2">
+              <p className="label-xs">{stat.label}</p>
+              <DataBadge source={stat.source} />
+            </div>
             <p className="title-lg text-slate-900 dark:text-white tracking-tight">{stat.value}</p>
           </div>
           <div className={`w-12 h-12 rounded-xl ${stat.bg} ${stat.color} flex items-center justify-center`}>

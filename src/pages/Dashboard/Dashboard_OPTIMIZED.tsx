@@ -23,6 +23,7 @@ import AtRiskAnimals from '../../components/widgets/AtRiskAnimals';
 import geofenceService from '../../services/geofenceService';
 import { IKpis, type IGeofenceZone } from '../../types';
 import Button from '../../components/ui/Button';
+import { DataBadge, type DataSource } from '../../components/ui/DataBadge';
 
 // DND Kit Imports
 import {
@@ -552,6 +553,7 @@ export default function Dashboard() {
                       value={animalsList.length}
                       icon={<Activity />}
                       color="blue"
+                      source="live"
                       trend={animalsList.length > 0 ? `${animalsList.length} colliers actifs` : 'En attente...'}
                       live
                     />
@@ -562,6 +564,7 @@ export default function Dashboard() {
                       value={onlineCount}
                       icon={<Cpu />}
                       color="green"
+                      source="live"
                       live
                     />
                   )}
@@ -571,6 +574,7 @@ export default function Dashboard() {
                       value={unreadCount}
                       icon={<Bell />}
                       color="amber"
+                      source="live"
                       isAlert={unreadCount > 0}
                       trend={`${criticalAlerts.length} critiques`}
                     />
@@ -581,6 +585,7 @@ export default function Dashboard() {
                       value={outOfZoneCount}
                       icon={<ShieldAlert />}
                       color="red"
+                      source="derived"
                       isAlert={outOfZoneCount > 0}
                     />
                   )}
@@ -600,6 +605,7 @@ export default function Dashboard() {
           sub={`${lowBatteryDevices.length} critiques (<${BATTERY_LOW_THRESHOLD}%)`}
           isAlert={lowBatteryDevices.length > 0}
           accentColor="#EF9F27"
+          source="live"
         />
         <MiniKpi
           icon={<Thermometer className="text-orange-500" />}
@@ -607,6 +613,7 @@ export default function Dashboard() {
           value={avgTemperature}
           sub="Température moyenne"
           accentColor="#1D9E75"
+          source="derived"
         />
         <MiniKpi
           icon={<Gauge className="text-blue-500" />}
@@ -616,6 +623,7 @@ export default function Dashboard() {
             : (kpis && typeof (kpis as any).ingestionRate === 'number' ? `${Math.round((kpis as any).ingestionRate)}%` : 'N/A — capteur non connecté')}
           sub="Flux de télémétrie"
           accentColor="#1D9E75"
+          source="derived"
         />
       </div>
 
@@ -757,9 +765,10 @@ interface KpiCardProps {
   trend?: string;
   isAlert?: boolean;
   live?: boolean;
+  source?: DataSource;
 }
 
-function KpiCard({ title, value, icon, color, trend, isAlert, live }: KpiCardProps) {
+function KpiCard({ title, value, icon, color, trend, isAlert, live, source }: KpiCardProps) {
   const colors: Record<string, string> = {
     blue: 'bg-blue-50/50 dark:bg-blue-500/5 text-blue-600',
     green: 'bg-green-50/50 dark:bg-green-500/5 text-green-600',
@@ -771,7 +780,10 @@ function KpiCard({ title, value, icon, color, trend, isAlert, live }: KpiCardPro
     <div className={`bg-white dark:bg-card-dark p-4 md:p-5 rounded-2xl shadow-sm border transition-all ${isAlert ? 'border-red-200 dark:border-red-500/30 ring-2 ring-red-500/10' : 'border-gray-100 dark:border-gray-800'
       }`}>
       <div className="flex justify-between items-start mb-4">
-        <p className="label-xs ml-6">{title}</p> {/* Space for drag handle */}
+        <div className="label-xs ml-6 flex items-center gap-2"> {/* Space for drag handle */}
+          <span>{title}</span>
+          {source && <DataBadge source={source} />}
+        </div>
         <div className={`p-2.5 rounded-xl ${colors[color] || 'bg-gray-50'}`}>
           {React.cloneElement(icon as React.ReactElement, { size: 18 })}
         </div>
@@ -796,9 +808,10 @@ interface MiniKpiProps {
   sub: string;
   isAlert?: boolean;
   accentColor?: string;
+  source?: DataSource;
 }
 
-function MiniKpi({ icon, label, value, sub, isAlert, accentColor = '#e8e6e0' }: MiniKpiProps) {
+function MiniKpi({ icon, label, value, sub, isAlert, accentColor = '#e8e6e0', source }: MiniKpiProps) {
   return (
     <div
       className="bg-white dark:bg-card-dark rounded-[8px] border transition-all flex items-center gap-3.5"
@@ -813,7 +826,10 @@ function MiniKpi({ icon, label, value, sub, isAlert, accentColor = '#e8e6e0' }: 
         {React.cloneElement(icon as React.ReactElement, { size: 16 })}
       </div>
       <div className="min-w-0">
-        <p className="label-xs">{label}</p>
+        <div className="mb-0.5 flex items-center gap-2">
+          <p className="label-xs">{label}</p>
+          {source && <DataBadge source={source} />}
+        </div>
         <p className="title-md text-gray-900 dark:text-white truncate">{value}</p>
         <p className="label-xs truncate">{sub}</p>
       </div>
