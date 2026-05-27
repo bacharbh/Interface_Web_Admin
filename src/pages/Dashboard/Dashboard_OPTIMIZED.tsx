@@ -7,6 +7,7 @@ import {
   Activity, Bell, MapPin, ShieldAlert, Cpu, Battery,
   TrendingUp, Thermometer, Gauge, Save, RotateCcw, GripVertical
 } from 'lucide-react';
+import { AlertTriangle } from 'lucide-react';
 import { SkeletonCard, SkeletonChart } from '../../components/ui/Skeleton';
 import LiveBadge from '../../components/ui/LiveBadge';
 import {
@@ -18,6 +19,7 @@ import annotationPlugin from 'chartjs-plugin-annotation';
 import { Line } from 'react-chartjs-2';
 import WeatherWidget from '../../components/widgets/WeatherWidget';
 import MiniMapPreview from '../../components/widgets/MiniMapPreview';
+import AtRiskAnimals from '../../components/widgets/AtRiskAnimals';
 import geofenceService from '../../services/geofenceService';
 import { IKpis, type IGeofenceZone } from '../../types';
 import Button from '../../components/ui/Button';
@@ -106,6 +108,19 @@ export default function Dashboard() {
         status
       };
     });
+  }, [animalsList]);
+
+  const atRiskAnimalList = useMemo(() => {
+    return animalsList.map((animal) => ({
+      id: animal.collar_id ?? animal.id ?? animal.sheepId ?? String(Math.random()),
+      name: animal.name,
+      breed: animal.breed,
+      battery: animal.battery,
+      temp: animal.temperature,
+      status: animal.status,
+      geofence_exit: animal.status === 'OUT_OF_ZONE',
+      inactivity_hours: animal.activity_level != null && animal.activity_level < 0.1 ? 3 : 0,
+    }));
   }, [animalsList]);
 
 
@@ -671,6 +686,28 @@ export default function Dashboard() {
             )}
           </div>
         </div>
+      </div>
+
+      <div className="bg-white dark:bg-card-dark rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm overflow-hidden">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-50 dark:border-gray-800">
+          <h3 className="title-sm text-gray-900 dark:text-white flex items-center gap-2">
+            <AlertTriangle className="w-4 h-4 text-red-500" />
+            Animaux à risque
+          </h3>
+          <button
+            onClick={() => navigate('/map')}
+            className="label-xs text-primary hover:underline cursor-pointer"
+          >
+            Voir carte →
+          </button>
+        </div>
+
+        <AtRiskAnimals
+          animals={atRiskAnimalList}
+          onViewProfile={(id) => navigate(`/animals/${id}`)}
+          maxItems={5}
+          isLoading={!isLoaded}
+        />
       </div>
     </div>
   );
