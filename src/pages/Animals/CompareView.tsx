@@ -21,9 +21,16 @@ export default function CompareView() {
     const [period, setPeriod] = useState<'1h' | '6h' | '24h' | '7j'>('24h');
     const [hiddenAnimals, setHiddenAnimals] = useState<string[]>([]);
 
-    // Preselect from URL params (/compare?a=ID1&b=ID2)
+    // Preselect from URL params (/compare?ids=ID1,ID2 or /compare?a=ID1&b=ID2)
     const [params] = useSearchParams()
     useEffect(() => {
+        const idsParam = params.get('ids')
+        if (idsParam) {
+            const parsed = idsParam.split(',').map((id) => id.trim()).filter(Boolean).slice(0, 2)
+            if (parsed.length > 0) setSelected(parsed)
+            return
+        }
+
         const a = params.get('a')
         const b = params.get('b')
         if (a && b) setSelected([a, b])

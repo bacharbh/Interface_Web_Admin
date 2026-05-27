@@ -504,7 +504,8 @@ export default function Animals() {
 
   const goToCompare = useCallback(() => {
     if (selected.length < 2) return;
-    navigate(`/compare?ids=${selected.join(',')}`);
+    const compareIds = selected.slice(0, 2);
+    navigate(`/compare?ids=${encodeURIComponent(compareIds.join(','))}`);
   }, [navigate, selected]);
 
   const exportToCSV = useCallback(() => {
