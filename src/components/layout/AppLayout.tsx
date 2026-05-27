@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Outlet, useNavigate, useLocation } from 'react-router-dom';
+import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import Sidebar from './Sidebar';
 import { motion, AnimatePresence } from 'framer-motion';
 import { CloudOff, Download } from 'lucide-react';
@@ -17,6 +17,7 @@ import ToastProvider from '../ui/ToastProvider';
 import TopBar from './TopBar';
 import { GlobalSearch, useGlobalSearch } from '../ui/GlobalSearch';
 import Button from '../ui/Button';
+import { ROUTE_META, buildBreadcrumbs, getRouteMeta, PILLAR_LABELS } from '../../config/routes';
 
 const normalizeRole = (role?: string | null) => (role ?? '').trim().toLowerCase();
 
@@ -30,7 +31,7 @@ const AppLayout: React.FC = () => {
   const alerts = useIoTStore(state => state.alerts);
   const isOfflineData = useIoTStore(state => state.isOfflineData);
   const navigate = useNavigate();
-  const location = useLocation();
+  const { pathname } = useLocation();
 
   // --- Offline & PWA Logic ---
   const [isOnline, setIsOnline] = useState(navigator.onLine);
@@ -156,9 +157,15 @@ const AppLayout: React.FC = () => {
 
   useEffect(() => {
     setIsSidebarOpen(false);
-  }, [location.pathname]);
+  }, [pathname]);
 
   const unreadCount = (alerts || []).filter(a => a && !a.read).length;
+  const routeMeta = ROUTE_META[pathname] ?? ROUTE_META['/'];
+  const page = {
+    title: routeMeta.title,
+    sub: routeMeta.subtitle,
+  };
+  const breadcrumbs = buildBreadcrumbs(pathname);
 
   return (
     <div className="flex h-screen w-full overflow-hidden bg-[var(--page-bg)] font-sans transition-colors duration-300 dark:bg-[var(--page-bg-dark)]">
@@ -185,8 +192,8 @@ const AppLayout: React.FC = () => {
 
       <div className="flex flex-col flex-1 overflow-hidden w-full">
         <TopBar
-          title="Tableau de bord"
-          subtitle="Ferme · Mis à jour il y a quelques secondes"
+          title={page.title}
+          subtitle={page.sub}
           unreadCount={unreadCount}
           isConnected={isConnected}
           isOfflineData={isOfflineData}
@@ -206,6 +213,28 @@ const AppLayout: React.FC = () => {
           userName={user?.name || 'Utilisateur'}
           roleLabel={normalizeRole(user?.role) === 'super_admin' ? 'Super admin' : normalizeRole(user?.role) === 'admin' ? 'Administrateur' : 'Observateur'}
         />
+
+        <div className="border-b border-[var(--card-border)] bg-white px-4 py-2 text-[11px] text-[var(--text-muted)] dark:bg-[var(--card-bg)] md:px-8">
+          <nav aria-label="Breadcrumb" className="flex items-center gap-2 overflow-hidden">
+            {breadcrumbs.map((crumb, index) => (
+              <React.Fragment key={`${crumb.label}-${index}`}>
+                {index > 0 && <span className="text-[var(--text-muted)]/60">/</span>}
+                {crumb.href && !crumb.current ? (
+                  <Link to={crumb.href} className="truncate font-medium text-[var(--text-secondary)] transition-colors hover:text-[var(--text-primary)]">
+                    {crumb.label}
+                  </Link>
+                ) : (
+                  <span className="truncate font-medium text-[var(--text-primary)]">
+                    {crumb.label}
+                  </span>
+                )}
+              </React.Fragment>
+            ))}
+            <span className="ml-2 rounded-full bg-[var(--brand-light)] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.08em] text-[var(--brand-dark)]">
+              {PILLAR_LABELS[routeMeta.pillar]}
+            </span>
+          </nav>
+        </div>
 
         {/* Offline Banner */}
         <AnimatePresence>
