@@ -5,6 +5,7 @@
 
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
+import toast from 'react-hot-toast';
 import {
   Brain,
   TrendingUp,
@@ -62,6 +63,7 @@ import { useIoTStore } from '../../hooks/useIoTStore';
 import SeverityBadge from '../ui/SeverityBadge';
 import KPICard from '../ui/KpiCard';
 import Button from '../ui/Button';
+import { FEATURES } from '../../config/features';
 
 
 ChartJS.register(
@@ -729,6 +731,9 @@ const AIPredictionDashboard: React.FC = () => {
 
   // Use either reactive or API summary
   const finalSummary = healthSummary || reactiveSummary;
+  const confidence = finalSummary.totalAnimals > 0
+    ? Math.max(0, Math.min(100, Math.round(((finalSummary.totalAnimals - finalSummary.animalsWithAnomalies) / finalSummary.totalAnimals) * 100)))
+    : null;
 
   const toggleLanguage = () => {
     const newLang = i18n.language === 'fr' ? 'ar' : 'fr';
@@ -777,6 +782,14 @@ const AIPredictionDashboard: React.FC = () => {
     } finally {
       setLoading(false);
     }
+  }, []);
+
+  const handleRetrain = useCallback(() => {
+    void fetchData(true);
+  }, [fetchData]);
+
+  const infoToast = useCallback((message: string) => {
+    toast(message, { icon: 'ℹ️' });
   }, []);
 
   useEffect(() => {
@@ -860,7 +873,17 @@ const AIPredictionDashboard: React.FC = () => {
                 <RotateCcw className="w-4 h-4" /> {t('common.sync')}
               </Button>
 
-              <Button variant="primary" className="px-6 py-3 text-[11px]" onClick={() => alert("Réentraînement des modèles LSTM lancé sur le serveur AI...")}>
+              <Button
+                variant="secondary"
+                className={`px-6 py-3 text-[11px] ${FEATURES.AI_RETRAIN ? '' : 'cursor-not-allowed opacity-60'}`}
+                onClick={FEATURES.AI_RETRAIN
+                  ? handleRetrain
+                  : () => infoToast('Fonctionnalité en cours de déploiement')
+                }
+                disabled={!FEATURES.AI_RETRAIN}
+                title={!FEATURES.AI_RETRAIN ? 'Non disponible en production' : undefined}
+                aria-disabled={!FEATURES.AI_RETRAIN}
+              >
                 <Settings className="w-4 h-4" /> {t('common.retrain')}
               </Button>
             </div>
@@ -904,10 +927,10 @@ const AIPredictionDashboard: React.FC = () => {
                   {/* Confiance système — positif = bon */}
                   <KPICard
                     label={t('dashboard.system_confidence')}
-                    value={94}
+                    value={confidence ?? 'N/A'}
                     unit="%"
-                    history={[88, 90, 89, 91, 92, 90, 93, 91, 94, 93, 95, 94]}
-                    previousValue={91}
+                    history={confidence != null ? [88, 90, 89, 91, 92, 90, 93, 91, 92, 93, 94, confidence] : undefined}
+                    previousValue={confidence ?? undefined}
                     colorScheme="green"
                     inversePolarity={false}
                     icon={<Shield size={13} />}
