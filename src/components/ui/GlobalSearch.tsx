@@ -11,6 +11,7 @@ import { Search, X, ChevronRight } from 'lucide-react';
 import { useIoTStore } from '../../hooks/useIoTStore';
 import { IAnimal } from '../../types';
 import { Alert } from '../../hooks/useIoTStore';
+import { SEARCH_PAGES } from '../../config/routes';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -26,54 +27,40 @@ interface SearchResult {
   action: () => void;
 }
 
-// ─── Static page list ─────────────────────────────────────────────────────────
-
-const PAGES = [
-  { id: 'dashboard',   label: 'Tableau de bord',    icon: '📊', path: '/dashboard',    keywords: ['dashboard', 'tableau', 'accueil'] },
-  { id: 'animals',     label: 'Gestion du troupeau',icon: '🐑', path: '/animals',      keywords: ['animaux', 'troupeau', 'colliers'] },
-  { id: 'alerts',      label: 'Centre d\'alertes',   icon: '🔔', path: '/alerts',       keywords: ['alertes', 'notifications', 'alarmes'] },
-  { id: 'map',         label: 'Carte live',          icon: '🗺️', path: '/map',          keywords: ['carte', 'map', 'gps', 'localisation'] },
-  { id: 'analytics',   label: 'Analytiques',         icon: '📈', path: '/analytics',    keywords: ['stats', 'analytics', 'données', 'graphiques'] },
-  { id: 'ai',          label: 'IA Prédictive',       icon: '🤖', path: '/ai-dashboard', keywords: ['ia', 'ai', 'prédiction', 'intelligence'] },
-  { id: 'hardware',    label: 'Matériel & Colliers',  icon: '📡', path: '/hardware',     keywords: ['matériel', 'hardware', 'colliers', 'iot'] },
-  { id: 'settings',    label: 'Paramètres',          icon: '⚙️', path: '/settings',     keywords: ['paramètres', 'configuration', 'réglages'] },
-  { id: 'users',       label: 'Utilisateurs',        icon: '👥', path: '/users',        keywords: ['utilisateurs', 'users', 'comptes', 'équipe'] },
-];
-
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
 function animalToStatus(health: IAnimal['health']): ResultStatus {
   if (health === 'Critical') return 'critical';
-  if (health === 'Warning')  return 'warn';
+  if (health === 'Warning') return 'warn';
   return 'ok';
 }
 
 function alertToStatus(severity: Alert['severity']): ResultStatus {
   if (severity === 'CRITICAL') return 'critical';
-  if (severity === 'WARNING')  return 'warn';
+  if (severity === 'WARNING') return 'warn';
   return 'ok';
 }
 
 function timeAgo(ts: string): string {
   const diff = Math.floor((Date.now() - new Date(ts).getTime()) / 1000);
-  if (diff < 60)   return `il y a ${diff}s`;
+  if (diff < 60) return `il y a ${diff}s`;
   if (diff < 3600) return `il y a ${Math.floor(diff / 60)}min`;
   return `il y a ${Math.floor(diff / 3600)}h`;
 }
 
 function getAlertLabel(type: string): string {
   switch (type) {
-    case 'OUT_OF_ZONE':    return 'Sortie de zone';
-    case 'LOW_BATTERY':    return 'Batterie critique';
+    case 'OUT_OF_ZONE': return 'Sortie de zone';
+    case 'LOW_BATTERY': return 'Batterie critique';
     case 'HEALTH_WARNING': return 'Alerte santé';
     case 'COLLAR_OFFLINE': return 'Collier hors ligne';
-    default:               return 'Alerte';
+    default: return 'Alerte';
   }
 }
 
 const STATUS_DOT: Record<ResultStatus, string> = {
-  ok:       'bg-[#1D9E75]',
-  warn:     'bg-[#EF9F27]',
+  ok: 'bg-[#1D9E75]',
+  warn: 'bg-[#EF9F27]',
   critical: 'bg-[#E24B4A] animate-pulse',
 };
 
@@ -148,15 +135,15 @@ interface GlobalSearchProps {
 }
 
 export function GlobalSearch({ open, onClose }: GlobalSearchProps) {
-  const navigate     = useNavigate();
-  const inputRef     = useRef<HTMLInputElement>(null);
-  const listRef      = useRef<HTMLDivElement>(null);
-  const [query, setQuery]       = useState('');
+  const navigate = useNavigate();
+  const inputRef = useRef<HTMLInputElement>(null);
+  const listRef = useRef<HTMLDivElement>(null);
+  const [query, setQuery] = useState('');
   const [activeIdx, setActiveIdx] = useState(0);
   const debouncedQuery = useDebounce(query, 150);
 
   const devicesMap = useIoTStore(s => s.devices);
-  const alerts     = useIoTStore(s => s.alerts);
+  const alerts = useIoTStore(s => s.alerts);
 
   // ── Reset on open ────────────────────────────────────────────────────────
   useEffect(() => {
@@ -186,13 +173,13 @@ export function GlobalSearch({ open, onClose }: GlobalSearchProps) {
       })
       .slice(0, 8)
       .map((a: IAnimal): SearchResult => ({
-        type:     'animal',
-        id:       a.collar_id,
-        title:    a.name,
+        type: 'animal',
+        id: a.collar_id,
+        title: a.name,
         subtitle: `${a.breed ?? '—'} · Collier ${a.collar_id} · ${a.health === 'Critical' ? '🔴' : a.health === 'Warning' ? '🟡' : '🟢'} ${a.health}`,
-        icon:     '🐑',
-        status:   animalToStatus(a.health),
-        action:   () => { navigate(`/animals/${a.collar_id}`); onClose(); },
+        icon: '🐑',
+        status: animalToStatus(a.health),
+        action: () => { navigate(`/animals/${a.collar_id}`); onClose(); },
       }));
 
     // ── Active alerts ──────────────────────────────────────────────────────
@@ -208,17 +195,17 @@ export function GlobalSearch({ open, onClose }: GlobalSearchProps) {
       })
       .slice(0, 5)
       .map((al: Alert): SearchResult => ({
-        type:     'alert',
-        id:       String(al.id),
-        title:    `${getAlertLabel(al.type)} — ${al.animal_name}`,
+        type: 'alert',
+        id: String(al.id),
+        title: `${getAlertLabel(al.type)} — ${al.animal_name}`,
         subtitle: `Collier ${al.collar_id} · ${al.severity.toLowerCase()} · ${timeAgo(al.timestamp)}`,
-        icon:     al.severity === 'CRITICAL' ? '🚨' : '⚠️',
-        status:   alertToStatus(al.severity),
-        action:   () => { navigate('/alerts'); onClose(); },
+        icon: al.severity === 'CRITICAL' ? '🚨' : '⚠️',
+        status: alertToStatus(al.severity),
+        action: () => { navigate('/alerts'); onClose(); },
       }));
 
     // ── Pages ─────────────────────────────────────────────────────────────
-    const pageResults: SearchResult[] = PAGES
+    const pageResults: SearchResult[] = SEARCH_PAGES
       .filter(p => {
         if (!q) return true;
         return (
@@ -227,13 +214,13 @@ export function GlobalSearch({ open, onClose }: GlobalSearchProps) {
         );
       })
       .map((p): SearchResult => ({
-        type:     'page',
-        id:       p.id,
-        title:    p.label,
+        type: 'page',
+        id: p.id,
+        title: p.label,
         subtitle: p.path,
-        icon:     p.icon,
-        status:   'ok',
-        action:   () => { navigate(p.path); onClose(); },
+        icon: p.icon,
+        status: 'ok',
+        action: () => { navigate(p.path); onClose(); },
       }));
 
     return [...animalResults, ...alertResults, ...pageResults];
@@ -243,7 +230,7 @@ export function GlobalSearch({ open, onClose }: GlobalSearchProps) {
   const groups = useMemo(() => {
     const animals = results.filter(r => r.type === 'animal');
     const alertsR = results.filter(r => r.type === 'alert');
-    const pages   = results.filter(r => r.type === 'page');
+    const pages = results.filter(r => r.type === 'page');
     return { animals, alerts: alertsR, pages };
   }, [results]);
 
@@ -284,7 +271,7 @@ export function GlobalSearch({ open, onClose }: GlobalSearchProps) {
   if (!open) return null;
 
   const hasResults = flat.length > 0;
-  const isEmpty    = debouncedQuery.length > 0 && !hasResults;
+  const isEmpty = debouncedQuery.length > 0 && !hasResults;
 
   // ── Render groups ─────────────────────────────────────────────────────────
   let globalIdx = 0;
@@ -513,10 +500,10 @@ export function GlobalSearch({ open, onClose }: GlobalSearchProps) {
 
           {/* Footer hint */}
           <div className="gs-footer">
-            <span><kbd className="gs-kbd">↑</kbd><kbd className="gs-kbd" style={{marginLeft:3}}>↓</kbd> Naviguer</span>
+            <span><kbd className="gs-kbd">↑</kbd><kbd className="gs-kbd" style={{ marginLeft: 3 }}>↓</kbd> Naviguer</span>
             <span><kbd className="gs-kbd">↵</kbd> Ouvrir</span>
             <span><kbd className="gs-kbd">Esc</kbd> Fermer</span>
-            <span style={{marginLeft:'auto'}}>{flat.length} résultat{flat.length !== 1 ? 's' : ''}</span>
+            <span style={{ marginLeft: 'auto' }}>{flat.length} résultat{flat.length !== 1 ? 's' : ''}</span>
           </div>
         </div>
       </div>
