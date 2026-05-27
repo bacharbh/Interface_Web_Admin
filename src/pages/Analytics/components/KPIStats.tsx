@@ -75,7 +75,7 @@ const KPIStats = ({ kpis, prediction }: KPIStatsProps) => {
           </div>
         </div>
       ))}
-      
+
       {/* Battery Prediction Summary */}
       {prediction !== null && (
         <div className="md:col-span-2 lg:col-span-4 glass p-6 rounded-2xl border-2 border-primary/20 bg-primary/5 dark:bg-emerald-500/5 mt-2 flex flex-col md:flex-row items-center justify-between gap-4">
