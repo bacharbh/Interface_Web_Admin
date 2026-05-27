@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { FeatureGroup, Polygon, useMap } from 'react-leaflet';
+import { FeatureGroup, Polygon, Tooltip, useMap } from 'react-leaflet';
 import { IGeofenceZone } from '../../types';
 
 const DEFAULT_ZONE_COLOR = '#16a34a';
@@ -35,27 +35,11 @@ const GeofenceLayer = ({
           cutPolygon?: boolean;
           drawMarker?: boolean;
           drawCircle?: boolean;
+          drawRectangle?: boolean;
+          drawPolyline?: boolean;
         }) => void;
       };
     };
-
-    if (!mapInst.pm) {
-      return;
-    }
-
-    try {
-      mapInst.pm.addControls({
-        position: 'topright',
-        drawPolygon: true,
-        editMode: true,
-        dragMode: false,
-        cutPolygon: false,
-        drawMarker: false,
-        drawCircle: false,
-      });
-    } catch {
-      return;
-    }
 
     const extractCoords = (layer: L.Layer): [number, number][] | null => {
       const toGeoJSON = (layer as L.Layer & { toGeoJSON: () => GeoJSON.Feature }).toGeoJSON;
@@ -119,14 +103,51 @@ const GeofenceLayer = ({
       }
     };
 
-    mapInst.on('pm:create' as any, onCreate as any);
-    mapInst.on('pm:edit' as any, onEdit as any);
-    mapInst.on('pm:remove' as any, onRemove as any);
+    let cancelled = false;
+    let rafId = 0;
+    let cleanupListeners: (() => void) | undefined;
+
+    const attachControls = () => {
+      if (cancelled) return;
+
+      if (!mapInst.pm) {
+        rafId = window.requestAnimationFrame(attachControls);
+        return;
+      }
+
+      try {
+        mapInst.pm.addControls({
+          position: 'topright',
+          drawPolygon: true,
+          editMode: true,
+          dragMode: false,
+          cutPolygon: false,
+          drawMarker: false,
+          drawCircle: false,
+          drawRectangle: false,
+          drawPolyline: false,
+        });
+      } catch {
+        return;
+      }
+
+      mapInst.on('pm:create' as any, onCreate as any);
+      mapInst.on('pm:edit' as any, onEdit as any);
+      mapInst.on('pm:remove' as any, onRemove as any);
+
+      cleanupListeners = () => {
+        mapInst.off('pm:create' as any, onCreate as any);
+        mapInst.off('pm:edit' as any, onEdit as any);
+        mapInst.off('pm:remove' as any, onRemove as any);
+      };
+    };
+
+    rafId = window.requestAnimationFrame(attachControls);
 
     return () => {
-      mapInst.off('pm:create' as any, onCreate as any);
-      mapInst.off('pm:edit' as any, onEdit as any);
-      mapInst.off('pm:remove' as any, onRemove as any);
+      cancelled = true;
+      window.cancelAnimationFrame(rafId);
+      cleanupListeners?.();
     };
   }, [map, onZoneCreated, onZoneEdited, onZoneDeleted]);
 
@@ -144,11 +165,20 @@ const GeofenceLayer = ({
             pathOptions={{
               color: isBreached ? '#ef4444' : color,
               fillColor: isBreached ? '#ef4444' : color,
-              fillOpacity: isBreached ? 0.3 : 0.1,
-              weight: isBreached ? 4 : 2,
-              dashArray: isBreached ? '10, 10' : undefined,
+              fillOpacity: isBreached ? 0.18 : 0.08,
+              weight: isBreached ? 3.5 : 2,
+              dashArray: isBreached ? '8, 8' : undefined,
             }}
-          />
+          >
+            <Tooltip
+              permanent
+              direction="center"
+              opacity={1}
+              className="geofence-label"
+            >
+              <span className="text-[11px] font-semibold uppercase tracking-[0.18em]">{zone.name}</span>
+            </Tooltip>
+          </Polygon>
         );
       })}
     </FeatureGroup>

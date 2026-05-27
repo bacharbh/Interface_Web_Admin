@@ -221,8 +221,32 @@ const VitalCard = ({ label, value, unit, range, status, icon }: any) => {
 
 const ClinicalModal = ({ animal, onClose }: { animal: PredictionData, onClose: () => void }) => {
   const { t } = useTranslation();
+  const navigate = useNavigate();
+  const { addAIAlert, markAllAlertsAsRead } = useIoTStore((state) => ({
+    addAIAlert: state.addAIAlert,
+    markAllAlertsAsRead: state.markAllAlertsAsRead,
+  }));
   const level = animal.riskScore.level;
   const color = level === 'low' ? '#10B981' : level === 'medium' ? '#F59E0B' : '#EF4444';
+
+  const notifyVet = () => {
+    addAIAlert({
+      id: `ai-${animal.sheepId}-${Date.now()}`,
+      title: `Alerte IA - ${animal.name}`,
+      animalId: animal.sheepId,
+      severity: level === 'critical' ? 'CRITICAL' : 'WARNING',
+      type: 'AI_REVIEW',
+      message: animal.riskScore.recommendations[0] || 'Revue IA requise',
+      createdAt: new Date().toISOString(),
+      read: false,
+    });
+    navigate('/alerts');
+  };
+
+  const markTreated = () => {
+    markAllAlertsAsRead();
+    onClose();
+  };
 
   useEffect(() => {
     const handleEsc = (e: KeyboardEvent) => {
@@ -343,10 +367,10 @@ const ClinicalModal = ({ animal, onClose }: { animal: PredictionData, onClose: (
             </div>
 
             <div className="flex flex-col sm:flex-row gap-3">
-              <Button variant="primary" className="flex-1 py-4 text-xs" onClick={() => console.log('notify')}>
+              <Button variant="primary" className="flex-1 py-4 text-xs" onClick={notifyVet}>
                 <Mail size={16} /> {t('common.notify_vet')}
               </Button>
-              <Button variant="secondary" className="flex-1 py-4 text-xs" onClick={() => console.log('mark')}>
+              <Button variant="secondary" className="flex-1 py-4 text-xs" onClick={markTreated}>
                 <CheckSquare size={16} /> {t('common.mark_treated')}
               </Button>
             </div>

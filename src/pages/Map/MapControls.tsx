@@ -1,5 +1,5 @@
 import React from 'react';
-import { Layers, Maximize, Target } from 'lucide-react';
+import { Cloud, Layers, Maximize, Pause, Play, Target } from 'lucide-react';
 import { useMap } from 'react-leaflet';
 import LiveBadge from '../../components/ui/LiveBadge';
 import Button from '../../components/ui/Button';
@@ -29,9 +29,12 @@ interface MapControlsProps {
   activeLayer: string;
   onLayerChange: (layer: string) => void;
   recenterCenter: [number, number];
+  showWeather: boolean;
+  onToggleWeather: () => void;
+  onToggleSimulation: () => void;
 }
 
-const MapControls = React.memo(({ isSimulation, isConnected, activeLayer, onLayerChange, recenterCenter }: MapControlsProps) => {
+const MapControls = React.memo(({ isSimulation, isConnected, activeLayer, onLayerChange, recenterCenter, showWeather, onToggleWeather, onToggleSimulation }: MapControlsProps) => {
   const map = useMap();
 
   const handleRecenter = () => {
@@ -48,11 +51,28 @@ const MapControls = React.memo(({ isSimulation, isConnected, activeLayer, onLaye
 
   return (
     <>
-      {/* Top Left: Status & Layers */}
-      <div className="absolute top-4 left-4 z-[1000] flex flex-col gap-2">
-        <div className="flex items-center gap-3 rounded-[10px] border border-[var(--card-border)] bg-white/90 p-1.5 backdrop-blur-md dark:bg-[var(--card-bg)]/90">
+      <div className="absolute top-4 left-4 z-[1000] flex max-w-[calc(100vw-2rem)] flex-col gap-2 sm:max-w-[720px]">
+        <div className="flex flex-wrap items-center gap-2 rounded-2xl border border-[var(--card-border)] bg-white/92 px-3 py-2 shadow-lg shadow-black/5 backdrop-blur-md dark:bg-[var(--card-bg)]/92">
           <LiveBadge isConnected={isConnected} isSimulation={isSimulation} />
-          <div className="h-4 w-px bg-[var(--card-border)]" />
+          <Button
+            onClick={onToggleSimulation}
+            size="sm"
+            variant={isSimulation ? 'primary' : 'ghost'}
+            className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[11px] font-medium ${isSimulation ? 'bg-[var(--brand-light)] text-[var(--brand-dark)]' : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'}`}
+          >
+            {isSimulation ? <Pause className="h-3.5 w-3.5" /> : <Play className="h-3.5 w-3.5" />}
+            {isSimulation ? 'Pause' : 'Simulation'}
+          </Button>
+          <Button
+            onClick={onToggleWeather}
+            size="sm"
+            variant={showWeather ? 'primary' : 'ghost'}
+            className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[11px] font-medium ${showWeather ? 'bg-[var(--brand-light)] text-[var(--brand-dark)]' : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'}`}
+          >
+            <Cloud className="h-3.5 w-3.5" />
+            Météo
+          </Button>
+          <div className="hidden h-4 w-px bg-[var(--card-border)] sm:block" />
           <div className="flex gap-1">
             {Object.entries(TILE_LAYERS).map(([key, config]) => (
               <Button
@@ -72,27 +92,29 @@ const MapControls = React.memo(({ isSimulation, isConnected, activeLayer, onLaye
         </div>
       </div>
 
-      {/* Bottom Right: Quick Actions */}
-      <div className="absolute bottom-6 right-6 z-[1000] flex flex-col gap-2">
+      <div className="absolute bottom-6 right-6 z-[1000] flex flex-col items-end gap-2">
+        <div className="rounded-2xl border border-[var(--card-border)] bg-white/90 p-2 shadow-lg shadow-black/5 backdrop-blur-md dark:bg-[var(--card-bg)]/90">
+          <div className="flex items-center gap-2">
+            <div className="rounded-full border border-[var(--card-border)] px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.08em] text-[var(--text-muted)]">GIS</div>
+            <Layers className="h-4 w-4 text-[var(--text-secondary)]" />
+          </div>
+        </div>
         <ControlButton onClick={handleRecenter} title="Recenter Map">
           <Target className="w-5 h-5" />
         </ControlButton>
         <ControlButton onClick={toggleFullscreen} title="Toggle Fullscreen">
           <Maximize className="w-5 h-5" />
         </ControlButton>
-        <div className="rounded-[10px] border border-[var(--card-border)] bg-white/90 p-2 backdrop-blur-md dark:bg-[var(--card-bg)]/90">
-          <Layers className="w-5 h-5 text-[var(--text-secondary)]" />
-        </div>
       </div>
 
       {/* Legend Overlay */}
-      <div className="pointer-events-none absolute bottom-6 left-6 z-[1000] rounded-[10px] border border-[var(--card-border)] bg-white/90 px-4 py-3 backdrop-blur-md dark:bg-[var(--card-bg)]/90">
+      <div className="pointer-events-none absolute bottom-6 left-6 z-[1000] rounded-2xl border border-[var(--card-border)] bg-white/90 px-4 py-3 shadow-lg shadow-black/5 backdrop-blur-md dark:bg-[var(--card-bg)]/90">
         <h4 className="mb-2 text-[11px] font-medium uppercase tracking-[0.05em] text-[var(--text-muted)]">Légende</h4>
-        <div className="space-y-2">
-          <LegendItem color="bg-green-500" label="Sain & Zone" />
-          <LegendItem color="bg-red-500 animate-pulse" label="Sortie de Zone" />
-          <LegendItem color="bg-amber-500" label="Batterie Faible" />
-          <LegendItem color="bg-red-600" label="État Critique" />
+        <div className="flex flex-wrap gap-2">
+          <LegendItem color="bg-green-500" label="Sain & zone" />
+          <LegendItem color="bg-red-500 animate-pulse" label="Sortie de zone" />
+          <LegendItem color="bg-amber-500" label="Batterie faible" />
+          <LegendItem color="bg-red-600" label="Critique" />
         </div>
       </div>
     </>
@@ -112,7 +134,7 @@ const ControlButton = ({ children, onClick, title }: any) => (
 );
 
 const LegendItem = ({ color, label }: any) => (
-  <div className="flex items-center gap-2">
+  <div className="flex items-center gap-2 rounded-full border border-[var(--card-border)] bg-white/80 px-3 py-1.5 dark:bg-[var(--card-bg)]/80">
     <div className={`w-2.5 h-2.5 rounded-full ${color}`} />
     <span className="text-[11px] font-medium text-[var(--text-secondary)]">{label}</span>
   </div>
