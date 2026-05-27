@@ -145,8 +145,8 @@ const LabellingPage = () => {
       await diagnoseMutation.mutateAsync({
         animalId: selectedAnimal.id,
         outcome: outcome as LabellingOutcome,
-        isConfirmed,
-        symptomOnset,
+        confirmedByVet: isConfirmed,
+        symptomOnsetTime: symptomOnset,
         notes: notes.trim(),
         anomalyDate: selectedAnimal.anomalyDate,
         severity: selectedAnimal.severity,
@@ -176,6 +176,20 @@ const LabellingPage = () => {
 
   return (
     <div className="flex flex-col h-[calc(100vh-6rem)] gap-6 animate-fade-in">
+      {!import.meta.env.PROD && (
+        <div style={{
+          background: '#fff3cd',
+          borderLeft: '4px solid #f0c040',
+          padding: '8px 16px',
+          fontSize: 12,
+          color: '#856404',
+          marginBottom: 16,
+        }}>
+          ⚠️ Sandbox — les diagnostics sont enregistrés en base
+          mais ce module est en phase de validation terrain.
+        </div>
+      )}
+
       {/* Header Stats */}
       <div className="flex items-center justify-between bg-white dark:bg-card-dark p-6 rounded-3xl shadow-sm border border-gray-100 dark:border-gray-800">
         <div>
@@ -209,8 +223,8 @@ const LabellingPage = () => {
                 key={animal.id}
                 onClick={() => setSelectedAnimal(animal)}
                 className={`w-full p-4 rounded-2xl text-left transition-all ${selectedAnimal?.id === animal.id
-                    ? 'bg-primary text-white shadow-lg shadow-primary/20 scale-[1.02]'
-                    : 'bg-gray-50 dark:bg-gray-800 hover:bg-gray-100'
+                  ? 'bg-primary text-white shadow-lg shadow-primary/20 scale-[1.02]'
+                  : 'bg-gray-50 dark:bg-gray-800 hover:bg-gray-100'
                   }`}
               >
                 <div className="flex justify-between items-start mb-2">
