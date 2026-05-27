@@ -20,6 +20,10 @@ import AlertRow from '../../components/ui/AlertRow';
 import { IKpis } from '../../types';
 import Button from '../../components/ui/Button';
 
+// @deprecated — use Dashboard_OPTIMIZED.tsx
+// Scheduled for removal in v1.1.0
+// Do not add new features here
+
 ChartJS.register(
   CategoryScale, LinearScale, PointElement, LineElement,
   Title, Tooltip, Legend, Filler
