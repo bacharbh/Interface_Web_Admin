@@ -10,7 +10,7 @@ import AIAnalysis from './components/ai/AIAnalysis';
 import { Eye, EyeOff, Loader2, Lock, User } from 'lucide-react';
 import sheepBg from './assets/sheep-bg.jpg';
 
-const Dashboard = React.lazy(() => import('./pages/Dashboard/Dashboard_OPTIMIZED'));
+const Dashboard = React.lazy(() => import('./pages/Dashboard/Dashboard'));
 const MapMonitor = React.lazy(() => import('./pages/Map/MapMonitor'));
 const Users = React.lazy(() => import('./pages/Users/Users'));
 const Animals = React.lazy(() => import('./pages/Animals/Animals'));
