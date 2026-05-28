@@ -11,6 +11,7 @@ interface MqttContextType {
   isConnected: boolean;
   isSimulation: boolean;
   toggleSimulation: () => void;
+  reconnect: () => void;
   brokerUrl: string;
   brokerMode: 'local' | 'remote';
 }
@@ -26,18 +27,125 @@ export const useMqtt = () => {
 export const MqttProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user } = useAuth();
   const { isSimulation, setSimulation, setConnected, addAlert } = useIoTStore();
-
-  const clientRef = useRef<MqttClient | null>(null);
-  const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const isUnmountedRef = useRef(false);
-  const reconnectAttemptRef = useRef(0);
-
-  const [clientState, setClientState] = useState<MqttClient | null>(null);
+  const [client, setClient] = useState<MqttClient | null>(null);
   const [internalConnected, setInternalConnected] = useState(false);
+  const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const clientRef = useRef<MqttClient | null>(null);
 
   // Get broker URL and mode from environment
   const brokerUrl = import.meta.env.VITE_MQTT_URL || 'ws://localhost:1883';
   const brokerMode = import.meta.env.VITE_MQTT_MODE === 'remote' ? 'remote' : 'local' as const;
+
+  // Cleanup function
+  const cleanup = useCallback(() => {
+    if (reconnectTimeoutRef.current) {
+      clearTimeout(reconnectTimeoutRef.current);
+      reconnectTimeoutRef.current = null;
+    }
+
+    if (clientRef.current) {
+      // Remove all event listeners
+      clientRef.current.removeAllListeners();
+      clientRef.current.end();
+      clientRef.current = null;
+      setClient(null);
+      setInternalConnected(false);
+      setConnected(false);
+    }
+  }, [setConnected]);
+
+  // Reconnect function with exponential backoff
+  const reconnect = useCallback(() => {
+    if (reconnectTimeoutRef.current) return;
+
+    const delay = Math.min(1000 * Math.pow(2, Math.floor(Math.random() * 3)), 30000);
+    reconnectTimeoutRef.current = setTimeout(() => {
+      reconnectTimeoutRef.current = null;
+      if (user && !isSimulation) {
+        initializeMqtt();
+      }
+    }, delay);
+  }, [user, isSimulation]);
+
+  // Initialize MQTT connection
+  const initializeMqtt = useCallback(() => {
+    try {
+      cleanup();
+
+      const mqttClient = connectMqtt('admin', 'admin_password');
+      clientRef.current = mqttClient;
+
+      const onConnect = () => {
+        setInternalConnected(true);
+        setConnected(true);
+        setClient(mqttClient);
+
+        // Subscribe to topics with error handling
+        const subscriptions: { topic: string, qos: 0 | 1 | 2 }[] = [
+          { topic: 'collar/+/gps', qos: 0 },
+          { topic: 'alerts/+', qos: 1 }
+        ];
+
+        subscriptions.forEach(({ topic, qos }) => {
+          mqttClient.subscribe(topic, { qos }, (err) => {
+            if (err) {
+              console.error(`Failed to subscribe to ${topic}:`, err);
+            }
+          });
+        });
+      };
+
+      const onMessage = (topic: string, message: Buffer) => {
+        try {
+          const data = JSON.parse(message.toString());
+
+          if (topic.startsWith('collar/')) {
+            queueIoTUpdate(data.collar_id, {
+              ...data,
+              lastUpdate: new Date().toLocaleTimeString()
+            });
+          } else if (topic.startsWith('alerts/')) {
+            const newAlert: Alert = { ...data, id: Date.now(), read: false };
+            addAlert(newAlert);
+            notificationService.playNotification(newAlert.severity === 'CRITICAL' ? 'critical' : 'default');
+          }
+        } catch (e) {
+          console.error('MQTT Parse Error:', e);
+        }
+      };
+
+      const onError = (error: Error) => {
+        console.error('MQTT Error:', error);
+        setInternalConnected(false);
+        setConnected(false);
+        reconnect();
+      };
+
+      const onClose = () => {
+        console.warn('MQTT Connection closed');
+        setInternalConnected(false);
+        setConnected(false);
+        reconnect();
+      };
+
+      const onOffline = () => {
+        console.warn('MQTT Client offline');
+        setInternalConnected(false);
+        setConnected(false);
+      };
+
+      // Add event listeners
+      mqttClient.on('connect', onConnect);
+      mqttClient.on('message', onMessage);
+      mqttClient.on('error', onError);
+      mqttClient.on('close', onClose);
+      mqttClient.on('offline', onOffline);
+
+    } catch (error) {
+      console.error('Failed to initialize MQTT:', error);
+      reconnect();
+    }
+  }, [cleanup, setConnected, addAlert, reconnect]);
 
   // Sync simulation lifecycle
   useEffect(() => {
@@ -51,96 +159,14 @@ export const MqttProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   // Real MQTT Logic
   useEffect(() => {
-    isUnmountedRef.current = false;
-
-    const connectWithBackoff = () => {
-      if (isUnmountedRef.current || isSimulation || !user) return;
-
-      console.info('[MqttProvider] Attempting MQTT connect to', brokerUrl);
-      const mqttClient = connectMqtt('admin', 'admin_password');
-      clientRef.current = mqttClient;
-      setClientState(mqttClient);
-
-      const handleConnect = () => {
-        if (isUnmountedRef.current) return;
-        console.info('[MqttProvider] MQTT connected to', brokerUrl);
-        setInternalConnected(true);
-        setConnected(true);
-        reconnectAttemptRef.current = 0; // Reset attempts on successful connection
-        mqttClient.subscribe('collar/+/gps', { qos: 0 });
-        mqttClient.subscribe('alerts/+', { qos: 1 });
-      };
-
-      const handleMessage = (topic: string, message: Buffer) => {
-        if (isUnmountedRef.current) return;
-        try {
-          const data = JSON.parse(message.toString());
-
-          if (topic.startsWith('collar/')) {
-            queueIoTUpdate(data.collar_id, {
-              ...data,
-              lastUpdate: new Date().toLocaleTimeString()
-            });
-          } else if (topic.startsWith('alerts/')) {
-            const newAlert: Alert = { ...data, id: Date.now(), read: false, source: 'mqtt' };
-            addAlert(newAlert);
-            notificationService.playNotification(newAlert.severity === 'CRITICAL' ? 'critical' : 'default');
-          }
-        } catch (e) {
-          console.error('MQTT Parse Error', e);
-        }
-      };
-
-      const handleDisconnectOrError = () => {
-        if (isUnmountedRef.current) return;
-        console.info('[MqttProvider] MQTT disconnected from', brokerUrl);
-        setInternalConnected(false);
-        setConnected(false);
-        scheduleReconnect();
-      };
-
-      mqttClient.on('connect', handleConnect);
-      mqttClient.on('message', handleMessage);
-      mqttClient.on('error', handleDisconnectOrError);
-      mqttClient.on('close', handleDisconnectOrError);
-    };
-
-    const scheduleReconnect = () => {
-      if (isUnmountedRef.current) return;
-      if (reconnectTimeoutRef.current) clearTimeout(reconnectTimeoutRef.current);
-
-      const backoffTime = Math.min(1000 * Math.pow(2, reconnectAttemptRef.current), 30000); // Max 30 seconds
-      reconnectAttemptRef.current += 1;
-
-      reconnectTimeoutRef.current = setTimeout(() => {
-        cleanupClient();
-        connectWithBackoff();
-      }, backoffTime);
-    };
-
-    const cleanupClient = () => {
-      if (clientRef.current) {
-        clientRef.current.removeAllListeners();
-        clientRef.current.end(true); // force close
-        clientRef.current = null;
-        setClientState(null);
-      }
-    };
-
-    const cleanup = () => {
-      isUnmountedRef.current = true;
-      if (reconnectTimeoutRef.current) clearTimeout(reconnectTimeoutRef.current);
-      cleanupClient();
-      setInternalConnected(false);
-      setConnected(false);
-    };
-
     if (user && !isSimulation) {
-      connectWithBackoff();
+      initializeMqtt();
+    } else {
+      cleanup();
     }
 
     return cleanup;
-  }, [user, isSimulation, setConnected, addAlert]);
+  }, [user, isSimulation, initializeMqtt, cleanup]);
 
   const toggleSimulation = useCallback(() => {
     setSimulation(!isSimulation);
@@ -148,10 +174,11 @@ export const MqttProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   return (
     <MqttContext.Provider value={{
-      client: clientState,
+      client: clientRef.current,
       isConnected: isSimulation ? true : internalConnected,
       isSimulation,
       toggleSimulation,
+      reconnect,
       brokerUrl,
       brokerMode
     }}>

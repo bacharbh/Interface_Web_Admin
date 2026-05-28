@@ -1,51 +1,67 @@
-import React, { useEffect, useState, useMemo, useRef, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useEffect, useState, useMemo, useCallback, useRef } from 'react';
 import { useMqtt } from '../../contexts/MqttContext';
-import { useIoTStore } from '../../hooks/useIoTStore';
+import { useIoTStore, type Alert as IoTAlert } from '../../hooks/useIoTStore';
 import { useMapWorker } from '../../hooks/useMapWorker';
+import { useNavigate } from 'react-router-dom';
 import {
-  Activity, Bell, ShieldAlert, Cpu, Battery,
-  Radio, TrendingUp, Thermometer, Gauge, AlertTriangle
+  Activity, Bell, MapPin, ShieldAlert, Cpu, Battery,
+  TrendingUp, Thermometer, Gauge, Save, RotateCcw, GripVertical
 } from 'lucide-react';
+import { AlertTriangle } from 'lucide-react';
 import { SkeletonCard, SkeletonChart } from '../../components/ui/Skeleton';
 import LiveBadge from '../../components/ui/LiveBadge';
 import {
   Chart as ChartJS, CategoryScale, LinearScale, PointElement,
-  LineElement, Title, Tooltip, Legend, Filler
+  LineElement, Title, Tooltip, Legend, Filler,
+  type ChartOptions
 } from 'chart.js';
+import annotationPlugin from 'chartjs-plugin-annotation';
 import { Line } from 'react-chartjs-2';
 import WeatherWidget from '../../components/widgets/WeatherWidget';
+import MiniMapPreview from '../../components/widgets/MiniMapPreview';
 import AtRiskAnimals from '../../components/widgets/AtRiskAnimals';
-import AlertRow from '../../components/ui/AlertRow';
-import { IKpis } from '../../types';
+import geofenceService from '../../services/geofenceService';
+import { IKpis, type IGeofenceZone } from '../../types';
 import Button from '../../components/ui/Button';
+import { DataBadge, type DataSource } from '../../components/ui/DataBadge';
 
-// @deprecated — use Dashboard_OPTIMIZED.tsx
-// Scheduled for removal in v1.1.0
-// Do not add new features here
+// DND Kit Imports
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+  TouchSensor,
+} from '@dnd-kit/core';
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  rectSortingStrategy,
+  useSortable,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 
 ChartJS.register(
   CategoryScale, LinearScale, PointElement, LineElement,
-  Title, Tooltip, Legend, Filler
+  Title, Tooltip, Legend, Filler, annotationPlugin
 );
 
-// --- Simple Layout Persistence Logic ---
+// --- Performance Optimizations ---
 const DEFAULT_LAYOUT = ['total', 'active', 'alerts', 'outOfZone'];
 const LAYOUT_KEY = 'ss_dashboard_layout_v1';
+const CHART_UPDATE_INTERVAL = 5000; // 5 seconds
+const MAX_CHART_POINTS = 20; // Limit chart points for performance
+const BATTERY_LOW_THRESHOLD = 20;
 
-// --- Optimized Chart Component ---
-const MemoizedChart = React.memo(
-  ({ chartData, options }: any) => {
-    return <Line options={options} data={chartData} />;
-  },
-  (prevProps, nextProps) => {
-    // Custom comparator: only re-render if the last time label changed
-    const prevLabels = prevProps.chartData?.labels;
-    const nextLabels = nextProps.chartData?.labels;
-    if (!prevLabels || !nextLabels || prevLabels.length !== nextLabels.length) return false;
-    return prevLabels[prevLabels.length - 1] === nextLabels[nextLabels.length - 1];
-  }
-);
+interface ChartData {
+  labels: string[];
+  animals: number[];
+  alerts: number[];
+}
 
 export default function Dashboard() {
   const navigate = useNavigate();
@@ -53,43 +69,132 @@ export default function Dashboard() {
   const positions = useIoTStore(state => state.devices);
   const history = useIoTStore(state => state.history);
   const alerts = useIoTStore(state => state.alerts);
-  const { enrichedAnimals: animalsList, kpis } = useMapWorker(positions, history, []);
+
+  const [zones, setZones] = useState<IGeofenceZone[]>([]);
+
+  useEffect(() => {
+    let active = true;
+    const fetchZones = async () => {
+      try {
+        const data = await geofenceService.getZones();
+        if (active) {
+          setZones(data);
+        }
+      } catch (error) {
+        console.warn("Failed to fetch zones for dashboard.");
+      }
+    };
+    fetchZones();
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const { enrichedAnimals: animalsList, kpis } = useMapWorker(positions, history, zones);
   const markAlertAsRead = useIoTStore(state => state.markAlertAsRead);
   const isOfflineData = useIoTStore(state => state.isOfflineData);
-  const isDev = import.meta.env.DEV;
 
-  // Adapt IAnimal[] → AtRiskAnimals Animal[] shape
-  const atRiskAnimalList = useMemo(() =>
-    animalsList.map((a) => ({
-      id: a.collar_id ?? a.sheepId ?? String(a.id ?? Math.random()),
-      name: a.name,
-      breed: a.breed,
-      battery: a.battery,
-      temp: a.temperature,
-      status: a.status,
-      geofence_exit: a.status === 'OUT_OF_ZONE',
-      inactivity_hours: a.activity_level != null && a.activity_level < 0.1 ? 3 : 0,
-    })),
-    [animalsList]
-  );
+  const mapPreviewAnimals = useMemo(() => {
+    return animalsList.map(a => {
+      let status: 'normal' | 'warning' | 'alert' = 'normal';
+      if (a.status === 'CRITICAL' || a.status === 'OUT_OF_ZONE') {
+        status = 'alert';
+      } else if (a.status === 'LOW_BATTERY') {
+        status = 'warning';
+      }
+      return {
+        id: a.collar_id || a.id,
+        lat: a.lat,
+        lng: a.lng,
+        status
+      };
+    });
+  }, [animalsList]);
+
+  const atRiskAnimalList = useMemo(() => {
+    return animalsList.map((animal) => ({
+      id: animal.collar_id ?? animal.id ?? animal.sheepId ?? String(Math.random()),
+      name: animal.name,
+      breed: animal.breed,
+      battery: animal.battery,
+      temp: animal.temperature,
+      status: animal.status,
+      geofence_exit: animal.status === 'OUT_OF_ZONE',
+      inactivity_hours: animal.activity_level != null && animal.activity_level < 0.1 ? 3 : 0,
+    }));
+  }, [animalsList]);
+
+
+
+  const onlineCount = useMemo(() => {
+    const fiveMinutes = 5 * 60 * 1000;
+    const freshCount = Object.values(positions).filter((animal) => {
+      const lastSeenValue = (animal as any).lastUpdate ?? (animal as any).lastSeen ?? (animal as any).updatedAt ?? (animal as any).timestamp ?? (animal as any).last_heartbeat;
+      const lastSeen = lastSeenValue ? new Date(lastSeenValue).getTime() : NaN;
+      return Number.isFinite(lastSeen) && Date.now() - lastSeen < fiveMinutes;
+    }).length;
+
+    return freshCount > 0 ? freshCount : animalsList.length;
+  }, [animalsList.length, positions]);
+
+  const outOfZoneCount = useMemo(() => {
+    if (zones.length === 0) return 0;
+    return kpis.outOfZone;
+  }, [kpis.outOfZone, zones.length]);
+
+  const primaryGeofence = useMemo(() => {
+    if (zones.length === 0) return [];
+    return zones[0].coords || [];
+  }, [zones]);
+
+  // Performance refs
+  const chartUpdateRef = useRef<NodeJS.Timeout | null>(null);
+  const lastUpdateRef = useRef<number>(Date.now());
+  const renderCountRef = useRef<number>(0);
 
   const [isLoaded, setIsLoaded] = useState(false);
-  const [historicData, setHistoricData] = useState<{ labels: string[], animals: number[], alerts: number[] }>({
+  const [historicData, setHistoricData] = useState<ChartData>({
     labels: [],
     animals: [],
     alerts: []
   });
   const [layout, setLayout] = useState(DEFAULT_LAYOUT);
+  const [isChartPaused, setIsChartPaused] = useState(false);
+  const latestDataRef = useRef({ animals: 0, alerts: 0 });
+  const simulationStartLabel = historicData.labels[historicData.labels.length - 1] ?? null;
 
-  // Optimizations refs
-  const chartUpdateRef = useRef<NodeJS.Timeout | null>(null);
-  const lastUpdateRef = useRef<number>(0);
-  const isVisibleRef = useRef<boolean>(true);
-  const latestDataRef = useRef({ animals: animalsList.length, alerts: alerts.length });
+  // DND Sensors
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8,
+      },
+    }),
+    useSensor(TouchSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
 
-  // Memoized calculations
-  const unreadCount = useMemo(() => alerts.filter(a => !a.read).length, [alerts]);
-  const criticalAlertsCount = useMemo(() => alerts.filter(a => a.severity === 'CRITICAL').length, [alerts]);
+  // Memoized calculations to prevent unnecessary re-renders
+  const criticalAlerts = useMemo(() =>
+    alerts.filter(a => a.severity === 'CRITICAL' && !a.read),
+    [alerts]
+  );
+
+  const lowBatteryDevices = useMemo(() =>
+    Object.values(positions).filter(d => (d.battery ?? 0) <= BATTERY_LOW_THRESHOLD),
+    [positions]
+  );
+
+  const unreadCount = useMemo(() =>
+    alerts.filter(a => !a.read).length,
+    [alerts]
+  );
+
+  useEffect(() => {
+    latestDataRef.current = { animals: animalsList.length, alerts: unreadCount };
+  }, [animalsList.length, unreadCount]);
 
   const avgTemperature = useMemo(() => {
     const devices = Object.values(positions);
@@ -113,82 +218,141 @@ export default function Dashboard() {
     return (sum / validBatteries.length).toFixed(0) + '%';
   }, [positions]);
 
-  // Keep latest data for the interval without triggering re-renders
-  useEffect(() => {
-    latestDataRef.current = { animals: animalsList.length, alerts: alerts.length };
-  }, [animalsList.length, alerts.length]);
+  // Optimized chart update function
+  const updateChartData = useCallback(() => {
+    if (isChartPaused) return;
 
-  // Handle visibility change to pause updates when tab is in background
-  useEffect(() => {
-    const handleVisibilityChange = () => {
-      isVisibleRef.current = document.visibilityState === 'visible';
-    };
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
-  }, []);
+    const now = new Date();
+    const timeLabel = now.toLocaleTimeString([], {
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit'
+    });
 
-  // Load layout once
+    setHistoricData(prev => {
+      const newLabels = [...prev.labels, timeLabel].slice(-MAX_CHART_POINTS);
+      const newAnimals = [...prev.animals, latestDataRef.current.animals].slice(-MAX_CHART_POINTS);
+      const newAlerts = [...prev.alerts, latestDataRef.current.alerts].slice(-MAX_CHART_POINTS);
+
+      return {
+        labels: newLabels,
+        animals: newAnimals,
+        alerts: newAlerts
+      };
+    });
+
+    lastUpdateRef.current = Date.now();
+  }, [isChartPaused]);
+
+  // Load layout once with error handling
   useEffect(() => {
-    const saved = localStorage.getItem(LAYOUT_KEY);
-    if (saved) {
-      try {
-        setLayout(JSON.parse(saved));
-      } catch {
-        setLayout(DEFAULT_LAYOUT);
+    try {
+      const saved = localStorage.getItem(LAYOUT_KEY);
+      if (saved) {
+        const parsedLayout = JSON.parse(saved);
+        if (Array.isArray(parsedLayout) && parsedLayout.length > 0) {
+          setLayout(parsedLayout);
+        }
       }
+    } catch (error) {
+      console.warn('Failed to load layout from localStorage:', error);
+      setLayout(DEFAULT_LAYOUT);
     }
   }, []);
 
-  // Initialize the chart
+  const resetLayout = () => {
+    localStorage.removeItem(LAYOUT_KEY);
+    setLayout(DEFAULT_LAYOUT);
+  };
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+
+    if (over && active.id !== over.id) {
+      setLayout((items) => {
+        const oldIndex = items.indexOf(active.id as string);
+        const newIndex = items.indexOf(over.id as string);
+        const newLayout = arrayMove(items, oldIndex, newIndex);
+        localStorage.setItem(LAYOUT_KEY, JSON.stringify(newLayout));
+        return newLayout;
+      });
+    }
+  };
+
+  // Initialize chart data efficiently
   useEffect(() => {
     const now = new Date();
-    setHistoricData({
-      labels: Array(12).fill(0).map((_, i) => {
-        const d = new Date(now.getTime() - (11 - i) * 5000);
-        return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-      }),
-      animals: Array(12).fill(latestDataRef.current.animals),
-      alerts: Array(12).fill(latestDataRef.current.alerts)
+    const newLabels = Array(MAX_CHART_POINTS).fill(0).map((_, i) => {
+      const d = new Date(now.getTime() - (MAX_CHART_POINTS - 1 - i) * CHART_UPDATE_INTERVAL);
+      return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
     });
-  }, []);
 
-  // Simulate initial loading
-  useEffect(() => {
-    const timer = setTimeout(() => setIsLoaded(true), 800);
-    return () => clearTimeout(timer);
-  }, []);
+    const initialData: ChartData = {
+      labels: newLabels,
+      animals: Array(MAX_CHART_POINTS).fill(animalsList.length),
+      alerts: Array(MAX_CHART_POINTS).fill(unreadCount)
+    };
+    setHistoricData(initialData);
+  }, []); // Only run once on mount
 
-  // Optimized, throttled callback for updating chart data
-  const updateChartData = useCallback(() => {
-    if (!isVisibleRef.current) return;
-
-    const now = Date.now();
-    // Throttling: skip update if the last update was less than 4 seconds ago
-    if (now - lastUpdateRef.current < 4000) return;
-    lastUpdateRef.current = now;
-
-    const timeLabel = new Date(now).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-
-    setHistoricData(prev => ({
-      labels: [...prev.labels.slice(-11), timeLabel],
-      animals: [...prev.animals.slice(-11), latestDataRef.current.animals],
-      alerts: [...prev.alerts.slice(-11), latestDataRef.current.alerts]
-    }));
-  }, []);
-
-  // Real-time Data Capture using setInterval with cleanup
+  // Optimized chart update interval
   useEffect(() => {
     if (!isLoaded) return;
 
-    chartUpdateRef.current = setInterval(updateChartData, 5000);
+    // Clear existing interval
+    if (chartUpdateRef.current) {
+      clearInterval(chartUpdateRef.current);
+    }
+
+    // Set new interval
+    chartUpdateRef.current = setInterval(() => {
+      // Throttle updates if tab is not visible
+      if (!document.hidden) {
+        updateChartData();
+      }
+    }, CHART_UPDATE_INTERVAL);
 
     return () => {
       if (chartUpdateRef.current) {
         clearInterval(chartUpdateRef.current);
+        chartUpdateRef.current = null;
       }
     };
   }, [isLoaded, updateChartData]);
 
+  // Handle visibility change to pause/resume updates
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      setIsChartPaused(document.hidden);
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+  }, []);
+
+  // Simulate initial loading with performance tracking
+  useEffect(() => {
+    const startTime = performance.now();
+    const timer = setTimeout(() => {
+      const loadTime = performance.now() - startTime;
+      if (import.meta.env.DEV && import.meta.env.MODE === 'development') {
+        console.log(`Dashboard loaded in ${loadTime.toFixed(2)}ms`);
+      }
+      setIsLoaded(true);
+      renderCountRef.current = 0;
+    }, 800);
+    return () => clearTimeout(timer);
+  }, []);
+
+  // Track render performance
+  useEffect(() => {
+    renderCountRef.current += 1;
+    if (import.meta.env.DEV && import.meta.env.MODE === 'development' && renderCountRef.current % 100 === 0) {
+      console.warn(`Dashboard rendered ${renderCountRef.current} times - check for performance issues`);
+    }
+  });
+
+  // Memoized chart data to prevent unnecessary re-renders
   const chartData = useMemo(() => ({
     labels: historicData.labels,
     datasets: [
@@ -218,9 +382,79 @@ export default function Dashboard() {
     ],
   }), [historicData]);
 
+  // Memoized chart options
+  const chartOptions = useMemo<ChartOptions<'line'>>(() => {
+    const chartAnnotations = simulationStartLabel
+      ? {
+        line1: {
+          type: 'line' as const,
+          scaleID: 'x',
+          value: simulationStartLabel,
+          borderColor: '#3b82f6',
+          borderWidth: 2,
+          borderDash: [5, 5],
+          label: {
+            display: true,
+            content: 'Démarrage simulation',
+            position: 'start' as const,
+            backgroundColor: 'rgba(59, 130, 246, 0.8)',
+            color: '#fff',
+            font: {
+              size: 10,
+              weight: 'bold' as const,
+            }
+          }
+        }
+      }
+      : undefined;
+
+    const annotations = import.meta.env.DEV ? chartAnnotations : {};
+
+    return {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: { mode: 'index' as const, intersect: false },
+      animation: {
+        duration: isChartPaused ? 0 : 300, // Disable animations when paused
+      },
+      plugins: {
+        legend: { display: false },
+        annotation: { annotations },
+        tooltip: {
+          backgroundColor: '#111827',
+          padding: 12,
+          cornerRadius: 12,
+          titleFont: { weight: 'bold' as const, size: 12 },
+          bodyFont: { size: 11 },
+        }
+      },
+      scales: {
+        y: {
+          display: false,
+          position: 'left' as const,
+        },
+        y1: {
+          display: false,
+          position: 'right' as const,
+          grid: { drawOnChartArea: false },
+        },
+        x: {
+          grid: { display: false },
+          ticks: {
+            font: { size: 9, weight: 'bold' as const },
+            color: '#9ca3af',
+            maxRotation: 0,
+            autoSkip: true,
+            maxTicksLimit: 6
+          }
+        }
+      }
+    };
+  }, [isChartPaused, simulationStartLabel]);
+
   if (!isLoaded) {
     return (
-      <div className="mx-auto max-w-7xl space-y-6 p-4 md:p-0">
+      <div className="space-y-6 max-w-7xl mx-auto p-4 md:p-0">
         <div className="flex justify-between items-center">
           <div className="space-y-2">
             <div className="h-8 w-48 bg-gray-200 dark:bg-gray-800 rounded-lg animate-pulse" />
@@ -239,135 +473,214 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="mx-auto max-w-7xl space-y-6 animate-fade-in p-4 md:p-0">
-      <header className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
-        <div className="max-w-2xl">
-          <p className="text-[10px] uppercase tracking-[0.18em] text-[var(--text-muted)]">Vue d'ensemble</p>
-          <h1 className="mt-1 text-[24px] font-medium leading-tight text-[var(--text-primary)]">Tableau de bord intelligent</h1>
-          <p className="mt-1 text-[14px] text-[var(--text-secondary)]">Monitoring agricole sobre, lisible et centré sur l'essentiel.</p>
+    <div className="space-y-6 max-w-7xl mx-auto animate-fade-in p-4 md:p-0">
+      {/* SaaS Styled Header */}
+      <header className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <h1 className="title-lg text-gray-900 dark:text-white tracking-tight">Tableau de bord intelligent</h1>
+          <p className="body-md text-gray-500 dark:text-gray-400">
+            Monitoring industriel de l'exploitation.
+            {renderCountRef.current > 50 && (
+              <span className="ml-2 text-amber-500">⚠️ Performance mode</span>
+            )}
+          </p>
         </div>
 
-        {isDev && (
+        <div className="flex items-center gap-3">
           <Button
-            onClick={toggleSimulation}
-            variant={isSimulation ? 'primary' : 'secondary'}
-            className={`inline-flex items-center gap-2 px-4 py-2 text-[12px] ${isSimulation
-              ? 'border border-[var(--brand-primary)] bg-[var(--brand-light)] text-[var(--brand-dark)]'
-              : 'border border-[var(--card-border)] bg-white text-[var(--text-secondary)] hover:border-[#c8dfd6]'
-              }`}
+            onClick={resetLayout}
+            variant="ghost"
+            className="px-3 py-2 rounded-xl label-xs text-gray-400 hover:text-primary transition-colors flex items-center gap-2"
           >
-            <Radio className="h-3.5 w-3.5" />
-            {isSimulation ? 'Simulation' : 'Temps réel'}
+            <RotateCcw className="w-3.5 h-3.5" />
+            Réinitialiser l'ordre
           </Button>
-        )}
+
+          <Button
+            onClick={() => setIsChartPaused(!isChartPaused)}
+            variant={isChartPaused ? 'secondary' : 'ghost'}
+            className="px-3 py-2 rounded-xl label-xs"
+          >
+            {isChartPaused ? '▶️' : '⏸️'} {isChartPaused ? 'Reprendre' : 'Pause'}
+          </Button>
+
+          <div className="flex items-center gap-2 bg-white dark:bg-card-dark px-4 py-2 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm">
+            <LiveBadge isConnected={isConnected} isOfflineData={isOfflineData} />
+            <span className="label-xs">
+              {isConnected ? 'MQTT connecté' : isOfflineData ? 'Mode hors-ligne' : 'Passerelle hors-ligne'}
+            </span>
+          </div>
+        </div>
       </header>
 
-      {/* Main Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-5 gap-4 md:gap-6">
-        <aside className="lg:col-span-1">
-          <WeatherWidget />
-        </aside>
+      {/* Critical Alerts Banner */}
+      {criticalAlerts.length > 0 && (
+        <div className="bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/30 rounded-xl p-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <ShieldAlert className="w-5 h-5 text-red-600 dark:text-red-400 flex-shrink-0" />
+              <span className="font-semibold text-red-800 dark:text-red-200">
+                {criticalAlerts.length} alerte{criticalAlerts.length > 1 ? 's' : ''} critique{criticalAlerts.length > 1 ? 's' : ''} nécessite{criticalAlerts.length > 1 ? 'nt' : ''} votre attention
+              </span>
+            </div>
+            <Button
+              onClick={() => navigate('/alerts?filter=critical')}
+              className="px-4 py-2 bg-red-600 hover:bg-red-700 border-transparent text-white rounded-lg text-sm font-medium transition-colors shadow-sm whitespace-nowrap"
+            >
+              Voir les {criticalAlerts.length} alertes &rarr;
+            </Button>
+          </div>
+        </div>
+      )}
 
-        <section className="lg:col-span-4 grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-6">
-          {layout.map((id) => (
-            <React.Fragment key={id}>
-              {id === 'total' && (
-                <KpiCard
-                  title="Total"
-                  value={animalsList.length}
-                  icon={<Activity />}
-                  color="blue"
-                  trend={animalsList.length > 0 ? `${animalsList.length} actifs` : 'Attente...'}
-                  live
-                />
-              )}
-              {id === 'active' && (
-                <KpiCard
-                  title="En ligne"
-                  value={kpis.totalActive}
-                  icon={<Cpu />}
-                  color="green"
-                  live
-                />
-              )}
-              {id === 'alerts' && (
-                <KpiCard
-                  title="Alertes"
-                  value={unreadCount}
-                  icon={<Bell />}
-                  color="amber"
-                  isAlert={unreadCount > 0}
-                  trend={`${criticalAlertsCount} critiques`}
-                />
-              )}
-              {id === 'outOfZone' && (
-                <KpiCard
-                  title="Hors Zone"
-                  value={kpis.outOfZone}
-                  icon={<ShieldAlert />}
-                  color="red"
-                  isAlert={kpis.outOfZone > 0}
-                />
-              )}
-            </React.Fragment>
-          ))}
-        </section>
-      </div>
+      {/* KPI Row */}
+      <section>
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCenter}
+          onDragEnd={handleDragEnd}
+        >
+          <SortableContext
+            items={layout}
+            strategy={rectSortingStrategy}
+          >
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5 mb-4">
+              {layout.map((id) => (
+                <SortableKpiItem key={id} id={id}>
+                  {id === 'total' && (
+                    <KpiCard
+                      title="Total troupeau"
+                      value={animalsList.length}
+                      icon={<Activity />}
+                      color="blue"
+                      source="live"
+                      trend={animalsList.length > 0 ? `${animalsList.length} colliers actifs` : 'En attente...'}
+                      live
+                    />
+                  )}
+                  {id === 'active' && (
+                    <KpiCard
+                      title="En ligne"
+                      value={onlineCount}
+                      icon={<Cpu />}
+                      color="green"
+                      source="live"
+                      live
+                    />
+                  )}
+                  {id === 'alerts' && (
+                    <KpiCard
+                      title="Alertes"
+                      value={unreadCount}
+                      icon={<Bell />}
+                      color="amber"
+                      source="live"
+                      isAlert={unreadCount > 0}
+                      trend={`${criticalAlerts.length} critiques`}
+                    />
+                  )}
+                  {id === 'outOfZone' && (
+                    <KpiCard
+                      title="Hors Zone"
+                      value={outOfZoneCount}
+                      icon={<ShieldAlert />}
+                      color="red"
+                      source="derived"
+                      isAlert={outOfZoneCount > 0}
+                    />
+                  )}
+                </SortableKpiItem>
+              ))}
+            </div>
+          </SortableContext>
+        </DndContext>
+      </section>
 
       {/* Secondary Metrics */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 md:gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5 mb-4">
         <MiniKpi
           icon={<Battery className="text-amber-500" />}
-          label="Batterie"
+          label="Niveau batterie"
           value={avgBatteryValue}
-          sub={`${kpis.lowBattery} critiques`}
+          sub={`${lowBatteryDevices.length} critiques (<${BATTERY_LOW_THRESHOLD}%)`}
+          isAlert={lowBatteryDevices.length > 0}
+          accentColor="#EF9F27"
+          source="live"
         />
         <MiniKpi
           icon={<Thermometer className="text-orange-500" />}
-          label="Santé"
+          label="Santé troupeau"
           value={avgTemperature}
-          sub="Temp. moy."
+          sub="Température moyenne"
+          accentColor="#1D9E75"
+          source="derived"
         />
         <MiniKpi
           icon={<Gauge className="text-blue-500" />}
-          label="Charge"
+          label="Charge ingestion"
           value={historicData?.animals?.length > 0
             ? `${((historicData.animals[historicData.animals.length - 1] || 0) / 2).toFixed(0)}%`
-            : "0%"}
-          sub="Télémétrie"
+            : (kpis && typeof (kpis as any).ingestionRate === 'number' ? `${Math.round((kpis as any).ingestionRate)}%` : 'N/A — capteur non connecté')}
+          sub="Flux de télémétrie"
+          accentColor="#1D9E75"
+          source="derived"
         />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6">
+      {/* Quick Overview */}
+      <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_300px] gap-3.5 mb-4 items-start">
+        <section className="bg-white dark:bg-card-dark p-4 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800 flex flex-col gap-3">
+          <h3 className="title-sm text-gray-900 dark:text-white flex items-center gap-2">
+            <MapPin className="w-4 h-4 text-primary" /> Aperçu géographique en direct
+          </h3>
+          <MiniMapPreview
+            animals={mapPreviewAnimals}
+            geofence={primaryGeofence}
+            onExpand={() => navigate('/map')}
+          />
+        </section>
+
+        <aside className="w-full">
+          <WeatherWidget />
+        </aside>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Activity Chart */}
-        <div className="flex flex-col rounded-[10px] border border-[var(--card-border)] bg-white p-4 md:p-6 dark:bg-[var(--card-bg)]">
-          <div className="mb-6 flex items-center justify-between md:mb-8">
-            <h3 className="flex items-center gap-2 text-[14px] font-medium text-[var(--text-primary)]">
-              <TrendingUp className="h-4 w-4 text-[var(--brand-primary)]" /> Activité
+        <div className="lg:col-span-2 bg-white dark:bg-card-dark p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800 flex flex-col">
+          <div className="flex items-center justify-between mb-8">
+            <h3 className="title-sm text-gray-900 dark:text-white flex items-center gap-2">
+              <TrendingUp className="w-4 h-4 text-primary" /> Métriques d'activité
             </h3>
-            <span className="text-[11px] text-[var(--text-muted)]">Mise à jour auto</span>
+            <div className="flex items-center gap-2">
+              <span className="label-xs">
+                {isChartPaused ? 'En pause' : 'Mise à jour automatique'}
+              </span>
+            </div>
           </div>
-          <div className="h-[200px] md:h-[300px]">
+          <div className="pt-2 h-[180px]">
             {chartData && chartData.labels?.length > 0 ? (
-              <MemoizedChart options={{ ...chartOptions, maintainAspectRatio: false }} chartData={chartData} />
+              <Line options={chartOptions} data={chartData} />
             ) : (
-              <div className="flex h-full items-center justify-center text-[var(--text-muted)]">Initialisation...</div>
+              <div className="h-full flex items-center justify-center text-gray-400">
+                Initialisation du flux...
+              </div>
             )}
           </div>
         </div>
 
         {/* Alerts Feed */}
-        <div className="flex flex-col rounded-[10px] border border-[var(--card-border)] bg-white p-0 dark:bg-[var(--card-bg)]">
-          <div className="flex items-center justify-between border-b border-[var(--card-border)] px-4 py-3 md:px-5">
-            <h3 className="flex items-center gap-2 text-[14px] font-medium text-[var(--text-primary)]">
-              <Bell className="h-4 w-4 text-[var(--warning)]" /> Flux d'alertes
+        <div className="bg-white dark:bg-card-dark p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800 flex flex-col">
+          <div className="flex items-center justify-between mb-8">
+            <h3 className="title-sm text-gray-900 dark:text-white flex items-center gap-2">
+              <Bell className="w-4 h-4 text-amber-500" /> Flux d'alertes
             </h3>
-            <span className="text-[11px] text-[var(--text-muted)]">
+            <span className="bg-[#f5f4f0] border border-[#e8e6e0] text-[#888] text-[11px] px-2 py-0.5 rounded-full">
               {unreadCount} nouvelles
             </span>
           </div>
 
-          <div className="flex-1 space-y-0 overflow-y-auto max-h-[400px]">
+          <div className="space-y-3 max-h-[400px] overflow-y-auto custom-scrollbar flex-1">
             {alerts.length === 0 ? (
               <EmptyAlerts />
             ) : (
@@ -383,40 +696,20 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* ── At-Risk Animals Priority List ── */}
       <div className="bg-white dark:bg-card-dark rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm overflow-hidden">
-        {/* Section header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-gray-50 dark:border-gray-800">
           <h3 className="title-sm text-gray-900 dark:text-white flex items-center gap-2">
             <AlertTriangle className="w-4 h-4 text-red-500" />
             Animaux à risque
           </h3>
-          <div className="flex items-center gap-2">
-            {atRiskAnimalList.filter(a =>
-              (a.battery ?? 100) < 15 ||
-              (a.temp ?? 38) > 39.5 ||
-              a.geofence_exit ||
-              (a.inactivity_hours ?? 0) > 2
-            ).length > 0 && (
-                <span className="bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400 label-xs px-2.5 py-0.5 rounded-full border border-red-100 dark:border-red-500/20 font-semibold">
-                  {atRiskAnimalList.filter(a =>
-                    (a.battery ?? 100) < 15 ||
-                    (a.temp ?? 38) > 39.5 ||
-                    a.geofence_exit ||
-                    (a.inactivity_hours ?? 0) > 2
-                  ).length} alertes
-                </span>
-              )}
-            <button
-              onClick={() => navigate('/map')}
-              className="label-xs text-primary hover:underline cursor-pointer"
-            >
-              Voir carte →
-            </button>
-          </div>
+          <button
+            onClick={() => navigate('/map')}
+            className="label-xs text-primary hover:underline cursor-pointer"
+          >
+            Voir carte →
+          </button>
         </div>
 
-        {/* Widget (no card wrapper — already inside one) */}
         <AtRiskAnimals
           animals={atRiskAnimalList}
           onViewProfile={(id) => navigate(`/animals/${id}`)}
@@ -428,31 +721,79 @@ export default function Dashboard() {
   );
 }
 
-// --- Sub-components ---
+// --- Sortable KPI Wrapper ---
 
-function KpiCard({ title, value, icon, color, trend, isAlert, live }: any) {
-  const colors: Record<string, string> = {
-    blue: 'bg-[#eaf2ff] text-[#2050a8]',
-    green: 'bg-[var(--success-bg)] text-[var(--success)]',
-    amber: 'bg-[var(--warning-bg)] text-[var(--warning)]',
-    red: 'bg-[var(--danger-bg)] text-[var(--danger)]',
+function SortableKpiItem({ id, children }: { id: string; children: React.ReactNode }) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging
+  } = useSortable({ id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    zIndex: isDragging ? 50 : undefined,
+    opacity: isDragging ? 0.5 : 1,
   };
 
   return (
-    <div className={`rounded-[10px] border bg-white p-4 transition-colors dark:bg-[var(--card-bg)] ${isAlert ? 'border-[var(--danger)]' : 'border-[var(--card-border)] hover:border-[#c8dfd6]'
+    <div ref={setNodeRef} style={style} className="relative group">
+      <div
+        {...attributes}
+        {...listeners}
+        className="absolute top-2 left-2 p-1 text-gray-300 hover:text-primary opacity-0 group-hover:opacity-100 transition-opacity cursor-grab active:cursor-grabbing z-20"
+        title="Faire glisser pour réorganiser"
+      >
+        <GripVertical size={16} />
+      </div>
+      {children}
+    </div>
+  );
+}
+
+// --- Optimized Sub-components ---
+
+interface KpiCardProps {
+  title: string;
+  value: number;
+  icon: React.ReactNode;
+  color: string;
+  trend?: string;
+  isAlert?: boolean;
+  live?: boolean;
+  source?: DataSource;
+}
+
+function KpiCard({ title, value, icon, color, trend, isAlert, live, source }: KpiCardProps) {
+  const colors: Record<string, string> = {
+    blue: 'bg-blue-50/50 dark:bg-blue-500/5 text-blue-600',
+    green: 'bg-green-50/50 dark:bg-green-500/5 text-green-600',
+    amber: 'bg-amber-50/50 dark:bg-amber-500/5 text-amber-600',
+    red: 'bg-red-50/50 dark:bg-red-500/5 text-red-600',
+  };
+
+  return (
+    <div className={`bg-white dark:bg-card-dark p-4 md:p-5 rounded-2xl shadow-sm border transition-all ${isAlert ? 'border-red-200 dark:border-red-500/30 ring-2 ring-red-500/10' : 'border-gray-100 dark:border-gray-800'
       }`}>
-      <div className="mb-4 flex items-start justify-between">
-        <p className="text-[11px] font-medium uppercase tracking-[0.05em] text-[var(--text-muted)]">{title}</p>
-        <div className={`rounded-[8px] border border-[var(--card-border)] p-2 ${colors[color] || 'bg-[var(--brand-light)] text-[var(--brand-dark)]'}`}>
+      <div className="flex justify-between items-start mb-4">
+        <div className="label-xs ml-6 flex items-center gap-2"> {/* Space for drag handle */}
+          <span>{title}</span>
+          {source && <DataBadge source={source} />}
+        </div>
+        <div className={`p-2.5 rounded-xl ${colors[color] || 'bg-gray-50'}`}>
           {React.cloneElement(icon as React.ReactElement, { size: 18 })}
         </div>
       </div>
       <div className="flex items-baseline gap-2">
-        <h4 className="text-[28px] font-medium leading-none tabular-nums text-[var(--text-primary)]">{value}</h4>
+        <h4 className="value-xl text-gray-900 dark:text-white tabular-nums">{value}</h4>
         {live && <span className="flex h-2 w-2 rounded-full bg-green-500 animate-pulse" />}
       </div>
       {trend && (
-        <p className={`mt-2 text-[11px] text-[var(--text-muted)] ${isAlert ? 'text-[var(--danger)]' : ''}`}>
+        <p className={`label-xs mt-2 ${isAlert ? 'text-red-500' : ''}`}>
           {trend}
         </p>
       )}
@@ -460,82 +801,77 @@ function KpiCard({ title, value, icon, color, trend, isAlert, live }: any) {
   );
 }
 
-function MiniKpi({ icon, label, value, sub }: any) {
+interface MiniKpiProps {
+  icon: React.ReactNode;
+  label: string;
+  value: string;
+  sub: string;
+  isAlert?: boolean;
+  accentColor?: string;
+  source?: DataSource;
+}
+
+function MiniKpi({ icon, label, value, sub, isAlert, accentColor = '#e8e6e0', source }: MiniKpiProps) {
   return (
-    <div className="flex items-center gap-4 rounded-[10px] border border-[var(--card-border)] bg-white p-4 transition-colors dark:bg-[var(--card-bg)]">
-      <div className="rounded-[8px] border border-[var(--card-border)] bg-[var(--brand-light)] p-2.5 text-[var(--brand-dark)]">
+    <div
+      className="bg-white dark:bg-card-dark rounded-[8px] border transition-all flex items-center gap-3.5"
+      style={{
+        border: '0.5px solid #e8e6e0',
+        borderLeft: `3px solid ${accentColor}`,
+        padding: '14px 16px'
+      }}
+    >
+      <div className={`p-2.5 rounded-xl ${isAlert ? 'bg-amber-50 dark:bg-amber-500/10' : 'bg-gray-50 dark:bg-gray-800/50'
+        }`}>
         {React.cloneElement(icon as React.ReactElement, { size: 16 })}
       </div>
       <div className="min-w-0">
-        <p className="text-[11px] uppercase tracking-[0.05em] text-[var(--text-muted)]">{label}</p>
-        <p className="truncate text-[16px] font-medium text-[var(--text-primary)]">{value}</p>
-        <p className="truncate text-[11px] text-[var(--text-muted)]">{sub}</p>
+        <div className="mb-0.5 flex items-center gap-2">
+          <p className="label-xs">{label}</p>
+          {source && <DataBadge source={source} />}
+        </div>
+        <p className="title-md text-gray-900 dark:text-white truncate">{value}</p>
+        <p className="label-xs truncate">{sub}</p>
       </div>
     </div>
   );
 }
 
-function AlertItem({ alert, onRead }: any) {
-  const severity = alert.severity === 'CRITICAL' ? 'critical' : alert.severity === 'WARNING' ? 'warning' : 'info';
-  const detail = alert.message || `${alert.type.replace(/_/g, ' ').toLowerCase()}.`;
-
+function AlertItem({ alert, onRead }: { alert: IoTAlert; onRead: (id: string | number) => void }) {
   return (
-    <AlertRow
-      animal={alert.animal_name}
-      detail={detail}
-      time={new Date(alert.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-      severity={severity}
-      unread={!alert.read}
+    <div
+      className={`p-3 rounded-xl border transition-all flex gap-3 cursor-pointer group ${alert.read
+        ? 'bg-gray-50/50 dark:bg-gray-800/20 border-gray-100 dark:border-gray-800 opacity-60'
+        : 'bg-white dark:bg-card-dark border-gray-100 dark:border-gray-800 hover:border-primary/30'
+        }`}
       onClick={() => onRead(alert.id)}
-    />
+    >
+      <div className={`p-2 rounded-lg flex-shrink-0 self-center ${alert.severity === 'CRITICAL' ? 'bg-red-50 dark:bg-red-500/10 text-red-600' : 'bg-amber-50 dark:bg-amber-500/10 text-amber-600'
+        }`}>
+        <ShieldAlert size={14} />
+      </div>
+      <div className="flex-1 min-w-0">
+        <div className="flex justify-between items-center mb-0.5">
+          <p className="title-sm text-gray-900 dark:text-white truncate">{alert.animal_name}</p>
+          <span className="label-xs">{new Date(alert.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+        </div>
+        <p className="label-xs truncate">
+          {alert.type.replace('_', ' ').toLowerCase()}
+        </p>
+      </div>
+      {!alert.read && <div className="w-1.5 h-1.5 rounded-full bg-primary self-center" />}
+    </div>
   );
 }
 
 function EmptyAlerts() {
   return (
-    <div className="flex flex-col items-center px-4 py-12 text-center">
-      <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-[10px] border border-[var(--card-border)] bg-[var(--success-bg)] text-[var(--success)]">
-        <ShieldAlert size={22} />
+    <div className="text-center py-12 flex flex-col items-center">
+      <div className="w-12 h-12 bg-green-50 dark:bg-green-500/5 rounded-full flex items-center justify-center mb-4">
+        <ShieldAlert className="text-green-500/50" size={24} />
       </div>
-      <p className="text-[12px] font-medium text-[var(--text-primary)]">Opérations nominales</p>
-      <p className="mt-1 text-[11px] text-[var(--text-muted)]">Aucune alerte active à signaler.</p>
+      <p className="label-sm font-black text-gray-400">Opérations nominales</p>
+      <p className="label-xs mt-1">Aucune alerte active à signaler.</p>
     </div>
   );
 }
-
-const chartOptions = {
-  responsive: true,
-  maintainAspectRatio: false,
-  interaction: { mode: 'index' as const, intersect: false },
-  plugins: {
-    legend: { display: false },
-    tooltip: {
-      backgroundColor: '#111827',
-      padding: 12,
-      cornerRadius: 12,
-      titleFont: { weight: '900', size: 12 },
-      bodyFont: { size: 11 },
-    }
-  },
-  scales: {
-    y: {
-      display: false,
-      position: 'left' as const,
-    },
-    y1: {
-      display: false,
-      position: 'right' as const,
-      grid: { drawOnChartArea: false },
-    },
-    x: {
-      grid: { display: false },
-      ticks: {
-        font: { size: 9, weight: '700' },
-        color: '#9ca3af',
-        maxRotation: 0,
-        autoSkip: true,
-        maxTicksLimit: 6
-      }
-    }
-  }
-};

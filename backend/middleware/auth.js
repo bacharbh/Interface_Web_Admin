@@ -1,6 +1,7 @@
 import jwt from 'jsonwebtoken';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'smart-shepherd-dev-secret';
+const JWT_SECRET = process.env.JWT_SECRET;
+if (!JWT_SECRET) throw new Error('JWT_SECRET env variable is required');
 
 const rolePermissions = {
     admin: new Set(['*', 'system:write', 'system:read', 'animal:write', 'animal:read', 'agenda:write', 'agenda:read', 'geofence:write', 'geofence:read']),

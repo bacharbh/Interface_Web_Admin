@@ -1,0 +1,126 @@
+C:\Users\bacha\Desktop\Interface_Web_Admin\src\pages\Admin\AISettings.tsx:364:Chaque modification est écrite dans le store Zustand et dans localStorage immédiatement.
+C:\Users\bacha\Desktop\Interface_Web_Admin\src\pages\Admin\LabellingPage.tsx:78:// Mock data fetching
+C:\Users\bacha\Desktop\Interface_Web_Admin\src\pages\Admin\LabellingPage.tsx:79:const mockAnimals: FlaggedAnimal[] = [
+C:\Users\bacha\Desktop\Interface_Web_Admin\src\pages\Admin\LabellingPage.tsx:84:setFlaggedAnimals(mockAnimals);
+C:\Users\bacha\Desktop\Interface_Web_Admin\src\pages\Admin\LabellingPage.tsx:85:setSelectedAnimal(mockAnimals[0]);
+C:\Users\bacha\Desktop\Interface_Web_Admin\src\pages\Admin\LabellingPage.tsx:94:data: Array.from({ length: 48 }, () => 38.5 + Math.random() * 2),
+C:\Users\bacha\Desktop\Interface_Web_Admin\src\pages\Admin\LabellingPage.tsx:102:data: Array.from({ length: 48 }, () => 70 + Math.random() * 40),
+C:\Users\bacha\Desktop\Interface_Web_Admin\src\pages\Alerts\Alerts.tsx:40:id: alertData?.id || `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+C:\Users\bacha\Desktop\Interface_Web_Admin\src\pages\Animals\CompareView\USAGE_EXAMPLES.tsx:95:console.log('Animal IDs:', animalIds);
+C:\Users\bacha\Desktop\Interface_Web_Admin\src\pages\Animals\CompareView\USAGE_EXAMPLES.tsx:98:console.log('Animals:', animals);
+C:\Users\bacha\Desktop\Interface_Web_Admin\src\pages\Animals\CompareView\USAGE_EXAMPLES.tsx:144:data: [70, 75, 80, 85, 90], // Mock data
+C:\Users\bacha\Desktop\Interface_Web_Admin\src\pages\Animals\CompareView\USAGE_EXAMPLES.tsx:335:// Fallback to mock
+C:\Users\bacha\Desktop\Interface_Web_Admin\src\pages\Animals\CompareView\USAGE_EXAMPLES.tsx:403:console.log(buildCompareURL(['SHEEP_001', 'SHEEP_002']));
+C:\Users\bacha\Desktop\Interface_Web_Admin\src\pages\Animals\CompareView\USAGE_EXAMPLES.tsx:406:console.log(parseCompareURL('/compare?ids=SHEEP_001,SHEEP_002,SHEEP_003'));
+C:\Users\bacha\Desktop\Interface_Web_Admin\src\pages\Animals\CompareView\USAGE_EXAMPLES.tsx:448:console.log(getColorStatus(85, 'bpm'));
+C:\Users\bacha\Desktop\Interface_Web_Admin\src\pages\Animals\CompareView\USAGE_EXAMPLES.tsx:451:console.log(getColorStatus(140, 'bpm'));
+C:\Users\bacha\Desktop\Interface_Web_Admin\src\pages\Animals\CompareView\USAGE_EXAMPLES.tsx:454:console.log(getColorStatus(200, 'bpm'));
+C:\Users\bacha\Desktop\Interface_Web_Admin\src\pages\Animals\CompareView\USAGE_EXAMPLES.tsx:458:// EXEMPLE 9: Données Mock pour Testing
+C:\Users\bacha\Desktop\Interface_Web_Admin\src\pages\Animals\CompareView\USAGE_EXAMPLES.tsx:461:const mockAnimalsForComparison = [
+C:\Users\bacha\Desktop\Interface_Web_Admin\src\pages\Animals\CompareView\USAGE_EXAMPLES.tsx:494:// Mock history for chart
+C:\Users\bacha\Desktop\Interface_Web_Admin\src\pages\Animals\CompareView\USAGE_EXAMPLES.tsx:495:const mockHistory = Array.from({ length: 96 }, (_, i) => ({
+C:\Users\bacha\Desktop\Interface_Web_Admin\src\pages\Animals\CompareView\USAGE_EXAMPLES.tsx:497:value: Math.random() * 40 + 70,
+C:\Users\bacha\Desktop\Interface_Web_Admin\src\pages\Animals\CompareView\USAGE_EXAMPLES.tsx:534:export { buildCompareURL, parseCompareURL, getColorStatus, mockAnimalsForComparison };
+C:\Users\bacha\Desktop\Interface_Web_Admin\src\pages\Animals\components\MiniGPSMap.tsx:21:// Mock data: last 24 hours
+C:\Users\bacha\Desktop\Interface_Web_Admin\src\pages\Animals\unified\AnimalDetailUnified.tsx:19:const buildMockTimeline = (animal: NormalizedAnimal): AnimalTimelineEntry[] => [
+C:\Users\bacha\Desktop\Interface_Web_Admin\src\pages\Animals\unified\AnimalDetailUnified.tsx:44:const buildMockDocuments = (animal: NormalizedAnimal): AnimalDocumentEntry[] => [
+C:\Users\bacha\Desktop\Interface_Web_Admin\src\pages\Animals\unified\AnimalDetailUnified.tsx:106:const timeline = useMemo(() => (animal ? buildMockTimeline(animal) : []), [animal]);
+C:\Users\bacha\Desktop\Interface_Web_Admin\src\pages\Animals\unified\AnimalDetailUnified.tsx:107:const documents = useMemo(() => (animal ? buildMockDocuments(animal) : []), [animal]);
+C:\Users\bacha\Desktop\Interface_Web_Admin\src\pages\Animals\AnimalProfile.tsx:114:static getDerivedStateFromError() {
+C:\Users\bacha\Desktop\Interface_Web_Admin\src\pages\Animals\ARCHITECTURE.ts:214:+- Liste événements médicaux (5 mock events)
+C:\Users\bacha\Desktop\Interface_Web_Admin\src\pages\Animals\ARCHITECTURE.ts:217:+- Liste fichiers (2 mock docs)
+C:\Users\bacha\Desktop\Interface_Web_Admin\src\pages\Animals\ARCHITECTURE.ts:437:+- Mock data affiche
+C:\Users\bacha\Desktop\Interface_Web_Admin\src\pages\Animals\ARCHITECTURE.ts:491:// ?? MOCK DATA STATISTICS
+C:\Users\bacha\Desktop\Interface_Web_Admin\src\pages\Animals\ARCHITECTURE.ts:532:? Mock data affiche correctement
+C:\Users\bacha\Desktop\Interface_Web_Admin\src\pages\Animals\TEST_SUITE.ts:13:console.log('%c? TEST 1: Route /animal/:id', 'color: green; font-weight: bold');
+C:\Users\bacha\Desktop\Interface_Web_Admin\src\pages\Animals\TEST_SUITE.ts:20:console.log('? Route accessible:', currentPath);
+C:\Users\bacha\Desktop\Interface_Web_Admin\src\pages\Animals\TEST_SUITE.ts:31:console.log('%c? TEST 2: Vérifier les imports', 'color: blue; font-weight: bold');
+C:\Users\bacha\Desktop\Interface_Web_Admin\src\pages\Animals\TEST_SUITE.ts:40:imports.forEach(imp => console.log('  ?', imp));
+C:\Users\bacha\Desktop\Interface_Web_Admin\src\pages\Animals\TEST_SUITE.ts:48:console.log('%c? TEST 3: Dépendances', 'color: purple; font-weight: bold');
+C:\Users\bacha\Desktop\Interface_Web_Admin\src\pages\Animals\TEST_SUITE.ts:58:console.log(`  ${loaded ? '?' : '??'} ${dep}`);
+C:\Users\bacha\Desktop\Interface_Web_Admin\src\pages\Animals\TEST_SUITE.ts:63:// TEST 4: Mock Animal Data
+C:\Users\bacha\Desktop\Interface_Web_Admin\src\pages\Animals\TEST_SUITE.ts:66:const mockAnimals = [
+C:\Users\bacha\Desktop\Interface_Web_Admin\src\pages\Animals\TEST_SUITE.ts:116:console.log('%c? TEST 5: Coloration VitalBox', 'color: orange; font-weight: bold');
+C:\Users\bacha\Desktop\Interface_Web_Admin\src\pages\Animals\TEST_SUITE.ts:133:console.log('Bella (Normal):');
+C:\Users\bacha\Desktop\Interface_Web_Admin\src\pages\Animals\TEST_SUITE.ts:134:console.log('  BPM 85:', testValue(85, ranges.heartRate));
+C:\Users\bacha\Desktop\Interface_Web_Admin\src\pages\Animals\TEST_SUITE.ts:135:console.log('  Temp 38.5:', testValue(38.5, ranges.temperature));
+C:\Users\bacha\Desktop\Interface_Web_Admin\src\pages\Animals\TEST_SUITE.ts:138:console.log('Luna (Warning):');
+C:\Users\bacha\Desktop\Interface_Web_Admin\src\pages\Animals\TEST_SUITE.ts:139:console.log('  BPM 110:', testValue(110, ranges.heartRate));
+C:\Users\bacha\Desktop\Interface_Web_Admin\src\pages\Animals\TEST_SUITE.ts:140:console.log('  Temp 39.2:', testValue(39.2, ranges.temperature));
+C:\Users\bacha\Desktop\Interface_Web_Admin\src\pages\Animals\TEST_SUITE.ts:143:console.log('Max (Critical):');
+C:\Users\bacha\Desktop\Interface_Web_Admin\src\pages\Animals\TEST_SUITE.ts:144:console.log('  BPM 140:', testValue(140, ranges.heartRate));
+C:\Users\bacha\Desktop\Interface_Web_Admin\src\pages\Animals\TEST_SUITE.ts:145:console.log('  Temp 40.1:', testValue(40.1, ranges.temperature));
+C:\Users\bacha\Desktop\Interface_Web_Admin\src\pages\Animals\TEST_SUITE.ts:153:console.log('%c? TEST 6: Avatar généré', 'color: cyan; font-weight: bold');
+C:\Users\bacha\Desktop\Interface_Web_Admin\src\pages\Animals\TEST_SUITE.ts:174:mockAnimals.forEach(animal => {
+C:\Users\bacha\Desktop\Interface_Web_Admin\src\pages\Animals\TEST_SUITE.ts:175:console.log(`${getInitials(animal.name)} (${animal.name}) - ${getAvatarColor(animal.sector)}`);
+C:\Users\bacha\Desktop\Interface_Web_Admin\src\pages\Animals\TEST_SUITE.ts:184:console.log('%c? TEST 7: Vérifier le DOM', 'color: red; font-weight: bold');
+C:\Users\bacha\Desktop\Interface_Web_Admin\src\pages\Animals\TEST_SUITE.ts:197:console.log(`  ${status} ${name}`);
+C:\Users\bacha\Desktop\Interface_Web_Admin\src\pages\Animals\TEST_SUITE.ts:206:console.log('%c? TEST 8: Navigation', 'color: green; font-weight: bold');
+C:\Users\bacha\Desktop\Interface_Web_Admin\src\pages\Animals\TEST_SUITE.ts:208:console.log('Animals disponibles:');
+C:\Users\bacha\Desktop\Interface_Web_Admin\src\pages\Animals\TEST_SUITE.ts:209:mockAnimals.forEach((animal, idx) => {
+C:\Users\bacha\Desktop\Interface_Web_Admin\src\pages\Animals\TEST_SUITE.ts:210:console.log(`  ${idx + 1}. ${animal.name} (${animal.sheepId})`);
+C:\Users\bacha\Desktop\Interface_Web_Admin\src\pages\Animals\TEST_SUITE.ts:213:console.log('\nComments naviguer:');
+C:\Users\bacha\Desktop\Interface_Web_Admin\src\pages\Animals\TEST_SUITE.ts:214:console.log('  navigate("/animal/SHEEP_001")');
+C:\Users\bacha\Desktop\Interface_Web_Admin\src\pages\Animals\TEST_SUITE.ts:215:console.log('  navigate("/animal/SHEEP_002")');
+C:\Users\bacha\Desktop\Interface_Web_Admin\src\pages\Animals\TEST_SUITE.ts:223:console.log('%c? TEST 9: Onglets', 'color: magenta; font-weight: bold');
+C:\Users\bacha\Desktop\Interface_Web_Admin\src\pages\Animals\TEST_SUITE.ts:226:console.log('Onglets disponibles:');
+C:\Users\bacha\Desktop\Interface_Web_Admin\src\pages\Animals\TEST_SUITE.ts:228:console.log(`  ? ${tab}`);
+C:\Users\bacha\Desktop\Interface_Web_Admin\src\pages\Animals\TEST_SUITE.ts:237:console.log('%c? TEST 10: Événements médicaux', 'color: brown; font-weight: bold');
+C:\Users\bacha\Desktop\Interface_Web_Admin\src\pages\Animals\TEST_SUITE.ts:248:console.log(`  ${event.icon} ${event.type}: ${event.title}`);
+C:\Users\bacha\Desktop\Interface_Web_Admin\src\pages\Animals\TEST_SUITE.ts:258:console.log('%c?? SUITE DE TESTS - AnimalProfile.tsx', 'color: #10B981; font-size: 20px; font-weight: bold');
+C:\Users\bacha\Desktop\Interface_Web_Admin\src\pages\Animals\TEST_SUITE.ts:259:console.log('');
+C:\Users\bacha\Desktop\Interface_Web_Admin\src\pages\Animals\TEST_SUITE.ts:262:console.log('');
+C:\Users\bacha\Desktop\Interface_Web_Admin\src\pages\Animals\TEST_SUITE.ts:264:console.log('');
+C:\Users\bacha\Desktop\Interface_Web_Admin\src\pages\Animals\TEST_SUITE.ts:266:console.log('');
+C:\Users\bacha\Desktop\Interface_Web_Admin\src\pages\Animals\TEST_SUITE.ts:268:console.log('');
+C:\Users\bacha\Desktop\Interface_Web_Admin\src\pages\Animals\TEST_SUITE.ts:270:console.log('');
+C:\Users\bacha\Desktop\Interface_Web_Admin\src\pages\Animals\TEST_SUITE.ts:272:console.log('');
+C:\Users\bacha\Desktop\Interface_Web_Admin\src\pages\Animals\TEST_SUITE.ts:274:console.log('');
+C:\Users\bacha\Desktop\Interface_Web_Admin\src\pages\Animals\TEST_SUITE.ts:276:console.log('');
+C:\Users\bacha\Desktop\Interface_Web_Admin\src\pages\Animals\TEST_SUITE.ts:278:console.log('%c? TOUS LES TESTS TERMINÉS', 'color: green; font-size: 16px; font-weight: bold');
+C:\Users\bacha\Desktop\Interface_Web_Admin\src\pages\Animals\TEST_SUITE.ts:285:console.log(`
+C:\Users\bacha\Desktop\Interface_Web_Admin\src\pages\Animals\TEST_SUITE.ts:301:Data Mock Animals:
+C:\Users\bacha\Desktop\Interface_Web_Admin\src\pages\Animals\TEST_SUITE.ts:308:export { mockAnimals, testRoute, testImports, testDependencies };
+C:\Users\bacha\Desktop\Interface_Web_Admin\src\pages\Animals\USAGE_EXAMPLES.tsx:31:// EXEMPLE 2: Données Mock pour tester
+C:\Users\bacha\Desktop\Interface_Web_Admin\src\pages\Animals\USAGE_EXAMPLES.tsx:33:export const MOCK_ANIMAL = {
+C:\Users\bacha\Desktop\Interface_Web_Admin\src\pages\Animals\USAGE_EXAMPLES.tsx:249:console.log('Vitals Update:', data);
+C:\Users\bacha\Desktop\Interface_Web_Admin\src\pages\Animals\USAGE_EXAMPLES.tsx:271:wrapper: createMemoryRouter(['/animal/SHEEP_001'], { animals: [MOCK_ANIMAL] })
+C:\Users\bacha\Desktop\Interface_Web_Admin\src\pages\Animals\VERIFICATION_CHECKLIST.ts:349:console.log('? Checklist de vérification générée');
+C:\Users\bacha\Desktop\Interface_Web_Admin\src\pages\Animals\VERIFICATION_CHECKLIST.ts:350:console.log(generateChecklistReport());
+C:\Users\bacha\Desktop\Interface_Web_Admin\src\pages\Dashboard\Dashboard.tsx:64:id: a.collar_id ?? a.sheepId ?? String(a.id ?? Math.random()),
+C:\Users\bacha\Desktop\Interface_Web_Admin\src\pages\Dashboard\Dashboard.tsx:132:const saved = localStorage.getItem(LAYOUT_KEY);
+C:\Users\bacha\Desktop\Interface_Web_Admin\src\pages\Dashboard\Dashboard_OPTIMIZED.tsx:116:id: animal.collar_id ?? animal.id ?? animal.sheepId ?? String(Math.random()),
+C:\Users\bacha\Desktop\Interface_Web_Admin\src\pages\Dashboard\Dashboard_OPTIMIZED.tsx:250:const saved = localStorage.getItem(LAYOUT_KEY);
+C:\Users\bacha\Desktop\Interface_Web_Admin\src\pages\Dashboard\Dashboard_OPTIMIZED.tsx:258:console.warn('Failed to load layout from localStorage:', error);
+C:\Users\bacha\Desktop\Interface_Web_Admin\src\pages\Dashboard\Dashboard_OPTIMIZED.tsx:264:localStorage.removeItem(LAYOUT_KEY);
+C:\Users\bacha\Desktop\Interface_Web_Admin\src\pages\Dashboard\Dashboard_OPTIMIZED.tsx:276:localStorage.setItem(LAYOUT_KEY, JSON.stringify(newLayout));
+C:\Users\bacha\Desktop\Interface_Web_Admin\src\pages\Dashboard\Dashboard_OPTIMIZED.tsx:339:console.log(`Dashboard loaded in ${loadTime.toFixed(2)}ms`);
+C:\Users\bacha\Desktop\Interface_Web_Admin\src\pages\Map\map.worker.ts:20:console.log("? Worker: Model loaded from IndexedDB");
+C:\Users\bacha\Desktop\Interface_Web_Admin\src\pages\Map\map.worker.ts:22:console.log("?? Worker: No model found, building fresh v2 model...");
+C:\Users\bacha\Desktop\Interface_Web_Admin\src\pages\Map\map.worker.ts:170:id: Date.now() + Math.random(),
+C:\Users\bacha\Desktop\Interface_Web_Admin\src\pages\Map\MapMonitor.tsx:94:return localStorage.getItem('mapFocus') === '1';
+C:\Users\bacha\Desktop\Interface_Web_Admin\src\pages\Map\MapMonitor.tsx:174:console.log("?? User Location Found:", latitude, longitude);
+C:\Users\bacha\Desktop\Interface_Web_Admin\src\pages\Map\MapMonitor.tsx:191:try { localStorage.setItem('mapFocus', '0'); } catch { }
+C:\Users\bacha\Desktop\Interface_Web_Admin\src\pages\Map\MapMonitor.tsx:352:try { localStorage.setItem('mapFocus', next ? '1' : '0'); } catch { }
+C:\Users\bacha\Desktop\Interface_Web_Admin\src\pages\Map\RealTimeMap.tsx:559:console.log('[Map] rendering', processedAnimals.length, 'markers');
+C:\Users\bacha\Desktop\Interface_Web_Admin\src\pages\Map\RealTimeMap.tsx:576:localStorage.setItem('smartShepherdConfig_v2', JSON.stringify(cfg));
+C:\Users\bacha\Desktop\Interface_Web_Admin\src\pages\Settings\Settings.tsx:136:const raw = localStorage.getItem(STORAGE_KEY);
+C:\Users\bacha\Desktop\Interface_Web_Admin\src\pages\Settings\Settings.tsx:158:// Only persist non-secret preferences; broker credentials should not remain readable in localStorage.
+C:\Users\bacha\Desktop\Interface_Web_Admin\src\pages\Settings\Settings.tsx:159:localStorage.setItem(STORAGE_KEY, JSON.stringify(persistedConfig));
+C:\Users\bacha\Desktop\Interface_Web_Admin\src\components\ai\AIInsightsFeed.tsx:59:// Load next events from localStorage (simple integration)
+C:\Users\bacha\Desktop\Interface_Web_Admin\src\components\ai\AIInsightsFeed.tsx:62:const raw = localStorage.getItem('vetEvents_v1');
+C:\Users\bacha\Desktop\Interface_Web_Admin\src\components\ai\AIPredictionDashboard.tsx:765:console.log(`[AIPredictionDashboard] Chargé ${preds.length} prédictions`);
+C:\Users\bacha\Desktop\Interface_Web_Admin\src\components\layout\AppLayout.tsx:9:import { isDevMockUserActive } from '../../utils/authStorage';
+C:\Users\bacha\Desktop\Interface_Web_Admin\src\components\layout\AppLayout.tsx:175:{import.meta.env.DEV && isDevMockUserActive() && <DevBanner />}
+C:\Users\bacha\Desktop\Interface_Web_Admin\src\components\map\MapErrorBoundary.tsx:21:static getDerivedStateFromError(error: Error): MapErrorBoundaryState {
+C:\Users\bacha\Desktop\Interface_Web_Admin\src\components\widgets\AnomalyHeatmap.tsx:64:// Score venant du MQTT/Store (Mocké à 0.1 par défaut, ou aléatoirement 0.9 si l'animal est "SICK")
+C:\Users\bacha\Desktop\Interface_Web_Admin\src\components\DevBanner.tsx:2:import { isDevMockUserActive } from '../utils/authStorage'
+C:\Users\bacha\Desktop\Interface_Web_Admin\src\components\DevBanner.tsx:5:// Only render in dev builds and when mock user is enabled
+C:\Users\bacha\Desktop\Interface_Web_Admin\src\components\DevBanner.tsx:7:if (!isDevMockUserActive()) return null
+C:\Users\bacha\Desktop\Interface_Web_Admin\src\components\DevBanner.tsx:28:DEV MODE - MOCK USER ACTIVE; TOKENS STAY OUT OF LOCALSTORAGE AND THIS BANNER NEVER SHIPS TO PRODUCTION.
+C:\Users\bacha\Desktop\Interface_Web_Admin\src\components\EnhancedDashboard.tsx:228:const newLivePoint = avgHealth + (Math.random() - 0.5) * 10; // Add some variance
+C:\Users\bacha\Desktop\Interface_Web_Admin\src\components\ErrorBoundary.tsx:9:static getDerivedStateFromError(error: Error): State {
+C:\Users\bacha\Desktop\Interface_Web_Admin\src\hooks\useDataRefresh.ts:26:const id = animal.collar_id || animal.id || `device_${Math.random()}`;
+C:\Users\bacha\Desktop\Interface_Web_Admin\src\hooks\useFarmConfig.ts:21:const raw = localStorage.getItem(FARM_CONFIG_STORAGE_KEY);
+C:\Users\bacha\Desktop\Interface_Web_Admin\src\hooks\useIoTStore.ts:54:const raw = localStorage.getItem(AI_SETTINGS_STORAGE_KEY);
+C:\Users\bacha\Desktop\Interface_Web_Admin\src\hooks\useIoTStore.ts:80:localStorage.setItem(AI_SETTINGS_STORAGE_KEY, JSON.stringify(settings));

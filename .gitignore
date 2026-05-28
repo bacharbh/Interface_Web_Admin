@@ -1,0 +1,20 @@
+# Dependencies
+node_modules/
+backend/node_modules/
+
+# Build output
+dist/
+
+# Logs
+*.log
+build_log.txt
+
+# Backups and LaTeX aux files
+*.backup
+*.aux
+
+# Temporary files
+tmp/
+
+# Archives
+*.rar
