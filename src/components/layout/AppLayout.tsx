@@ -168,7 +168,7 @@ const AppLayout: React.FC = () => {
   const breadcrumbs = buildBreadcrumbs(pathname);
 
   return (
-    <div className="flex h-screen w-full overflow-hidden bg-[var(--page-bg)] font-sans transition-colors duration-300 dark:bg-[var(--page-bg-dark)]">
+    <div className="flex h-screen w-full flex-col overflow-hidden bg-[var(--page-bg)] font-sans transition-colors duration-300 dark:bg-[var(--page-bg-dark)]">
       {/* Toast Notifications */}
       <ToastProvider />
 
@@ -177,85 +177,88 @@ const AppLayout: React.FC = () => {
       {/* Global Search Overlay (portal) */}
       <GlobalSearch open={searchOpen} onClose={() => setSearchOpen(false)} />
 
-      {/* Mobile Sidebar Overlay */}
-      {isSidebarOpen && (
-        <div
-          className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40 md:hidden transition-opacity"
-          onClick={() => setIsSidebarOpen(false)}
-        />
-      )}
+      <div className="flex min-h-0 w-full flex-1 overflow-hidden">
 
-      {/* Sidebar */}
-      <div className={`fixed inset-y-0 left-0 z-50 transform ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'} md:relative md:translate-x-0 transition-transform duration-300 ease-in-out`}>
-        <Sidebar onClose={() => setIsSidebarOpen(false)} />
-      </div>
+        {/* Mobile Sidebar Overlay */}
+        {isSidebarOpen && (
+          <div
+            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40 md:hidden transition-opacity"
+            onClick={() => setIsSidebarOpen(false)}
+          />
+        )}
 
-      <div className="flex flex-col flex-1 overflow-hidden w-full">
-        <TopBar
-          title={page.title}
-          subtitle={page.sub}
-          unreadCount={unreadCount}
-          isConnected={isConnected}
-          isOfflineData={isOfflineData}
-          onMenuClick={() => setIsSidebarOpen(true)}
-          onOpenSearch={() => setSearchOpen(true)}
-          onOpenAlerts={() => navigate('/alerts')}
-          installAction={showInstallBtn ? (
-            <Button
-              onClick={handleInstallClick}
-              variant="ghost"
-              size="sm"
-              className="hidden lg:inline-flex items-center gap-2 border border-[var(--card-border)] px-3 py-2 text-[12px] text-[var(--text-secondary)] hover:border-[#c8dfd6] hover:text-[var(--text-primary)]"
-            >
-              <Download size={14} /> Installer l'app
-            </Button>
-          ) : undefined}
-          userName={user?.name || 'Utilisateur'}
-          roleLabel={normalizeRole(user?.role) === 'super_admin' ? 'Super admin' : normalizeRole(user?.role) === 'admin' ? 'Administrateur' : 'Observateur'}
-        />
-
-        <div className="border-b border-[var(--card-border)] bg-white px-4 py-2 text-[11px] text-[var(--text-muted)] dark:bg-[var(--card-bg)] md:px-8">
-          <nav aria-label="Breadcrumb" className="flex items-center gap-2 overflow-hidden">
-            {breadcrumbs.map((crumb, index) => (
-              <React.Fragment key={`${crumb.label}-${index}`}>
-                {index > 0 && <span className="text-[var(--text-muted)]/60">/</span>}
-                {crumb.href && !crumb.current ? (
-                  <Link to={crumb.href} className="truncate font-medium text-[var(--text-secondary)] transition-colors hover:text-[var(--text-primary)]">
-                    {crumb.label}
-                  </Link>
-                ) : (
-                  <span className="truncate font-medium text-[var(--text-primary)]">
-                    {crumb.label}
-                  </span>
-                )}
-              </React.Fragment>
-            ))}
-            <span className="ml-2 rounded-full bg-[var(--brand-light)] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.08em] text-[var(--brand-dark)]">
-              {PILLAR_LABELS[routeMeta.pillar]}
-            </span>
-          </nav>
+        {/* Sidebar */}
+        <div className={`fixed inset-y-0 left-0 z-50 transform ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'} md:relative md:translate-x-0 transition-transform duration-300 ease-in-out`}>
+          <Sidebar onClose={() => setIsSidebarOpen(false)} />
         </div>
 
-        {/* Offline Banner */}
-        <AnimatePresence>
-          {!isOnline && (
-            <motion.div
-              initial={{ height: 0, opacity: 0 }}
-              animate={{ height: 'auto', opacity: 1 }}
-              exit={{ height: 0, opacity: 0 }}
-              className="z-20 flex items-center justify-center gap-3 overflow-hidden border-b border-[var(--card-border)] bg-[var(--warning-bg)] px-4 py-2 text-[11px] font-medium text-[var(--warning)]"
-            >
-              <CloudOff size={14} />
-              <span>Mode hors-ligne — Données du {lastSyncTime}</span>
-              <div className="h-1.5 w-1.5 rounded-full bg-current animate-pulse" />
-            </motion.div>
-          )}
-        </AnimatePresence>
+        <div className="flex flex-col flex-1 overflow-hidden w-full">
+          <TopBar
+            title={page.title}
+            subtitle={page.sub}
+            unreadCount={unreadCount}
+            isConnected={isConnected}
+            isOfflineData={isOfflineData}
+            onMenuClick={() => setIsSidebarOpen(true)}
+            onOpenSearch={() => setSearchOpen(true)}
+            onOpenAlerts={() => navigate('/alerts')}
+            installAction={showInstallBtn ? (
+              <Button
+                onClick={handleInstallClick}
+                variant="ghost"
+                size="sm"
+                className="hidden lg:inline-flex items-center gap-2 border border-[var(--card-border)] px-3 py-2 text-[12px] text-[var(--text-secondary)] hover:border-[#c8dfd6] hover:text-[var(--text-primary)]"
+              >
+                <Download size={14} /> Installer l'app
+              </Button>
+            ) : undefined}
+            userName={user?.name || 'Utilisateur'}
+            roleLabel={normalizeRole(user?.role) === 'super_admin' ? 'Super admin' : normalizeRole(user?.role) === 'admin' ? 'Administrateur' : 'Observateur'}
+          />
 
-        {/* Main Content Area */}
-        <main className="flex-1 overflow-x-hidden overflow-y-auto bg-[var(--page-bg)] p-4 transition-colors duration-300 md:p-8 dark:bg-[var(--page-bg-dark)]">
-          <Outlet />
-        </main>
+          <div className="border-b border-[var(--card-border)] bg-white px-4 py-2 text-[11px] text-[var(--text-muted)] dark:bg-[var(--card-bg)] md:px-8">
+            <nav aria-label="Breadcrumb" className="flex items-center gap-2 overflow-hidden">
+              {breadcrumbs.map((crumb, index) => (
+                <React.Fragment key={`${crumb.label}-${index}`}>
+                  {index > 0 && <span className="text-[var(--text-muted)]/60">/</span>}
+                  {crumb.href && !crumb.current ? (
+                    <Link to={crumb.href} className="truncate font-medium text-[var(--text-secondary)] transition-colors hover:text-[var(--text-primary)]">
+                      {crumb.label}
+                    </Link>
+                  ) : (
+                    <span className="truncate font-medium text-[var(--text-primary)]">
+                      {crumb.label}
+                    </span>
+                  )}
+                </React.Fragment>
+              ))}
+              <span className="ml-2 rounded-full bg-[var(--brand-light)] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.08em] text-[var(--brand-dark)]">
+                {PILLAR_LABELS[routeMeta.pillar]}
+              </span>
+            </nav>
+          </div>
+
+          {/* Offline Banner */}
+          <AnimatePresence>
+            {!isOnline && (
+              <motion.div
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: 'auto', opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                className="z-20 flex items-center justify-center gap-3 overflow-hidden border-b border-[var(--card-border)] bg-[var(--warning-bg)] px-4 py-2 text-[11px] font-medium text-[var(--warning)]"
+              >
+                <CloudOff size={14} />
+                <span>Mode hors-ligne — Données du {lastSyncTime}</span>
+                <div className="h-1.5 w-1.5 rounded-full bg-current animate-pulse" />
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {/* Main Content Area */}
+          <main className="flex-1 overflow-x-hidden overflow-y-auto bg-[var(--page-bg)] p-4 transition-colors duration-300 md:p-8 dark:bg-[var(--page-bg-dark)]">
+            <Outlet />
+          </main>
+        </div>
       </div>
     </div>
   );

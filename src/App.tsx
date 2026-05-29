@@ -426,6 +426,13 @@ function App() {
               }
             >
               <Route index element={<Navigate to="/dashboard" replace />} />
+              <Route path="/ai" element={<Navigate to="/ai-dashboard" replace />} />
+              <Route path="/troupeau" element={<Navigate to="/animals" replace />} />
+              <Route path="/troupeau/compare" element={<Navigate to="/compare" replace />} />
+              <Route
+                path="/labelling"
+                element={['admin', 'operator'].includes(normalizeRole(user?.role)) ? <LabellingPage /> : <Navigate to="/dashboard" replace />}
+              />
               <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/map" element={<ErrorBoundary fallback={<MapError />}><MapMonitor /></ErrorBoundary>} />
               <Route path="/animals" element={<Animals />} />
@@ -439,7 +446,7 @@ function App() {
               <Route path="/ai-dashboard" element={<AIPredictionDashboard />} />
 
               {/* Admin Only Routes */}
-              {(normalizeRole(user?.role) === 'super_admin' || normalizeRole(user?.role) === 'admin') && (
+              {['admin', 'operator'].includes(normalizeRole(user?.role)) && (
                 <>
                   <Route path="/users" element={<Users />} />
                   <Route path="/hardware" element={<Hardware />} />

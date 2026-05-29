@@ -3,7 +3,7 @@ import api from './api';
 
 export const USE_MOCK = import.meta.env.VITE_USE_MOCK_USERS === 'true';
 
-export type UserRole = 'admin' | 'vet' | 'farmer';
+export type UserRole = 'admin' | 'operator' | 'viewer';
 export type UserStatus = 'Actif' | 'Inactif';
 
 export interface UserRecord {
@@ -41,9 +41,9 @@ const DEFAULT_USERS: UserRecord[] = [
     },
     {
         id: 'u-2',
-        name: 'Jean Vétérinaire',
+        name: 'Jean Opérateur',
         email: 'jean.vet@smartshepherd.com',
-        role: 'vet',
+        role: 'operator',
         phone: '+33 6 00 00 00 02',
         status: 'Actif',
         animalCount: 8,
@@ -51,9 +51,9 @@ const DEFAULT_USERS: UserRecord[] = [
     },
     {
         id: 'u-3',
-        name: 'Marie Éleveuse',
+        name: 'Marie Lectrice',
         email: 'marie@smartshepherd.com',
-        role: 'farmer',
+        role: 'viewer',
         phone: '+33 6 00 00 00 03',
         status: 'Inactif',
         animalCount: 12,
@@ -73,7 +73,9 @@ const createId = () => {
 
 const normalizeRole = (role: unknown): UserRole => {
     const value = String(role ?? '').toLowerCase();
-    if (value === 'vet' || value === 'farmer') return value;
+    // Accept legacy role names from older payloads/storage and map them.
+    if (value === 'operator' || value === 'vet') return 'operator';
+    if (value === 'viewer' || value === 'farmer') return 'viewer';
     return 'admin';
 };
 

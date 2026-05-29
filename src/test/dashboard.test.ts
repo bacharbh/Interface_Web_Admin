@@ -2,7 +2,7 @@ import React from 'react';
 import { beforeEach, expect, it, vi } from 'vitest';
 import { act, render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
-import Dashboard from '../pages/Dashboard/Dashboard_OPTIMIZED';
+import Dashboard from '../pages/Dashboard/Dashboard';
 import { useIoTStore } from '../hooks/useIoTStore';
 import { makeAlert, makeAnimal } from './factories';
 

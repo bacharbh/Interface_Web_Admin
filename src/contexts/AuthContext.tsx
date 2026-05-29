@@ -11,12 +11,12 @@ import {
 } from '../utils/authStorage';
 
 export const USER_ROLES = {
-  SUPER_ADMIN: 'SUPER_ADMIN',
-  FARMER: 'FARMER',
-  ADMIN: 'ADMIN',
+  ADMIN: 'admin',
+  OPERATOR: 'operator',
+  VIEWER: 'viewer',
 } as const;
 
-export type UserRole = keyof typeof USER_ROLES;
+export type UserRole = (typeof USER_ROLES)[keyof typeof USER_ROLES];
 
 export interface User {
   id: string;
@@ -110,7 +110,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const verifySession = async () => {
       // DEV-only mock user: this branch is tree-shaken from production builds.
       if (!token && isDevMockUserActive()) {
-        setUser({ id: 'dev', name: 'Dev User', role: USER_ROLES.SUPER_ADMIN });
+        setUser({ id: 'dev', name: 'Dev User', role: USER_ROLES.ADMIN });
         setLoading(false);
         return;
       }
@@ -167,7 +167,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } catch (error) {
       if (process.env.NODE_ENV !== 'production' && credentials.email === 'admin' && credentials.password === 'admin123') {
         enableDevMockUser();
-        setUser({ id: 'dev', name: 'Dev User', role: USER_ROLES.SUPER_ADMIN });
+        setUser({ id: 'dev', name: 'Dev User', role: USER_ROLES.ADMIN });
         setToken(null);
         setExpiresAt(null);
         return { success: true };

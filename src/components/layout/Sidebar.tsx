@@ -4,16 +4,16 @@ import { LogOut, Shield, LayoutDashboard, MapPin, PawPrint, Bell, Brain, BarChar
 import { useAuth } from '../../contexts/AuthContext';
 import { useIoTStore } from '../../hooks/useIoTStore';
 import Button from '../ui/Button';
-import { ROUTE_META } from '../../config/routes';
+import { getRouteMeta } from '../../config/routes';
 
 const normalizeRole = (role?: string | null) => (role ?? '').trim().toLowerCase();
 
 const getRoleLabel = (role?: string | null) => {
   const normalized = normalizeRole(role);
 
-  if (normalized === 'admin' || normalized === 'super_admin') return 'Administrateur';
+  if (normalized === 'admin') return 'Administrateur';
   if (normalized === 'operator') return 'Opérateur';
-  if (normalized === 'viewer' || normalized === 'farmer') return 'Éleveur / observateur';
+  if (normalized === 'viewer') return 'Lecteur';
   return 'Utilisateur';
 };
 
@@ -22,9 +22,9 @@ interface SidebarProps {
 }
 
 const PILLARS = {
-  operations: { label: 'Opérations', routes: ['/', '/map', '/troupeau', '/alerts', '/troupeau/compare', '/agenda'] },
-  intelligence: { label: 'Intelligence', routes: ['/ai', '/analytics', '/anomalies', '/labelling'] },
-  administration: { label: 'Gestion', routes: ['/hardware', '/users', '/settings'] },
+  operations: { label: 'Opérations', routes: ['/dashboard', '/map', '/animals', '/alerts', '/compare', '/agenda'] },
+  intelligence: { label: 'Intelligence', routes: ['/ai-dashboard', '/analytics', '/anomalies'] },
+  administration: { label: 'Gestion', routes: ['/admin/labelling', '/hardware', '/users', '/settings'] },
 } as const;
 
 const ICONS = {
@@ -43,8 +43,6 @@ const ICONS = {
   'calendar': Calendar,
 } as const;
 
-type RouteKey = keyof typeof ROUTE_META;
-
 const getIcon = (icon: string) => ICONS[icon as keyof typeof ICONS] ?? LayoutDashboard;
 
 const Sidebar: React.FC<SidebarProps> = ({ onClose }) => {
@@ -57,7 +55,7 @@ const Sidebar: React.FC<SidebarProps> = ({ onClose }) => {
     .map(([key, pillar]) => ({
       key,
       ...pillar,
-      routes: pillar.routes.filter((path) => (key !== 'administration' || ['admin', 'super_admin'].includes(currentRole))),
+      routes: pillar.routes.filter((path) => (key !== 'administration' || ['admin', 'operator'].includes(currentRole))),
     }))
     .filter((pillar) => pillar.routes.length > 0);
 
@@ -83,7 +81,7 @@ const Sidebar: React.FC<SidebarProps> = ({ onClose }) => {
             </p>
             <div className="space-y-[2px]">
               {pillar.routes.map((path) => {
-                const meta = ROUTE_META[path as RouteKey];
+                const meta = getRouteMeta(path);
                 const Icon = getIcon(meta.icon);
 
                 return (

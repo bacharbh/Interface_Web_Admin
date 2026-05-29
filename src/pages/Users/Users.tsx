@@ -31,20 +31,20 @@ const USER_QUERY_KEY = ['users'] as const;
 
 const ROLE_OPTIONS: Array<{ value: UserRole; label: string; description: string }> = [
   { value: 'admin', label: 'Administrateur', description: 'Accès complet à la plateforme' },
-  { value: 'vet', label: 'Vétérinaire', description: 'Suivi santé et alertes' },
-  { value: 'farmer', label: 'Éleveur', description: 'Surveillance et exploitation' },
+  { value: 'operator', label: 'Opérateur', description: 'Pilotage opérationnel et suivi terrain' },
+  { value: 'viewer', label: 'Lecteur', description: 'Consultation en lecture seule' },
 ];
 
 const ROLE_BADGE: Record<UserRole, string> = {
   admin: 'bg-purple-50 text-purple-600 border-purple-100 dark:bg-purple-500/10 dark:text-purple-400 dark:border-purple-500/20',
-  vet: 'bg-cyan-50 text-cyan-600 border-cyan-100 dark:bg-cyan-500/10 dark:text-cyan-300 dark:border-cyan-500/20',
-  farmer: 'bg-emerald-50 text-emerald-600 border-emerald-100 dark:bg-emerald-500/10 dark:text-emerald-300 dark:border-emerald-500/20',
+  operator: 'bg-cyan-50 text-cyan-600 border-cyan-100 dark:bg-cyan-500/10 dark:text-cyan-300 dark:border-cyan-500/20',
+  viewer: 'bg-emerald-50 text-emerald-600 border-emerald-100 dark:bg-emerald-500/10 dark:text-emerald-300 dark:border-emerald-500/20',
 };
 
 const ROLE_LABEL: Record<UserRole, string> = {
   admin: 'Administrateur',
-  vet: 'Vétérinaire',
-  farmer: 'Éleveur',
+  operator: 'Opérateur',
+  viewer: 'Lecteur',
 };
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/i;
@@ -110,7 +110,7 @@ const EmptyState = ({ onCreate }: { onCreate: () => void }) => (
     </div>
     <h3 className="title-md text-gray-900 dark:text-white">Aucun utilisateur</h3>
     <p className="mt-2 max-w-md body-md text-gray-500 dark:text-gray-400">
-      Créez un premier compte pour votre équipe. Les administrateurs, vétérinaires et éleveurs peuvent être ajoutés depuis ce panneau.
+      Créez un premier compte pour votre équipe. Les administrateurs, opérateurs et lecteurs peuvent être ajoutés depuis ce panneau.
     </p>
     <Button variant="primary" className="mt-6" onClick={onCreate}>
       <UserPlus className="h-4 w-4" /> Créer un utilisateur
