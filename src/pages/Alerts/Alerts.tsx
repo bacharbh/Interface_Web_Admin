@@ -3,7 +3,7 @@ import { useLocation } from 'react-router-dom';
 import { Bell, CheckCircle, Filter, CheckCheck } from 'lucide-react';
 import { useIoTStore, Alert } from '../../hooks/useIoTStore';
 import { useAuth } from '../../contexts/AuthContext';
-import { connectSocket, disconnectSocket, socket } from '../../services/socket';
+import { connectSocket, socket } from '../../services/socket';
 import AlertRow from '../../components/ui/AlertRow';
 
 export default function Alerts() {
@@ -56,7 +56,6 @@ export default function Alerts() {
 
     return () => {
       socket.off('new_alert', onNewAlert);
-      disconnectSocket();
     };
   }, [token, addAlert]);
 

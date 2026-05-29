@@ -14,7 +14,13 @@ export const connectSocket = (token) => {
   if (socket.connected) return;
 
   socket.auth = { token };
-  socket.connect();
+
+  if (!socket.active) {
+    socket.connect();
+  }
+
+  socket.off('connect');
+  socket.off('disconnect');
 
   socket.on('connect', () => {
     console.log('Connected to WebSocket server');

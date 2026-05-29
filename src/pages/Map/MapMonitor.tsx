@@ -1,6 +1,5 @@
-import React, { useState, useCallback, useEffect, useMemo } from 'react';
+import React, { useState, useCallback, useEffect, useMemo, useRef } from 'react';
 import toast from 'react-hot-toast';
-import { useMqtt } from '../../contexts/MqttContext';
 import { useRealtimePositions } from '../../hooks/useRealtimePositions';
 import { setSimulationCenter, stopSimulation, startSimulation } from '../../utils/simulation';
 import geofenceService from '../../services/geofenceService';
@@ -96,15 +95,13 @@ export default function MapMonitor() {
       return false;
     }
   });
+  const simStartedRef = useRef(false);
 
   // State Layer Info (Zustand) - Now using the reactive hook for all-in-one data
   const { animalsList, history, alerts, kpis, isConnected: iotConnected, isSimulation: iotSim } = useRealtimePositions(zones);
 
-
-  // Keep local simulation state from MQTT context for UI consistency
-  const { isSimulation: mqttSim, isConnected: mqttConnected } = useMqtt();
-  const isSimulation = mqttSim || iotSim;
-  const isConnected = mqttConnected || iotConnected;
+  const isSimulation = iotSim;
+  const isConnected = iotConnected;
 
   const breedOptions = useMemo(() => {
     return Array.from(new Set(animalsList.map((animal) => animal.breed).filter((breed): breed is string => Boolean(breed)))).sort();
@@ -175,9 +172,11 @@ export default function MapMonitor() {
 
         // Update simulation center
         setSimulationCenter(latitude, longitude);
-        // Restart simulation to reposition animals
-        stopSimulation();
-        startSimulation();
+        if (!simStartedRef.current) {
+          // Start the simulation once; subsequent GPS updates only recenter it.
+          startSimulation();
+          simStartedRef.current = true;
+        }
       }, (err) => {
         console.warn("⚠️ Geolocation failed or denied:", err.message);
       });

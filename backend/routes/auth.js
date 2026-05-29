@@ -67,7 +67,8 @@ const loginSchema = Joi.object({
   password: Joi.string().required()
 });
 
-const JWT_SECRET = process.env.JWT_SECRET || 'smart-shepherd-dev-secret';
+const JWT_SECRET = process.env.JWT_SECRET;
+if (!JWT_SECRET) throw new Error('JWT_SECRET environment variable is required. Set it in your .env file.');
 
 const buildDevUser = () => ({
   id: 'dev-user',
@@ -114,7 +115,7 @@ router.post('/register', registerLimiter, async (req, res) => {
 
     const token = jwt.sign(
       { userId: user._id, username: user.username, role: user.role },
-      process.env.JWT_SECRET,
+      JWT_SECRET,
       { expiresIn: process.env.JWT_EXPIRE || '24h' }
     );
 
@@ -186,7 +187,7 @@ router.post('/login', progressiveDelayMiddleware, loginLimiter, async (req, res)
 
     const token = jwt.sign(
       { userId: user._id, username: user.username, role: user.role },
-      process.env.JWT_SECRET,
+      JWT_SECRET,
       { expiresIn: process.env.JWT_EXPIRE || '24h' }
     );
 
