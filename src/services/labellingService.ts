@@ -25,7 +25,7 @@ export interface LabellingDiagnosisResult {
 
 const labellingService = {
     diagnose: async (payload: LabellingDiagnosisInput) => {
-        const response = await api.post('/labelling/diagnose', payload)
+        const response = await api.post('/labelling/submit-diagnostic', payload)
         return response.data as LabellingDiagnosisResult
     },
 }

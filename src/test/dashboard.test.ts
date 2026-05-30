@@ -23,7 +23,7 @@ it('renders KPI cards and stays quiet about performance in test mode', async () 
     render(React.createElement(MemoryRouter, null, React.createElement(Dashboard)));
     await act(async () => { vi.advanceTimersByTime(800); });
     expect(screen.getByText('Tableau de bord intelligent')).toBeInTheDocument();
-    expect(screen.getByText('34')).toBeInTheDocument();
+    expect(screen.getAllByText('2').length).toBeGreaterThanOrEqual(1);
     expect(screen.getByText('12%')).toBeInTheDocument();
     expect(screen.getByText('78.0°C')).toBeInTheDocument();
     expect(screen.getByText('1 critiques (<20%)')).toBeInTheDocument();

@@ -8,6 +8,7 @@ const WeatherWidget = () => {
   const [weather, setWeather] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [notice, setNotice] = useState('');
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [forecast, setForecast] = useState(null);
@@ -40,9 +41,35 @@ const WeatherWidget = () => {
     return { ...coords, source: farmName || 'Position de secours' };
   }, [farmName, getCoordinates]);
 
+  const fetchOpenMeteoFallback = useCallback(async (lat, lng) => {
+    const res = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lng}&current=temperature_2m,relative_humidity_2m,wind_speed_10m,weather_code&timezone=auto`);
+    if (!res.ok) {
+      throw new Error('Open-Meteo indisponible');
+    }
+
+    const data = await res.json();
+    const current = data?.current;
+    if (!current) {
+      throw new Error('Données météo incomplètes');
+    }
+
+    const code = Number(current.weather_code);
+    let main = 'Clouds';
+    if (code === 0) main = 'Clear';
+    else if ((code >= 51 && code <= 67) || (code >= 80 && code <= 82) || (code >= 95 && code <= 99)) main = 'Rain';
+
+    return {
+      temp: Math.round(Number(current.temperature_2m)),
+      windspeed: Math.round(Number(current.wind_speed_10m)),
+      humidity: Math.round(Number(current.relative_humidity_2m)),
+      code: main,
+    };
+  }, []);
+
   const loadWeather = useCallback(async () => {
     setLoading(true);
     setError('');
+    setNotice('');
 
     try {
       const { lat, lng } = await resolveCoords();
@@ -56,13 +83,23 @@ const WeatherWidget = () => {
       });
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Impossible de charger la météo en ce moment.';
-      devLog('[Weather] fallback used:', message);
-      setWeather(null);
-      setError(message);
+      devLog('[Weather] backend unavailable, trying Open-Meteo fallback:', message);
+
+      try {
+        const { lat, lng } = await resolveCoords();
+        const fallbackWeather = await fetchOpenMeteoFallback(lat, lng);
+        setWeather(fallbackWeather);
+        setNotice('Source locale météo utilisée');
+      } catch (fallbackError) {
+        devLog('[Weather] Open-Meteo fallback failed:', fallbackError instanceof Error ? fallbackError.message : fallbackError);
+        setWeather(null);
+        setNotice('');
+        setError('Météo indisponible');
+      }
     } finally {
       setLoading(false);
     }
-  }, [resolveCoords]);
+  }, [fetchOpenMeteoFallback, resolveCoords]);
 
   useEffect(() => {
     loadWeather();
@@ -142,30 +179,16 @@ const WeatherWidget = () => {
 
   if (error) {
     return (
-      <div className="bg-gradient-to-br from-[#1e293b] to-[#0f172a] rounded-3xl p-6 shadow-xl border border-white/5 relative overflow-hidden">
-        <div className="absolute -top-10 -right-10 w-32 h-32 bg-red-500/10 rounded-full blur-2xl" />
-
-        <div className="relative z-10 flex flex-col gap-4 text-white min-h-[160px] justify-center">
-          <div className="flex items-start gap-3">
-            <div className="p-2 rounded-2xl bg-red-500/10 border border-red-400/20">
-              <AlertTriangle className="w-5 h-5 text-red-300" />
-            </div>
-            <div className="space-y-1">
-              <h3 className="label-sm text-white">Météo indisponible</h3>
-              <p className="text-sm text-slate-300 leading-relaxed">{error}</p>
-            </div>
-          </div>
-
-          <button
-            type="button"
-            onClick={loadWeather}
-            aria-label="Actualiser la météo"
-            className="inline-flex items-center gap-2 w-fit px-4 py-2 rounded-xl bg-white/10 hover:bg-white/15 border border-white/10 text-sm font-medium transition-colors"
-          >
-            <RotateCcw className="w-4 h-4" />
-            Réessayer
-          </button>
-        </div>
+      <div className="bg-gradient-to-br from-[#1e293b] to-[#0f172a] rounded-3xl p-6 shadow-xl border border-white/5 flex flex-col justify-center items-center gap-3 h-[160px]">
+        <AlertTriangle className="w-5 h-5 text-slate-300" />
+        <p className="text-sm font-medium text-slate-100">Météo indisponible</p>
+        <button
+          onClick={loadWeather}
+          className="inline-flex items-center gap-2 rounded-lg border border-white/15 bg-white/5 px-3 py-1.5 text-xs font-semibold text-slate-100 transition-colors hover:bg-white/10"
+        >
+          <RotateCcw className="w-3.5 h-3.5" />
+          Réessayer
+        </button>
       </div>
     );
   }
@@ -215,6 +238,12 @@ const WeatherWidget = () => {
                 <span className="label-sm text-white">{weather?.windspeed} km/h</span>
               </div>
             </div>
+
+            {notice && (
+              <div className="col-span-2 mt-1 text-[11px] text-slate-400">
+                {notice}
+              </div>
+            )}
           </div>
 
           <div className="absolute bottom-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity translate-x-2 group-hover:translate-x-0">

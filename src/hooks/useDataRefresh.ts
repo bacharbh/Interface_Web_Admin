@@ -18,7 +18,7 @@ export function useDataRefresh(intervalMs: number = 5000) {
             isRefreshingRef.current = true;
             try {
                 // Fetch fresh device/animal data from backend
-                const response = await api.get('/api/sheep', { timeout: 10000 });
+                const response = await api.get('/sheep', { timeout: 10000 });
                 if (response?.data && Array.isArray(response.data)) {
                     // Convert API response to device objects
                     const devices: Record<string, any> = {};

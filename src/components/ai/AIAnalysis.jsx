@@ -303,12 +303,12 @@ const AIAnalysis = () => {
                 </div>
             )}
 
-            {/* Degraded mode - orange banner */}
+            {/* Local AI mode - neutral info banner */}
             {isDegraded && !isAnalyzing && (
                 <div className="fixed top-20 left-1/2 -translate-x-1/2 z-50">
-                    <div className="px-4 py-2 bg-orange-50 dark:bg-orange-900/30 rounded-lg border border-orange-300 dark:border-orange-700 flex items-center gap-2 text-sm shadow-lg">
-                        <AlertCircle className="w-4 h-4 text-orange-600 dark:text-orange-400" />
-                        <span className="text-orange-700 dark:text-orange-300 font-medium">Mode dégradé - Analyse locale utilisée</span>
+                    <div className="px-4 py-2 bg-blue-50 dark:bg-blue-900/30 rounded-lg border border-blue-200 dark:border-blue-700 flex items-center gap-2 text-sm shadow-lg">
+                        <AlertCircle className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                        <span className="text-blue-700 dark:text-blue-300 font-medium">IA locale active — Connecter le service FastAPI pour l'analyse complète</span>
                     </div>
                 </div>
             )}

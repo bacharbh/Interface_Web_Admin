@@ -84,6 +84,28 @@ const UserLocationMarker: React.FC<UserLocationMarkerProps> = ({
   const map = useMap();
   const { position, error, isLoading, watchPosition, stopWatching } = useGeolocation();
   const hasCentered = useRef(false);
+  const [isFollowing, setIsFollowing] = React.useState(autoTrack);
+
+  useEffect(() => {
+    const handleDragStart = () => {
+      setIsFollowing(false);
+    };
+    map.on('dragstart', handleDragStart);
+    return () => {
+      map.off('dragstart', handleDragStart);
+    };
+  }, [map]);
+
+  useEffect(() => {
+    const handleCenterOnUser = () => {
+      if (position) {
+        map.setView([position.latitude, position.longitude], 18, { animate: true });
+        setIsFollowing(true);
+      }
+    };
+    window.addEventListener('centerOnUser', handleCenterOnUser);
+    return () => window.removeEventListener('centerOnUser', handleCenterOnUser);
+  }, [map, position]);
 
   useEffect(() => {
     if (autoTrack) {
@@ -98,39 +120,23 @@ const UserLocationMarker: React.FC<UserLocationMarkerProps> = ({
   }, [autoTrack, watchPosition, stopWatching]);
 
   useEffect(() => {
-    if (position && !hasCentered.current) {
-      // Center map on user's location on first position update
-      map.setView([position.latitude, position.longitude], 16);
-      hasCentered.current = true;
+    if (position) {
+      if (!hasCentered.current || isFollowing) {
+        map.setView([position.latitude, position.longitude], hasCentered.current ? map.getZoom() : 16, { animate: true });
+        hasCentered.current = true;
+      }
+      if (onLocationUpdate) {
+        onLocationUpdate(position);
+      }
     }
-
-    if (position && onLocationUpdate) {
-      onLocationUpdate(position);
-    }
-  }, [position, map, onLocationUpdate]);
+  }, [position, map, isFollowing, onLocationUpdate]);
 
   if (isLoading) {
-    return (
-      <div className="absolute top-4 left-4 z-[1000] bg-white dark:bg-gray-800 rounded-lg shadow-lg p-3">
-        <div className="flex items-center space-x-2">
-          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-500"></div>
-          <span className="text-sm text-gray-700 dark:text-gray-300">Getting location...</span>
-        </div>
-      </div>
-    );
+    return null;
   }
 
   if (error) {
-    return (
-      <div className="absolute top-4 left-4 z-[1000] bg-red-50 dark:bg-red-900/20 rounded-lg shadow-lg p-3">
-        <div className="flex items-center space-x-2">
-          <svg className="w-4 h-4 text-red-500" fill="currentColor" viewBox="0 0 20 20">
-            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
-          </svg>
-          <span className="text-sm text-red-700 dark:text-red-300">{error.message}</span>
-        </div>
-      </div>
-    );
+    return null;
   }
 
   if (!position) {

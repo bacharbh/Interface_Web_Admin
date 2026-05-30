@@ -29,7 +29,7 @@ const getRelativeTime = (timestamp: string) => {
   return `il y a ${hours}h`;
 };
 
-const AIInsightsFeed = ({ onSelectAnimal }: { onSelectAnimal?: (id: string) => void }) => {
+const AIInsightsFeed = ({ onSelectAnimal, backendNote }: { onSelectAnimal?: (id: string) => void; backendNote?: string }) => {
   const navigate = useNavigate();
   const aiAlerts = useIoTStore(state => state.aiAlerts);
   const [filter, setFilter] = useState('all');
@@ -132,6 +132,12 @@ const AIInsightsFeed = ({ onSelectAnimal }: { onSelectAnimal?: (id: string) => v
             <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
           </div>
         </div>
+        {backendNote && (
+          <div className="p-3 mb-4 rounded-lg border border-amber-200 dark:border-amber-500/30 bg-amber-50 dark:bg-amber-500/10 text-amber-800 dark:text-amber-200">
+            <p className="label-xs font-semibold mb-1">Limites backend</p>
+            <p className="text-[11px] leading-5">{backendNote}</p>
+          </div>
+        )}
         {/* Next events (simple) */}
         {nextEvents.length > 0 && (
           <div className="p-3 mb-4 bg-gray-50 dark:bg-gray-800/40 rounded-lg">

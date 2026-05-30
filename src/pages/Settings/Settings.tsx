@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, ReactNode } from 'react';
+import toast from 'react-hot-toast';
 import {
   Save, Server, Shield, Bell, Key, Sun, Moon, Sliders,
   Play, Pause, RotateCcw, Download, CheckCircle, Cpu,
@@ -8,6 +9,7 @@ import { useTheme } from '../../contexts/ThemeContext';
 import { useIoTStore } from '../../hooks/useIoTStore';
 import { useMqtt } from '../../contexts/MqttContext';
 import { updateSimulationConfig } from '../../utils/simulation';
+import api from '../../services/api';
 import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
 
@@ -155,14 +157,27 @@ const Settings = () => {
     e.preventDefault();
     const { mqttPass, ...persistedConfig } = config;
 
-    // Only persist non-secret preferences; broker credentials should not remain readable in localStorage.
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(persistedConfig));
+    void (async () => {
+      try {
+        await api.put('/settings/mqtt', config);
+        // Only persist non-secret preferences; broker credentials should not remain readable in localStorage.
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(persistedConfig));
 
-    // Apply simulation changes immediately
-    updateSimulationConfig(config.simAnimalCount, config.simRefreshMs);
+        // Apply simulation changes immediately
+        updateSimulationConfig(config.simAnimalCount, config.simRefreshMs);
 
-    setSaved(true);
-    setTimeout(() => setSaved(false), 3000);
+        setSaved(true);
+        toast.success('Réglages MQTT enregistrés.');
+        window.setTimeout(() => setSaved(false), 3000);
+      } catch (error) {
+        console.warn('Failed to save MQTT settings to backend, keeping local copy only.', error);
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(persistedConfig));
+        updateSimulationConfig(config.simAnimalCount, config.simRefreshMs);
+        setSaved(true);
+        toast.error('Réglages sauvegardés localement, mais le backend est indisponible.');
+        window.setTimeout(() => setSaved(false), 3000);
+      }
+    })();
   };
 
   const handleExport = () => {

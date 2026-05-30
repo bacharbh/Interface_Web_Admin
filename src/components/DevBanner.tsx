@@ -3,8 +3,7 @@ import { isDevMockUserActive } from '../utils/authStorage'
 
 const DevBanner: React.FC = () => {
     // Only render in dev builds and when mock user is enabled
-    if (!import.meta.env.DEV) return null
-    if (!isDevMockUserActive()) return null
+    if (!import.meta.env.DEV || !isDevMockUserActive() || import.meta.env.VITE_SHOW_DEV_BANNER === 'false') return null
 
     return (
         <div

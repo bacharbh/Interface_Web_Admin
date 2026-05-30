@@ -55,6 +55,8 @@ router.get('/:id', authMiddleware, async (req, res) => {
 // Create new geofence
 router.post('/', authMiddleware, authorize('admin', 'operator'), async (req, res) => {
   try {
+    await ensureGeofencesLoaded();
+
     const { error } = geofenceSchema.validate(req.body);
     if (error) {
       return res.status(400).json({ error: error.details[0].message });
@@ -134,88 +136,6 @@ router.delete('/:id', authMiddleware, authorize('admin'), async (req, res) => {
     res.json({ message: 'Geofence deleted successfully' });
   } catch (error) {
     res.status(500).json({ error: 'Error deleting geofence' });
-  }
-});
-
-// Check if sheep is within geofence
-router.post('/check', async (req, res) => {
-  try {
-    const { sheepId, coordinates } = req.body;
-
-    if (!coordinates || !Array.isArray(coordinates) || coordinates.length !== 2) {
-      return res.status(400).json({ error: 'Invalid coordinates format' });
-    }
-
-    const [longitude, latitude] = coordinates;
-
-    // Find sheep
-    const sheep = await Sheep.findOne({ sheepId, isActive: true });
-    if (!sheep) {
-      return res.status(404).json({ error: 'Sheep not found' });
-    }
-
-    // Check against all active geofences
-    const violations = [];
-    const withinGeofences = [];
-
-    for (const geofence of geofences.filter(g => g.isActive)) {
-      const isWithin = isPointInPolygon([longitude, latitude], geofence.geometry.coordinates[0]);
-
-      if (isWithin) {
-        withinGeofences.push({
-          geofenceId: geofence.id,
-          name: geofence.name
-        });
-      } else {
-        violations.push({
-          geofenceId: geofence.id,
-          name: geofence.name,
-          sheepId,
-          coordinates: [longitude, latitude],
-          timestamp: new Date()
-        });
-      }
-    }
-
-    // Emit alerts for violations
-    if (violations.length > 0) {
-      const io = req.app.get('io');
-      io.emit('geofence:violation', violations);
-    }
-
-    res.json({
-      sheepId,
-      coordinates: [longitude, latitude],
-      withinGeofences,
-      violations,
-      timestamp: new Date()
-    });
-  } catch (error) {
-    res.status(500).json({ error: 'Error checking geofence status' });
-  }
-});
-
-// Get geofence violations
-router.get('/violations', authMiddleware, async (req, res) => {
-  try {
-    const { startDate, endDate, sheepId } = req.query;
-
-    // In a real implementation, this would query a violations collection
-    // For now, return a placeholder response
-    const violations = {
-      data: [], // Would contain violation records
-      summary: {
-        totalViolations: 0,
-        dateRange: {
-          start: startDate,
-          end: endDate
-        }
-      }
-    };
-
-    res.json(violations);
-  } catch (error) {
-    res.status(500).json({ error: 'Error fetching geofence violations' });
   }
 });
 

@@ -21,6 +21,7 @@ import WeatherWidget from '../../components/widgets/WeatherWidget';
 import MiniMapPreview from '../../components/widgets/MiniMapPreview';
 import AtRiskAnimals from '../../components/widgets/AtRiskAnimals';
 import geofenceService from '../../services/geofenceService';
+import api from '../../services/api';
 import { IKpis, type IGeofenceZone } from '../../types';
 import Button from '../../components/ui/Button';
 import { DataBadge, type DataSource } from '../../components/ui/DataBadge';
@@ -67,8 +68,30 @@ export default function Dashboard() {
   const navigate = useNavigate();
   const { isConnected, isSimulation, toggleSimulation } = useMqtt();
   const positions = useIoTStore(state => state.devices);
+  const setDevices = useIoTStore(state => state.setDevices);
   const history = useIoTStore(state => state.history);
   const alerts = useIoTStore(state => state.alerts);
+
+  useEffect(() => {
+    if (isConnected || isSimulation || Object.keys(positions).length > 0) return;
+    let cancelled = false;
+    api.get('/sheep', { params: { limit: 300 } })
+      .then((res) => {
+        if (cancelled) return;
+        const list: any[] = Array.isArray(res.data) ? res.data
+          : Array.isArray(res.data?.sheep) ? res.data.sheep
+            : Array.isArray(res.data?.data) ? res.data.data : [];
+        if (list.length === 0) return;
+        const map: Record<string, any> = {};
+        list.forEach((a: any) => {
+          const key = a.collarId || a.collar_id || a.sheepId || a._id;
+          if (key) map[key] = { ...a, collar_id: key };
+        });
+        setDevices(map);
+      })
+      .catch(() => { });
+    return () => { cancelled = true; };
+  }, [isConnected, isSimulation]);
 
   const [zones, setZones] = useState<IGeofenceZone[]>([]);
 
@@ -124,6 +147,19 @@ export default function Dashboard() {
     }));
   }, [animalsList]);
 
+  const mapFocusTargetId = useMemo(() => {
+    return mapPreviewAnimals[0]?.id ?? atRiskAnimalList[0]?.id ?? null;
+  }, [atRiskAnimalList, mapPreviewAnimals]);
+
+  const openMap = useCallback(() => {
+    if (mapFocusTargetId) {
+      navigate(`/map?focus=${encodeURIComponent(String(mapFocusTargetId))}`);
+      return;
+    }
+
+    navigate('/map');
+  }, [mapFocusTargetId, navigate]);
+
 
 
   const onlineCount = useMemo(() => {
@@ -137,10 +173,7 @@ export default function Dashboard() {
     return freshCount > 0 ? freshCount : animalsList.length;
   }, [animalsList.length, positions]);
 
-  const outOfZoneCount = useMemo(() => {
-    if (zones.length === 0) return 0;
-    return kpis.outOfZone;
-  }, [kpis.outOfZone, zones.length]);
+  const outOfZoneCount = kpis.outOfZone;
 
   const primaryGeofence = useMemo(() => {
     if (zones.length === 0) return [];
@@ -340,7 +373,7 @@ export default function Dashboard() {
       }
       setIsLoaded(true);
       renderCountRef.current = 0;
-    }, 800);
+    }, 400);
     return () => clearTimeout(timer);
   }, []);
 
@@ -636,7 +669,7 @@ export default function Dashboard() {
           <MiniMapPreview
             animals={mapPreviewAnimals}
             geofence={primaryGeofence}
-            onExpand={() => navigate('/map')}
+            onExpand={openMap}
           />
         </section>
 
@@ -703,7 +736,7 @@ export default function Dashboard() {
             Animaux à risque
           </h3>
           <button
-            onClick={() => navigate('/map')}
+            onClick={openMap}
             className="label-xs text-primary hover:underline cursor-pointer"
           >
             Voir carte →

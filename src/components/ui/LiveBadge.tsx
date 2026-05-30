@@ -19,8 +19,8 @@ const LiveBadge: React.FC<LiveBadgeProps> = ({
   label,
   className = ""
 }) => {
-  const displayLabel = label || (isSimulation ? 'Simulation' : isConnected ? 'En direct' : isOfflineData ? 'Hors-ligne (cache)' : 'Hors-ligne');
-  const color = isSimulation ? 'var(--status-warn)' : isConnected ? 'var(--status-ok)' : isOfflineData ? 'var(--status-warn)' : 'var(--status-critical)';
+  const displayLabel = label || (isSimulation ? 'SIMULATION' : isConnected ? 'EN DIRECT' : isOfflineData ? 'HORS-LIGNE (CACHE)' : 'OFFLINE');
+  const color = isSimulation ? '#F59E0B' : isConnected ? '#00A96E' : isOfflineData ? '#F59E0B' : '#EF4444';
 
   const shouldPulse = Boolean(isSimulation && import.meta.env.DEV);
 
@@ -33,7 +33,7 @@ const LiveBadge: React.FC<LiveBadgeProps> = ({
         <span className="relative inline-flex rounded-full" style={{ width: 10, height: 10, backgroundColor: color }} />
       </span>
       {displayLabel && (
-        <span className="label-xs font-semibold text-gray-700 dark:text-gray-200">{displayLabel}</span>
+        <span className="text-[11px] font-bold tracking-wider" style={{ color }}>{displayLabel}</span>
       )}
     </div>
   );

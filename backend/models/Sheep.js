@@ -98,6 +98,13 @@ const sheepSchema = new mongoose.Schema({
     unique: true,
     sparse: true
   },
+  firmware: {
+    type: String,
+    default: null
+  },
+  firmwareUpdatedAt: {
+    type: Date
+  },
   medicalHistory: [{
     date: { type: Date, default: Date.now },
     condition: String,

@@ -1,27 +1,32 @@
 import mongoose from 'mongoose';
 
 const anomalyEventSchema = new mongoose.Schema({
-  animalId: { 
-    type: String, 
-    required: true, 
-    index: true 
+  animalId: {
+    type: String,
+    required: true,
+    index: true
   },
-  farmId: { 
-    type: String, 
-    required: true, 
-    index: true 
+  farmId: {
+    type: String,
+    required: true,
+    index: true
   },
-  timestamp: { 
-    type: Date, 
-    default: Date.now, 
-    index: true 
+  timestamp: {
+    type: Date,
+    default: Date.now,
+    index: true
+  },
+  detectedAt: {
+    type: Date,
+    default: Date.now,
+    index: true
   },
   // Score de probabilité calculé par TensorFlow.js (0 = Normal, 1 = Critique)
-  score: { 
-    type: Number, 
-    required: true, 
-    min: 0, 
-    max: 1 
+  score: {
+    type: Number,
+    required: true,
+    min: 0,
+    max: 1
   },
   // Les features IoT qui ont causé l'anomalie
   features: {
@@ -30,12 +35,16 @@ const anomalyEventSchema = new mongoose.Schema({
     heartRate: Number
   },
   // Évaluation post-hoc : l'éleveur confirme-t-il que l'animal était vraiment malade ? (Reinforcement Learning)
-  truePositive: { 
-    type: Boolean, 
-    default: null 
+  truePositive: {
+    type: Boolean,
+    default: null
   },
-  resolvedAt: { 
-    type: Date 
+  resolved: {
+    type: Boolean,
+    default: false
+  },
+  resolvedAt: {
+    type: Date
   }
 }, { timestamps: true });
 

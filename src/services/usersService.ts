@@ -3,7 +3,7 @@ import api from './api';
 
 export const USE_MOCK = import.meta.env.VITE_USE_MOCK_USERS === 'true';
 
-export type UserRole = 'admin' | 'operator' | 'viewer';
+export type UserRole = 'admin' | 'operator' | 'viewer' | 'vet';
 export type UserStatus = 'Actif' | 'Inactif';
 
 export interface UserRecord {
@@ -187,7 +187,7 @@ export const fetchUsers = async (): Promise<UserRecord[]> => {
 
     try {
         const response = await api.get('/users');
-        const payload = response.data?.data ?? response.data;
+        const payload = response.data?.data ?? response.data?.users ?? response.data;
         return Array.isArray(payload) ? payload.map(normalizeUser) : [];
     } catch (error) {
         if (axios.isAxiosError(error) && error.response?.status === 404) {
@@ -205,7 +205,7 @@ export const createUser = async (input: UserInput): Promise<UserRecord> => {
 
     try {
         const response = await api.post('/users', input);
-        return normalizeUser(response.data?.data ?? response.data);
+        return normalizeUser(response.data?.data ?? response.data?.user ?? response.data);
     } catch (error) {
         throw new Error(getApiErrorMessage(error, "Impossible de créer l'utilisateur."));
     }
@@ -218,7 +218,7 @@ export const updateUser = async (id: string, input: UserInput): Promise<UserReco
 
     try {
         const response = await api.put(`/users/${id}`, input);
-        return normalizeUser(response.data?.data ?? response.data);
+        return normalizeUser(response.data?.data ?? response.data?.user ?? response.data);
     } catch (error) {
         throw new Error(getApiErrorMessage(error, "Impossible de mettre à jour l'utilisateur."));
     }
@@ -231,7 +231,7 @@ export const deleteUser = async (id: string): Promise<{ success: boolean }> => {
 
     try {
         const response = await api.delete(`/users/${id}`);
-        return response.data?.data ?? response.data ?? { success: true };
+        return response.data?.data ?? response.data?.result ?? response.data ?? { success: true };
     } catch (error) {
         throw new Error(getApiErrorMessage(error, "Impossible de supprimer l'utilisateur."));
     }

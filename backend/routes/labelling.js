@@ -46,7 +46,7 @@ const resolveLabelledBy = (userId) => {
     return new mongoose.Types.ObjectId();
 };
 
-router.post('/diagnose', authMiddleware, async (req, res) => {
+const handleDiagnose = async (req, res) => {
     try {
         const { error, value } = diagnoseSchema.validate(req.body, { stripUnknown: true });
         if (error) {
@@ -83,6 +83,9 @@ router.post('/diagnose', authMiddleware, async (req, res) => {
     } catch (error) {
         return res.status(500).json({ error: 'Error saving labelling diagnosis' });
     }
-});
+};
+
+router.post('/diagnose', authMiddleware, handleDiagnose);
+router.post('/submit-diagnostic', authMiddleware, handleDiagnose);
 
 export default router;

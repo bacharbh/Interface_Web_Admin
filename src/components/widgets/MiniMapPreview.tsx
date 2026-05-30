@@ -2,6 +2,7 @@ import React, { memo, useEffect, useMemo, useRef, useState } from 'react';
 import { CircleMarker, MapContainer, Polygon, TileLayer, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import { Maximize2 } from 'lucide-react';
+import UserLocationMarker from '../../components/UserLocationMarker';
 import 'leaflet/dist/leaflet.css';
 import useInterval from '../../hooks/useInterval';
 import { useIoTStore } from '../../hooks/useIoTStore';
@@ -151,7 +152,7 @@ const MiniMapPreview: React.FC<MiniMapPreviewProps> = ({
     refreshInFlightRef.current = true;
 
     try {
-      const response = await api.get('/api/sheep', { timeout: 8000 });
+      const response = await api.get('/sheep', { timeout: 8000 });
       if (response?.data && Array.isArray(response.data)) {
         const devices: Record<string, any> = {};
         response.data.forEach((animal: any) => {
@@ -333,6 +334,8 @@ const MiniMapPreview: React.FC<MiniMapPreviewProps> = ({
 
         {memoizedPolygon}
         {memoizedMarkers}
+
+        <UserLocationMarker showAccuracy={true} autoTrack={true} />
 
         <MapBoundsFitter bounds={mapBounds} />
       </MapContainer>

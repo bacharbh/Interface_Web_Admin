@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Brain, Loader, AlertCircle, CheckCircle } from 'lucide-react';
+import api from '../../../services/api';
 
 interface Animal {
     collar_id: string;
@@ -24,6 +25,7 @@ interface AnalysisResponse {
     success: boolean;
     data?: AnalysisData;
     fallback?: boolean;
+    model_mode?: 'anthropic' | 'local' | 'local-cache';
     confidence?: number;
     error?: string;
 }
@@ -35,9 +37,11 @@ interface Props {
 export default function AIAnalysis({ animals }: Props) {
     const [analysis, setAnalysis] = useState<AnalysisData | null>(null);
     const [loading, setLoading] = useState(false);
-    const [error, setError] = useState<string | null>(null);
+    const [aiError, setAiError] = useState<string | null>(null);
     const [isFallback, setIsFallback] = useState(false);
     const [confidence, setConfidence] = useState(0);
+    const [modelMode, setModelMode] = useState<AnalysisResponse['model_mode']>('anthropic');
+    const [retryToken, setRetryToken] = useState(0);
 
     useEffect(() => {
         let timer: NodeJS.Timeout | null = null;
@@ -46,28 +50,34 @@ export default function AIAnalysis({ animals }: Props) {
         const doFetch = async () => {
             try {
                 setLoading(true);
-                setError(null);
-                const res = await fetch('/api/ai/analyze', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ animals }),
-                    signal: controller.signal,
-                });
-
-                if (!res.ok) throw new Error(`API error: ${res.status} ${res.statusText}`);
-
-                const data: AnalysisResponse = await res.json();
+                setAiError(null);
+                const { data } = await api.post<AnalysisResponse>(
+                    '/ai/analyze',
+                    { animals },
+                    {
+                        signal: controller.signal,
+                        timeout: 20000,
+                    }
+                );
                 if (data.success && data.data) {
                     setAnalysis(data.data);
                     setIsFallback(!!data.fallback);
+                    setModelMode(data.model_mode || (data.fallback ? 'local' : 'anthropic'));
                     setConfidence(data.confidence ?? (data.fallback ? 0.85 : 0.95));
                 } else {
                     throw new Error(data.error || 'Invalid analysis response');
                 }
             } catch (err) {
-                if (err instanceof Error && err.name === 'AbortError') return;
+                if ((err as any)?.name === 'CanceledError' || (err as any)?.code === 'ERR_CANCELED') return;
                 console.error('AIAnalysis error', err);
-                setError(err instanceof Error ? err.message : String(err));
+
+                const status = (err as any)?.response?.status;
+                const msg = status === 500
+                    ? 'Service IA indisponible. Vérifiez que le backend est démarré.'
+                    : status === 404
+                        ? 'Endpoint /api/ai/analyze introuvable. Vérifiez server.js.'
+                        : (err as any)?.message || "Erreur lors de l'analyse IA";
+                setAiError(msg);
                 setAnalysis(null);
             } finally {
                 setLoading(false);
@@ -85,7 +95,7 @@ export default function AIAnalysis({ animals }: Props) {
             if (timer) clearTimeout(timer);
             controller.abort();
         };
-    }, [animals.length, animals.map(a => a.collar_id).join(',')]);
+    }, [animals.length, animals.map(a => a.collar_id).join(','), retryToken]);
 
     const getRiskColor = (level: string) => {
         switch (level) {
@@ -111,20 +121,22 @@ export default function AIAnalysis({ animals }: Props) {
                     </div>
                     <div>
                         <h3 className="title-sm text-gray-900 dark:text-white">Analyse comparative IA</h3>
-                        <p className="label-xs text-gray-500 dark:text-gray-400">{isFallback ? '🤖 Intelligence locale' : '🧠 Powered by Claude'}</p>
+                        <p className="label-xs text-gray-500 dark:text-gray-400">
+                            {modelMode === 'anthropic' ? '🧠 Powered by Claude' : modelMode === 'local-cache' ? '🤖 Mode local mis en cache' : '🤖 Intelligence locale'}
+                        </p>
                     </div>
                 </div>
                 <div className="flex items-center gap-2">
                     <span className="text-xs font-bold text-gray-600 dark:text-gray-400">Confiance: {(confidence * 100).toFixed(0)}%</span>
                     <span
-                        className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full label-xs font-bold ${loading ? 'bg-orange-100 dark:bg-orange-500/20 text-orange-700 dark:text-orange-300' : error ? 'bg-red-100 dark:bg-red-500/20 text-red-700 dark:text-red-300' : isFallback ? 'bg-blue-100 dark:bg-blue-500/20 text-blue-700 dark:text-blue-300' : 'bg-purple-100 dark:bg-purple-500/20 text-purple-700 dark:text-purple-300'
+                        className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full label-xs font-bold ${loading ? 'bg-orange-100 dark:bg-orange-500/20 text-orange-700 dark:text-orange-300' : aiError ? 'bg-red-100 dark:bg-red-500/20 text-red-700 dark:text-red-300' : isFallback ? 'bg-blue-100 dark:bg-blue-500/20 text-blue-700 dark:text-blue-300' : 'bg-purple-100 dark:bg-purple-500/20 text-purple-700 dark:text-purple-300'
                             }`}
                     >
                         {loading ? (
                             <>
                                 <Loader className="w-3 h-3 animate-spin" /> Analyse…
                             </>
-                        ) : error ? (
+                        ) : aiError ? (
                             <>
                                 <AlertCircle className="w-3 h-3" /> Erreur
                             </>
@@ -137,12 +149,21 @@ export default function AIAnalysis({ animals }: Props) {
                 </div>
             </div>
 
-            {error ? (
+            {aiError ? (
                 <div className="flex items-start gap-3 p-4 bg-red-50 dark:bg-red-500/10 rounded-lg border border-red-200 dark:border-red-500/30">
                     <AlertCircle className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
-                    <div>
-                        <p className="label-sm font-bold text-red-700 dark:text-red-400">Erreur lors de l'analyse</p>
-                        <p className="text-xs text-red-600 dark:text-red-300 mt-1">{error}</p>
+                    <div className="flex-1 space-y-2">
+                        <div className="flex items-start gap-2">
+                            <span className="text-sm leading-none">⚠️</span>
+                            <p className="text-xs text-red-600 dark:text-red-300">{aiError}</p>
+                        </div>
+                        <button
+                            type="button"
+                            onClick={() => setRetryToken(token => token + 1)}
+                            className="inline-flex items-center gap-2 px-3 py-1.5 rounded-md bg-red-100 dark:bg-red-500/20 text-red-700 dark:text-red-300 text-xs font-semibold hover:bg-red-200 dark:hover:bg-red-500/30 transition-colors"
+                        >
+                            Réessayer
+                        </button>
                     </div>
                 </div>
             ) : analysis ? (
@@ -196,6 +217,9 @@ export default function AIAnalysis({ animals }: Props) {
                 <p className="text-xs text-gray-500 dark:text-gray-400">💡 Conseil: Validez l'analyse avec un vétérinaire avant action. Les données IA complètent, ne remplacent pas, le diagnostic professionnel.</p>
                 {isFallback && (
                     <p className="text-xs text-blue-600 dark:text-blue-400 mt-2">📌 Utilisation du mode analyse locale. Pour des analyses Claude avancées, configurez ANTHROPIC_API_KEY.</p>
+                )}
+                {modelMode && (
+                    <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">Mode IA: {modelMode}</p>
                 )}
             </div>
         </div>

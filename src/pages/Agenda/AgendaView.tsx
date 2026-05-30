@@ -82,7 +82,7 @@ const AgendaView: React.FC = () => {
     const animalsQuery = useQuery<AnimalOption[]>({
         queryKey: ['agenda-animals'],
         queryFn: async () => {
-            const response = await api.get('/sheep');
+            const response = await api.get('/sheep', { params: { limit: 200, page: 1 } });
             const payload = Array.isArray(response.data)
                 ? response.data
                 : Array.isArray(response.data?.data)
@@ -243,6 +243,13 @@ const AgendaView: React.FC = () => {
                     </button>
                 ))}
             </div>
+
+            {events.length === 0 && (
+                <div className="rounded-2xl border border-dashed border-gray-300 bg-white px-6 py-10 text-center shadow-sm dark:border-gray-700 dark:bg-card-dark">
+                    <p className="text-base font-semibold text-gray-900 dark:text-white">Aucun événement ce mois</p>
+                    <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">Cliquez sur "Ajouter" pour planifier une visite.</p>
+                </div>
+            )}
 
             {view === 'month' && (
                 <div className="grid grid-cols-7 gap-2">

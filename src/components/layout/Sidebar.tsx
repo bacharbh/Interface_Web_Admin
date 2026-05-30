@@ -22,7 +22,7 @@ interface SidebarProps {
 }
 
 const PILLARS = {
-  operations: { label: 'Opérations', routes: ['/dashboard', '/map', '/animals', '/alerts', '/compare', '/agenda'] },
+  operations: { label: 'Opérations', routes: ['/dashboard', '/map', '/animals', '/alerts', '/agenda'] },
   intelligence: { label: 'Intelligence', routes: ['/ai-dashboard', '/analytics', '/anomalies'] },
   administration: { label: 'Gestion', routes: ['/admin/labelling', '/hardware', '/users', '/settings'] },
 } as const;

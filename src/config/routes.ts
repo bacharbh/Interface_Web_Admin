@@ -25,7 +25,6 @@ export const ROUTE_META: Record<string, RouteMeta> = {
     '/hardware': { title: 'Hardware', subtitle: 'Flotte colliers', pillar: 'administration', icon: 'device-watch' },
     '/users': { title: 'Utilisateurs', subtitle: 'Gestion des accès', pillar: 'administration', icon: 'users' },
     '/settings': { title: 'Paramètres', subtitle: 'Configuration système', pillar: 'administration', icon: 'settings' },
-    '/troupeau/compare': { title: 'Comparaison', subtitle: 'Comparaison des animaux', pillar: 'operations', icon: 'git-compare' },
     '/agenda': { title: 'Agenda', subtitle: 'Planification des visites', pillar: 'operations', icon: 'calendar' },
 };
 

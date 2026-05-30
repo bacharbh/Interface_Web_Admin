@@ -2,6 +2,7 @@ import React, { useMemo, useState, useEffect } from 'react';
 import { MapContainer, TileLayer, Polyline, useMap } from 'react-leaflet';
 import MarkerClusterGroup from 'react-leaflet-cluster';
 import L from 'leaflet';
+import { useSearchParams } from 'react-router-dom';
 import iconRetinaUrl from 'leaflet/dist/images/marker-icon-2x.png';
 import iconUrl from 'leaflet/dist/images/marker-icon.png';
 import shadowUrl from 'leaflet/dist/images/marker-shadow.png';
@@ -73,6 +74,8 @@ interface RealTimeMapProps {
   isConnected: boolean;
   onViewportChange: (zoom: number, bounds: ViewBounds) => void;
   center?: [number, number];
+  tileLayerOverride?: 'streets' | 'satellite' | 'dark';
+  imperativeRef?: React.MutableRefObject<((lat: number, lng: number, zoom?: number) => void) | null>;
 }
 
 // Fix Leaflet default marker icons for Vite/Webpack bundling.
@@ -286,6 +289,23 @@ const MapEvents = ({ onViewportChange, onZoomChange }: { onViewportChange: (zoom
   return null;
 };
 
+const MapImperativeRef = ({ imperativeRef }: { imperativeRef?: React.MutableRefObject<((lat: number, lng: number, zoom?: number) => void) | null> }) => {
+  const map = useMap();
+
+  useEffect(() => {
+    if (!imperativeRef) return;
+    imperativeRef.current = (lat: number, lng: number, zoom = 16) => {
+      map.setView([lat, lng], zoom, { animate: true });
+    };
+
+    return () => {
+      imperativeRef.current = null;
+    };
+  }, [map, imperativeRef]);
+
+  return null;
+};
+
 const createCustomClusterIcon = (cluster: ClusterMarker) => {
   const childMarkers = cluster.getAllChildMarkers();
   const counts = childMarkers.reduce((acc, marker) => {
@@ -307,12 +327,13 @@ const createCustomClusterIcon = (cluster: ClusterMarker) => {
   }[status];
 
   return L.divIcon({
-    html: `<div style="background-color: ${color}; width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-weight: 900; font-size: 14px; border: 3px solid white; box-shadow: 0 4px 10px rgba(0,0,0,0.3);">
+    html: `<div style="background-color: ${color}; width: 44px; height: 44px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-weight: 800; font-size: 15px; border: 3px solid rgba(255,255,255,0.9); box-shadow: 0 4px 15px ${color}80, inset 0 0 10px rgba(255,255,255,0.4); backdrop-filter: blur(4px); position: relative;">
+             <span style="position: absolute; top: -4px; right: -4px; width: 12px; height: 12px; background: white; border-radius: 50%; display: inline-block;"></span>
              ${childMarkers.length}
            </div>`,
     className: 'custom-cluster-icon',
-    iconSize: [40, 40],
-    iconAnchor: [20, 20],
+    iconSize: [44, 44],
+    iconAnchor: [22, 22],
   });
 };
 
@@ -353,13 +374,17 @@ const RealTimeMap = React.memo(({
   isSimulation,
   isConnected,
   onViewportChange,
+  tileLayerOverride,
+  imperativeRef,
 }: RealTimeMapProps) => {
   const { theme } = useTheme();
   const { toggleSimulation } = useMqtt();
   const mapRef = React.useRef<any>(null);
+  const [searchParams] = useSearchParams();
+  const focusId = searchParams.get('focus');
   const farmConfig = useFarmConfig();
   const [simulationSettings, setSimulationSettings] = useState(() => getSimulationSettings());
-  const [activeLayer, setActiveLayer] = useState(theme === 'dark' ? 'dark' : 'street');
+  const [activeLayer, setActiveLayer] = useState<keyof typeof TILE_LAYERS>(theme === 'dark' ? 'dark' : 'street');
   const [tileUrl, setTileUrl] = useState(TILE_LAYERS[theme === 'dark' ? 'dark' : 'street'].url);
   const [showWeather, setShowWeather] = useState(false);
   const [weatherType, setWeatherType] = useState('precipitation_new');
@@ -376,6 +401,18 @@ const RealTimeMap = React.memo(({
   useEffect(() => {
     updateSimulationConfig(simulationSettings);
   }, [simulationSettings]);
+
+  useEffect(() => {
+    if (!tileLayerOverride) return;
+    const map: Record<'streets' | 'satellite' | 'dark', keyof typeof TILE_LAYERS> = {
+      streets: 'street',
+      satellite: 'satellite',
+      dark: 'dark',
+    };
+    const key = map[tileLayerOverride] || 'street';
+    if (TILE_LAYERS[key]?.url) setTileUrl(TILE_LAYERS[key].url);
+    if (key !== activeLayer) setActiveLayer(key);
+  }, [activeLayer, tileLayerOverride]);
 
   const processedAnimals = useMemo<AnimalPosition[]>(() => {
     return animalsList
@@ -560,6 +597,22 @@ const RealTimeMap = React.memo(({
     return processedAnimals;
   }, [processedAnimals]);
 
+  useEffect(() => {
+    if (!focusId || !mapRef.current) return;
+
+    const target = Object.values(animalsList).find(
+      (animal: any) => animal.collar_id === focusId || animal.id === focusId || animal.sheepId === focusId
+    );
+
+    if (target && typeof target.lat === 'number' && typeof target.lng === 'number') {
+      try {
+        mapRef.current.setView([target.lat, target.lng], 18);
+      } catch (error) {
+        console.warn('Unable to focus map on selected animal:', error);
+      }
+    }
+  }, [animalsList, focusId]);
+
   if (!initialCenter) {
     return (
       <div className="relative h-full min-h-[520px] overflow-hidden rounded-[10px] border border-[var(--card-border)] bg-white dark:bg-[var(--card-bg)]">
@@ -593,12 +646,13 @@ const RealTimeMap = React.memo(({
         zoom={14}
         className="w-full"
         zoomControl={false}
+        preferCanvas={true}
         {...({ whenCreated: (m: any) => { mapRef.current = m } } as any)}
         style={{ height: '100%', minHeight: '400px', width: '100%', position: 'relative' }}
       >
         <MapViewSync animalBounds={animalBounds} initialCenter={initialCenter} />
         <InvalidateMapSize />
-        <GeomanControls onZoneCreated={onZoneCreated} onZoneEdited={onZoneEdited} onZoneDeleted={onZoneDeleted} />
+        <MapImperativeRef imperativeRef={imperativeRef} />
         <MapEvents onViewportChange={onViewportChange} onZoomChange={setCurrentZoom} />
 
         <TileLayer

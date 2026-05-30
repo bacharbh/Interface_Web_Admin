@@ -39,6 +39,37 @@ function checkRateLimit(ip) {
     return limit.count <= 100; // Allow 100 requests per minute
 }
 
+function buildFallbackAnalysis(animals, extra = {}) {
+    try {
+        const analysis = LocalAIAnalysisService.analyzeAnimals(animals);
+        return {
+            success: true,
+            data: analysis,
+            fallback: true,
+            model_mode: 'local',
+            confidence: 0.85,
+            timestamp: new Date().toISOString(),
+            ...extra,
+        };
+    } catch (fallbackError) {
+        console.error('Local AI fallback error:', fallbackError);
+        return {
+            success: true,
+            data: {
+                summary: 'Analyse indisponible',
+                riskLevel: 'LOW',
+                riskAnimalIds: [],
+                suggestions: []
+            },
+            fallback: true,
+            model_mode: 'local',
+            isSimulated: true,
+            timestamp: new Date().toISOString(),
+            ...extra,
+        };
+    }
+}
+
 /**
  * POST /api/ai/analyze
  * Proxies Anthropic API for comparing multiple animals
@@ -72,15 +103,7 @@ router.post('/analyze', async (req, res) => {
                 console.log('ℹ️ Anthropic API key not configured. Using local AI analysis.');
                 global.__anthropicFallbackLogged = true;
             }
-            const analysis = LocalAIAnalysisService.analyzeAnimals(animals);
-
-            return res.json({
-                success: true,
-                data: analysis,
-                fallback: true,
-                confidence: 0.85,
-                timestamp: new Date().toISOString(),
-            });
+            return res.json(buildFallbackAnalysis(animals));
         }
 
         // Prevent spam: Skip analysis if data unchanged in last 30 seconds
@@ -90,15 +113,7 @@ router.post('/analyze', async (req, res) => {
 
         if (lastAnalysisTime[cacheKey] && (now - lastAnalysisTime[cacheKey]) < 30000) {
             console.log('⏭️  Skipping duplicate analysis (cache hit, <30s)');
-            const analysis = LocalAIAnalysisService.analyzeAnimals(animals);
-            return res.json({
-                success: true,
-                data: analysis,
-                fallback: true,
-                confidence: 0.85,
-                cached: true,
-                timestamp: new Date().toISOString(),
-            });
+            return res.json(buildFallbackAnalysis(animals, { cached: true, model_mode: 'local-cache' }));
         }
 
         lastAnalysisTime[cacheKey] = now;
@@ -194,23 +209,12 @@ Réponds maintenant le JSON uniquement.`;
         res.json({
             success: true,
             data: analysisData,
+            model_mode: 'anthropic',
             timestamp: new Date().toISOString(),
         });
     } catch (error) {
         console.error('AI Analysis error:', error.response?.data || error.message);
-
-        return res.status(200).json({
-            success: true,
-            data: {
-                summary: 'Analyse indisponible',
-                riskLevel: 'LOW',
-                riskAnimalIds: [],
-                suggestions: []
-            },
-            fallback: true,
-            isSimulated: true,
-            timestamp: new Date().toISOString(),
-        });
+        return res.status(200).json(buildFallbackAnalysis(req.body?.animals || []));
     }
 });
 

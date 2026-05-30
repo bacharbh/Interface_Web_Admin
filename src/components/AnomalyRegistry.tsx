@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { AlertTriangle, RefreshCw, Clock, TrendingUp } from 'lucide-react';
 import Button from './ui/Button';
 import { useRealtimePositions } from '../hooks/useRealtimePositions';
@@ -18,9 +19,27 @@ interface AnomalyRecord {
 
 interface AIAnalysis {
     summary: string;
-    riskLevel: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
+    riskLevel: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL' | 'N/A';
+    riskScore?: number;
     riskAnimalIds: string[];
     suggestions: string[];
+    fallback?: boolean;
+}
+
+interface PersistedAnomaly {
+    _id?: string;
+    animalId?: string;
+    collar_id?: string;
+    name?: string;
+    score?: number;
+    detectedAt?: string;
+    timestamp?: string;
+    resolved?: boolean;
+    features?: {
+        temperature?: number;
+        movementRate?: number;
+        heartRate?: number;
+    };
 }
 
 const AnomalyRegistry: React.FC = () => {
@@ -35,7 +54,14 @@ const AnomalyRegistry: React.FC = () => {
     const lastAIRequestSignatureRef = useRef<string>('');
     const aiRequestInFlightRef = useRef(false);
     const lastAnomalySignatureRef = useRef<string>('');
+    const lastPersistedAnomalySignatureRef = useRef<string>('');
     const refreshTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+    const { data: persistedAnomalies = [] } = useQuery<PersistedAnomaly[]>({
+        queryKey: ['anomalies'],
+        queryFn: () => api.get('/anomalies').then((response) => response.data?.data ?? []),
+        refetchInterval: 30000,
+    });
 
     const animalsSignature = animalsList
         .map(animal => `${animal.collar_id || animal.id || 'na'}:${animal.health || 'Unknown'}:${animal.battery ?? 0}:${animal.temperature ?? 0}:${animal.heartRate ?? 0}`)
@@ -43,6 +69,31 @@ const AnomalyRegistry: React.FC = () => {
         .join('|');
 
     const aiRiskSignature = aiAnalysis?.riskAnimalIds?.slice().sort().join('|') ?? '';
+
+    const persistAnomalies = async (records: AnomalyRecord[], signature: string) => {
+        try {
+            await Promise.all(
+                records.map((record) =>
+                    api.post('/anomalies', {
+                        animalId: record.collar_id,
+                        name: record.name,
+                        score: record.health === 'Critical' ? 1 : record.health === 'Warning' ? 0.7 : 0.4,
+                        features: {
+                            temperature: record.temperature,
+                            movementRate: record.activity,
+                            heartRate: record.bpm,
+                        },
+                        detectedAt: new Date().toISOString(),
+                        resolved: false,
+                    })
+                )
+            );
+
+            lastPersistedAnomalySignatureRef.current = signature;
+        } catch (error: any) {
+            console.error('Anomaly persistence error:', error?.response?.data || error?.message || error);
+        }
+    };
 
     // Reactive anomaly tracking - updates immediately when store changes
     useEffect(() => {
@@ -95,6 +146,10 @@ const AnomalyRegistry: React.FC = () => {
             lastAnomalySignatureRef.current = signature;
             setAnomalyRecords(newRecords);
             setLastSimulationUpdate(new Date());
+
+            if (newRecords.length > 0 && signature !== lastPersistedAnomalySignatureRef.current) {
+                void persistAnomalies(newRecords, signature);
+            }
         }
     }, [animalsSignature, aiRiskSignature]);
 
@@ -135,7 +190,7 @@ const AnomalyRegistry: React.FC = () => {
                 };
 
                 console.debug('[AnomalyRegistry] POST /api/ai/analyze payload size:', payload.animals.length);
-                const response = await api.post('/ai/analyze', payload, { timeout: 30000 });
+                const response = await api.post('/ai/analyze', payload, { timeout: 12000 });
                 console.debug('[AnomalyRegistry] AI analyze response', response?.data);
 
                 if (response?.data) {
@@ -152,7 +207,20 @@ const AnomalyRegistry: React.FC = () => {
                     }
                 }
             } catch (error: any) {
-                console.error('AI Analysis error:', error?.response?.data || error?.message || error);
+                console.error('AI Analysis error:', error?.response?.data || error?.message);
+                setAiAnalysis({
+                    riskLevel: 'N/A',
+                    riskScore: 0,
+                    summary: !error.response
+                        ? 'Service IA hors ligne — vérifiez la connexion backend.'
+                        : error?.response?.status === 500
+                            ? 'Erreur interne du service IA (500).'
+                            : 'Analyse IA indisponible.',
+                    suggestions: [],
+                    riskAnimalIds: [],
+                    fallback: true,
+                });
+                setLastAIUpdate(new Date());
             } finally {
                 aiRequestInFlightRef.current = false;
                 setIsLoading(false);
@@ -195,8 +263,21 @@ const AnomalyRegistry: React.FC = () => {
         }
     };
 
+    const persistedAnomalyRecords: AnomalyRecord[] = persistedAnomalies.map((anomaly, index) => ({
+        collar_id: anomaly.animalId || anomaly.collar_id || anomaly._id || `persisted_${index}`,
+        name: anomaly.name || anomaly.animalId || anomaly.collar_id || `Anomalie ${index + 1}`,
+        bpm: anomaly.features?.heartRate ?? 0,
+        temperature: anomaly.features?.temperature ?? 0,
+        activity: anomaly.features?.movementRate ?? 0,
+        health: anomaly.resolved ? 'Resolved' : 'Warning',
+        battery: 0,
+        timestamp: anomaly.detectedAt || anomaly.timestamp || new Date().toISOString(),
+        isAtRisk: !anomaly.resolved,
+    }));
+
+    const allAnomalyRecords = [...persistedAnomalyRecords, ...anomalyRecords];
     const totalAnimals = animalsList.length;
-    const anomaliesCount = anomalyRecords.length;
+    const anomaliesCount = allAnomalyRecords.length;
     const atRiskCount = aiAnalysis?.riskAnimalIds?.length ?? 0;
 
     return (
@@ -242,7 +323,7 @@ const AnomalyRegistry: React.FC = () => {
                         Dernière analyse IA
                     </div>
                     <p className="text-lg font-semibold text-gray-900 dark:text-white mt-1">
-                        {lastAIUpdate?.toLocaleTimeString('fr-FR') || 'En attente...'}
+                        {lastAIUpdate?.toLocaleTimeString('fr-FR') || 'Non disponible'}
                     </p>
                     <div className="mt-2 text-sm text-gray-600 dark:text-gray-400">
                         <span>Analysés: <strong className="text-gray-900 dark:text-white">{totalAnimals}</strong></span>
@@ -295,7 +376,7 @@ const AnomalyRegistry: React.FC = () => {
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-                        {anomalyRecords.map((record) => (
+                        {allAnomalyRecords.map((record) => (
                             <tr
                                 key={record.collar_id}
                                 className={`transition-colors ${record.isAtRisk
@@ -350,7 +431,7 @@ const AnomalyRegistry: React.FC = () => {
                 </table>
             </div>
 
-            {anomalyRecords.length === 0 && (
+            {allAnomalyRecords.length === 0 && (
                 <div className="text-center py-12">
                     <p className="text-gray-600 dark:text-gray-400">
                         En attente des données de simulation...

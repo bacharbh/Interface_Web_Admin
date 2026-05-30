@@ -1,9 +1,11 @@
 import React, { useState, useMemo } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { Cpu, Battery, Wifi, Activity, Search, RefreshCw, Layers, Radio, AlertTriangle, CheckCircle } from 'lucide-react';
 import Button from '../../components/ui/Button';
 import { useIoTStore } from '../../hooks/useIoTStore';
 import { IAnimal } from '../../types';
+import api from '../../services/api';
 
 type HardwareStatus = 'DEPLOYED' | 'LOW_BATT' | 'OFFLINE' | 'UNASSIGNED';
 
@@ -66,6 +68,17 @@ const Hardware = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filter, setFilter] = useState<HardwareStatus | 'ALL'>('ALL');
 
+  const { data: apiSheep = [] } = useQuery({
+    queryKey: ['hardware-sheep-fallback'],
+    queryFn: async () => {
+      const response = await api.get('/sheep');
+      const payload = response.data?.data ?? response.data?.sheep ?? response.data;
+      return Array.isArray(payload) ? payload : [];
+    },
+    enabled: Object.keys(devicesMap).length === 0,
+    staleTime: 30_000,
+  });
+
   // Derive hardware list from live device store
   const hardwareList = useMemo<HardwareItem[]>(() => {
     return Object.values(devicesMap).map(animal => ({
@@ -74,7 +87,7 @@ const Hardware = () => {
       breed: animal.breed,
       battery: animal.battery,
       signal: animal.rssi,
-      firmware: 'v2.1.4',
+      firmware: (animal as any).firmware || (animal as any).firmwareVersion || 'N/A',
       status: getStatusFromDevice(animal),
       lat: animal.lat,
       lng: animal.lng,
@@ -82,21 +95,31 @@ const Hardware = () => {
     }));
   }, [devicesMap]);
 
-  const filtered = useMemo(() => hardwareList.filter(d => {
-    const matchesSearch = d.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      d.animalName?.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesFilter = filter === 'ALL' || d.status === filter;
-    return matchesSearch && matchesFilter;
-  }), [hardwareList, searchTerm, filter]);
+  const fallbackHardware = useMemo<HardwareItem[]>(() => {
+    return (apiSheep as IAnimal[]).map(animal => ({
+      id: animal.collar_id,
+      animalName: animal.name,
+      breed: animal.breed,
+      battery: animal.battery ?? 0,
+      signal: animal.rssi,
+      firmware: (animal as any).firmware || (animal as any).firmwareVersion || 'N/A',
+      status: getStatusFromDevice(animal),
+      lat: animal.lat,
+      lng: animal.lng,
+      lastUpdate: animal.lastUpdate,
+    }));
+  }, [apiSheep]);
+
+  const displayHardware = hardwareList.length > 0 ? hardwareList : fallbackHardware;
 
   const kpis = useMemo(() => ({
-    total: hardwareList.length,
-    deployed: hardwareList.filter(d => d.status === 'DEPLOYED').length,
-    lowBatt: hardwareList.filter(d => d.status === 'LOW_BATT').length,
-    offline: hardwareList.filter(d => d.status === 'OFFLINE').length,
-  }), [hardwareList]);
+    total: displayHardware.length,
+    deployed: displayHardware.filter(d => d.status === 'DEPLOYED').length,
+    lowBatt: displayHardware.filter(d => d.status === 'LOW_BATT').length,
+    offline: displayHardware.filter(d => d.status === 'OFFLINE').length,
+  }), [displayHardware]);
 
-  const isEmpty = hardwareList.length === 0;
+  const isEmpty = displayHardware.length === 0;
 
   return (
     <div className="max-w-7xl mx-auto space-y-6 pb-20 px-4 animate-fade-in">
@@ -161,9 +184,13 @@ const Hardware = () => {
 
         <div className="overflow-x-auto">
           {isEmpty ? (
-            <div className="py-20 text-center">
+            <div className="py-20 text-center space-y-4">
               <Radio className="w-12 h-12 mx-auto mb-4 text-gray-200 animate-pulse" />
-              <p className="label-sm font-black text-gray-400">En attente de la simulation…</p>
+              <p className="label-sm font-black text-gray-400">Aucun appareil détecté</p>
+              <p className="text-xs text-gray-500">Activez la simulation ou vérifiez la connexion MQTT.</p>
+              <Button variant="secondary" onClick={() => navigate('/settings')} className="inline-flex items-center gap-2">
+                Aller aux paramètres
+              </Button>
             </div>
           ) : (
             <table className="w-full text-left text-sm whitespace-nowrap">
@@ -175,7 +202,12 @@ const Hardware = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 dark:divide-slate-800/50">
-                {filtered.slice(0, 50).map((device) => {
+                {displayHardware.filter(d => {
+                  const matchesSearch = d.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                    d.animalName?.toLowerCase().includes(searchTerm.toLowerCase());
+                  const matchesFilter = filter === 'ALL' || d.status === filter;
+                  return matchesSearch && matchesFilter;
+                }).slice(0, 50).map((device) => {
                   const sig = getSignalStrength(device.signal);
                   return (
                     <tr
@@ -224,7 +256,7 @@ const Hardware = () => {
                         <div className={`flex items-center gap-2 ${sig.color}`}>
                           <SignalBars bars={sig.bars} />
                           <span className="text-xs font-bold dark:text-slate-300">
-                            {sig.text} <span className="text-slate-400 font-mono ml-1">({device.signal} dBm)</span>
+                            {sig.text} <span className="text-slate-400 font-mono ml-1">({typeof device.signal === 'number' ? `${device.signal} dBm` : 'Non disponible'})</span>
                           </span>
                         </div>
                       </td>
@@ -258,9 +290,9 @@ const Hardware = () => {
           )}
         </div>
 
-        {filtered.length > 50 && (
+        {displayHardware.length > 50 && (
           <div className="px-6 py-3 border-t border-slate-100 dark:border-slate-800 text-center">
-            <p className="text-[11px] font-bold text-gray-400">Affichage des 50 premiers sur {filtered.length} résultats. Affinez la recherche pour voir plus.</p>
+            <p className="text-[11px] font-bold text-gray-400">Affichage des 50 premiers sur {displayHardware.length} résultats. Affinez la recherche pour voir plus.</p>
           </div>
         )}
       </div>

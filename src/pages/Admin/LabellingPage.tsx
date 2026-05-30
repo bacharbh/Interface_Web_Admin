@@ -65,6 +65,7 @@ export default function LabellingPage() {
     const [isConfirmed, setIsConfirmed] = useState(false);
     const [notes, setNotes] = useState('');
     const [labelledCount, setLabelledCount] = useState(0);
+    const [submittedIds, setSubmittedIds] = useState<Set<string>>(new Set());
 
     // ── Guard: feature flag ─────────────────────────────────────────────────
     if (!FEATURES.LABELLING) {
@@ -104,6 +105,28 @@ export default function LabellingPage() {
     useEffect(() => {
         if (!selectedAnimal && flaggedAnimals.length > 0) setSelectedAnimal(flaggedAnimals[0]);
     }, [flaggedAnimals]);
+
+
+
+    // Load initial labelled count from API (if available)
+    const { data: initialCount } = useQuery({
+        queryKey: ['labelling', 'count'],
+        queryFn: async () => {
+            try {
+                const res = await api.get('/labelling/count');
+                return res.data?.count ?? res.data?.data?.count ?? 0;
+            } catch (err) {
+                return 0;
+            }
+        },
+        staleTime: 60_000,
+    });
+
+    useEffect(() => {
+        if (typeof initialCount === 'number' && initialCount >= 0) {
+            setLabelledCount(initialCount);
+        }
+    }, [initialCount]);
 
     // ── Real telemetry chart for selected animal ──────────────────────────────
     const { data: telemetryData } = useQuery({
@@ -202,8 +225,20 @@ export default function LabellingPage() {
             setSymptomOnset(null);
             setOutcome('Healthy');
             setIsConfirmed(false);
-            const idx = flaggedAnimals.findIndex(a => a.id === selectedAnimal.id);
-            if (idx < flaggedAnimals.length - 1) setSelectedAnimal(flaggedAnimals[idx + 1]);
+            // Mark this animal as submitted locally so it disappears from the visible list
+            setSubmittedIds(prev => {
+                const next = new Set(prev);
+                next.add(selectedAnimal.id);
+                return next;
+            });
+
+            // Move to next visible animal (excluding submitted ones)
+            const currentVisible = flaggedAnimals.filter(a => !submittedIds.has(a.id) && a.id !== selectedAnimal.id);
+            if (currentVisible.length > 0) {
+                setSelectedAnimal(currentVisible[0]);
+            } else {
+                setSelectedAnimal(null);
+            }
         } catch (err: any) {
             const msg = err?.response?.status === 404
                 ? 'Endpoint /api/labelling/diagnose introuvable.'
@@ -212,7 +247,20 @@ export default function LabellingPage() {
         }
     };
 
-    const totalFlagged = flaggedAnimals.length || 1;
+    // Exclude locally-submitted animals from the visible flagged list
+    const visibleFlagged = useMemo(() => flaggedAnimals.filter(a => !submittedIds.has(a.id)), [flaggedAnimals, submittedIds]);
+
+    // Ensure selection follows visibleFlagged (excludes already submitted)
+    useEffect(() => {
+        if (!selectedAnimal && visibleFlagged.length > 0) setSelectedAnimal(visibleFlagged[0]);
+        if (selectedAnimal && submittedIds.has(selectedAnimal.id)) {
+            // If currently selected animal was just submitted, move to next
+            const next = visibleFlagged.find(a => a.id !== selectedAnimal.id) ?? null;
+            setSelectedAnimal(next);
+        }
+    }, [visibleFlagged, selectedAnimal, submittedIds]);
+
+    const totalFlagged = (labelledCount + visibleFlagged.length) || 1;
     const pct = Math.round((labelledCount / totalFlagged) * 100);
 
     return (
@@ -264,7 +312,7 @@ export default function LabellingPage() {
                             <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Anomalies récentes</p>
                         </div>
                         <div className="overflow-y-auto max-h-[420px]">
-                            {flaggedAnimals.map(a => (
+                            {visibleFlagged.map(a => (
                                 <button
                                     key={a.id}
                                     onClick={() => setSelectedAnimal(a)}

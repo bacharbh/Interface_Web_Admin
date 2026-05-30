@@ -1,0 +1,412 @@
+\documentclass[12pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[french]{babel}
+\usepackage{geometry}
+\usepackage{longtable}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{hyperref}
+\usepackage{xcolor}
+\usepackage{enumitem}
+\usepackage{titlesec}
+
+\geometry{margin=2.2cm}
+\setlist[itemize]{leftmargin=1.2cm}
+\setlist[enumerate]{leftmargin=1.1cm}
+\hypersetup{colorlinks=true,linkcolor=black,urlcolor=blue}
+\titleformat{\section}{\large\bfseries}{\thesection.}{0.6em}{}
+\titleformat{\subsection}{\normalsize\bfseries}{\thesubsection.}{0.6em}{}
+
+\title{\textbf{Rapport d'Audit Technique}\\Smart Shepherd - Plateforme Admin IoT/IA}
+\author{Audit architecture, produit et ingenierie}
+\date{29 mai 2026}
+
+\begin{document}
+\maketitle
+\tableofcontents
+\newpage
+
+\section{Resume executif}
+Ce rapport presente une analyse technique complete du dashboard administratif et de la plateforme Smart Shepherd sur la base du code source disponible.\
+
+\textbf{Conclusion courte :} la plateforme est avancee et convaincante en demonstration (temps reel, carte, analytics, IA, simulation), mais reste hybride entre MVP avance et produit SaaS industriel.\
+
+\textbf{Forces majeures :}
+\begin{itemize}
+  \item Stack moderne coherente pour un produit IoT (React + Node + MongoDB + MQTT + Socket.IO + FastAPI).
+  \item Dashboard riche avec nombreuses pages metier et UX globalement solide.
+  \item Simulation IoT detaillee et parametres avances de scenario.
+  \item Presence d'une base DevOps (Docker Compose, Prometheus, Grafana, Alertmanager).
+\end{itemize}
+
+\textbf{Risques majeurs :}
+\begin{itemize}
+  \item Securite et authentification heterogenes (plusieurs middlewares auth, bypass dev, roles non uniformes).
+  \item IA multi-chemin (Node local, FastAPI, LLM externe) avec fallback mock partiellement opaque.
+  \item Contrats API et evenements temps reel non totalement uniformises.
+  \item Presence de comportements fallback/mocks pouvant masquer des incidents en production.
+\end{itemize}
+
+\section{Methodologie et perimetre}
+\subsection{Sources inspectees}
+L'analyse couvre principalement :
+\begin{itemize}
+  \item Frontend: routage, pages, hooks et services temps reel.
+  \item Backend: API Express, routes metier, MQTT, Socket.IO, auth.
+  \item Microservice IA Python FastAPI.
+  \item Infrastructure Docker (dev/prod) et observabilite.
+\end{itemize}
+
+\subsection{Limites}
+\begin{itemize}
+  \item Pas de capture d'ecran exploitee dans ce passage.
+  \item Pas de benchmark de charge execute dans ce rapport.
+  \item Evaluation basee sur le code et la structure projet.
+\end{itemize}
+
+\section{1. Identification des technologies}
+\subsection{Frontend}
+\begin{itemize}
+  \item React 18 + TypeScript + Vite.
+  \item React Router v6 pour les routes applicatives.
+  \item Zustand pour l'etat global IoT et alertes.
+  \item React Query pour requetes API et mutations.
+  \item Tailwind CSS + composants UI custom.
+  \item Chart.js/Recharts pour visualisation.
+  \item Leaflet/React-Leaflet + Geoman pour cartes/geofence.
+  \item MQTT client navigateur et Socket.IO client.
+\end{itemize}
+
+\subsection{Backend}
+\begin{itemize}
+  \item Node.js + Express (ESM).
+  \item MongoDB via Mongoose.
+  \item Redis (cache conditionnel).
+  \item Socket.IO serveur pour push realtime.
+  \item MQTT client serveur pour ingestion/emission flux IoT.
+\end{itemize}
+
+\subsection{IA et data science}
+\begin{itemize}
+  \item Service IA Node (tfjs-node conditionnel, logique prediction et scoring).
+  \item Microservice FastAPI (TensorFlow/XGBoost, endpoints IA).
+  \item LLM externe Anthropic avec fallback local heuristique.
+\end{itemize}
+
+\subsection{Infra et exploitation}
+\begin{itemize}
+  \item Docker Compose dev/prod.
+  \item Mosquitto, Mongo, Redis.
+  \item Prometheus, Alertmanager, Grafana.
+  \item Nginx reverse proxy.
+\end{itemize}
+
+\subsection{LoRa / LoRaWAN}
+\begin{itemize}
+  \item Presence d'un dossier firmware ESP32 avec bibliotheques LoRaWAN.
+  \item Pas d'integration backend explicite complete type network server LoRaWAN -> decoder -> pipeline data.
+\end{itemize}
+
+\textbf{Verdict coherence techno :} choix global logique et pertinent pour une plateforme IoT intelligente; les points faibles proviennent surtout de l'uniformisation d'architecture et de gouvernance runtime.
+
+\section{2. Analyse complete des pages}
+\subsection{Pages identifiees}
+\begin{itemize}
+  \item Dashboard, Map, Animals, Animal Profile, Compare, Agenda, Alerts.
+  \item Anomalies, Analytics, AI Dashboard.
+  \item Users, Hardware, Settings.
+  \item Admin: AI Settings, Labelling.
+\end{itemize}
+
+\subsection{Evaluation fonctionnelle par domaine}
+\textbf{Operations:}
+\begin{itemize}
+  \item Dashboard: KPIs, widgets realtime, alertes, mini-map, meteo.
+  \item Map: supervision geospatiale, geofencing, edition de zones.
+  \item Animals: liste virtualisee, tri/filtre, score sante, navigation detail.
+  \item Alerts: centre de triage realtime.
+  \item Agenda: planification vet.
+\end{itemize}
+
+\textbf{Intelligence:}
+\begin{itemize}
+  \item Analytics: heatmap, batterie, tendances historiques, export.
+  \item Anomalies: registre + analyse IA asynchrone.
+  \item AI Dashboard: vue predictive, severite, recommandations.
+\end{itemize}
+
+\textbf{Administration:}
+\begin{itemize}
+  \item Users: CRUD avec optimistic update (et mode mock selon config).
+  \item Hardware: flotte colliers, etat derive du store.
+  \item Settings/AI Settings: configuration simulation, seuils, canaux notifications.
+  \item Labelling: annotation terrain alimentee par les alertes et le troupeau live, avec fallback store en secours.
+\end{itemize}
+
+\subsection{UX/UI}
+\begin{itemize}
+  \item Niveau visuel global bon a tres bon (hierarchie, composants, skeletons, badges severite).
+  \item Navigation claire via piliers metier.
+  \item Risque de surcharge informationnelle sur certaines vues denses.
+  \item Certains fallbacks UX peuvent masquer des incidents techniques reels.
+\end{itemize}
+
+\section{3. Analyse speciale IA}
+\subsection{Constat de realite IA}
+La plateforme propose une vraie couche IA, mais elle fonctionne selon plusieurs modes selon la disponibilite des dependances, des modeles et des cles API.
+
+\subsection{Modes detectes}
+\begin{itemize}
+  \item IA locale Node (prediction/scoring).
+  \item IA microservice FastAPI (health-check, battery-rul, position).
+  \item IA generative externe (Anthropic) pour synthese.
+  \item Fallback heuristique locale en cas d'echec API/cle absente, expose via un mode IA explicite.
+\end{itemize}
+
+\subsection{Points critiques IA}
+\begin{itemize}
+  \item Risque de confusion produit fortement reduit: le backend expose maintenant un \texttt{model\_mode} explicite (anthropic/local/local-cache).
+  \item Endpoints avec retour success/fallback toujours a surveiller, mais la transparence d'incident est meilleure qu'avant.
+  \item Absence d'une gouvernance MLOps complete (versioning modele, quality gates, drift monitoring).
+\end{itemize}
+
+\subsection{Recommandations IA prioritaires}
+\begin{enumerate}
+  \item Standardiser la reponse IA avec un champ obligatoire \texttt{model\_mode} (real/mock/fallback).
+  \item Centraliser l'inference via FastAPI; garder Node en orchestrateur et policy layer.
+  \item Mettre en place registre de modeles + metriques qualite + seuils d'acceptation.
+  \item Isoler IA explicative (LLM) de l'IA decisionnelle (scoring risque).
+\end{enumerate}
+
+\section{4. Analyse de la simulation}
+\subsection{Etat actuel}
+\begin{itemize}
+  \item Simulation riche (nombre animaux, vitesse, densite, scenarios, batterie, alertes).
+  \item Simulation encore principalement centree frontend/store, avec un pipeline temps reel partiellement unifie.
+  \item Bonne valeur pour demo, UX tests, essais fonctionnels rapides.
+\end{itemize}
+
+\subsection{Limites}
+\begin{itemize}
+  \item Pas de digital twin backend canonique.
+  \item Realisme biologique/comportemental limite par des regles heuristiques.
+  \item Rejouabilite et tracabilite simulation encore perfectibles.
+\end{itemize}
+
+\subsection{Cible recommandee}
+\begin{enumerate}
+  \item Moteur de simulation backend event-driven.
+  \item Publication simulation via MQTT sur le meme pipeline que le reel.
+  \item Scenarios parametrables avec \texttt{run\_id} et seeds reproductibles.
+  \item Correlation simulation avec meteo, geofence, pannes capteurs et anomalies IA.
+\end{enumerate}
+
+\section{5. Analyse du dashboard administratif}
+\subsection{Architecture frontend}
+\begin{itemize}
+  \item Organisation modulaire globalement bonne (pages, composants, hooks).
+  \item Etat global coherent via Zustand, mais certaines logiques restent dupliquees (MQTT/realtime/services).
+  \item Presence d'une forte couche de presentation avancee.
+\end{itemize}
+
+\subsection{Roles et permissions}
+\begin{itemize}
+  \item Intention RBAC visible cote UI.
+  \item Incoherences role naming detectees (admin/ADMIN/super\_admin selon couches).
+  \item La securite ne doit pas dependre de la seule couche UI.
+\end{itemize}
+
+\subsection{Securite}
+\begin{itemize}
+  \item Corrections recentes sur JWT\_SECRET positives.
+  \item Mais coexistence de plusieurs middlewares auth et bypass dev a controler strictement.
+\end{itemize}
+
+\section{6. Detection des problemes}
+\subsection{Problemes critiques}
+\begin{enumerate}
+  \item Heterogeneite des middlewares d'authentification et des conventions roles.
+  \item Bypass dev potentiellement actif selon environnement et routes.
+  \item Evenements realtime non completement alignes entre emit backend et ecoute frontend.
+\end{enumerate}
+
+\subsection{Problemes majeurs}
+\begin{enumerate}
+  \item Contrats API non uniformes (formes de payload variees).
+  \item Multiples fallback/mocks en chemins utilisateur sans indicateur unifie.
+  \item Dette de standardisation du pipeline IA.
+\end{enumerate}
+
+\subsection{Problemes moyens}
+\begin{enumerate}
+  \item Couplage fort de certains composants pages/services.
+  \item Presence de logiques historiques/optionnelles qui complexifient la maintenance.
+  \item Documentation fonctionnelle riche mais parfois en decalage avec execution runtime.
+\end{enumerate}
+
+\section{7. Fonctionnalites manquantes pour un niveau SaaS IoT pro}
+\begin{itemize}
+  \item RBAC centralise avec policy engine unique.
+  \item Audit logs complets (auth, actions admin, config, IA).
+  \item Device management industriel: provisioning, rotation credentials, OTA, inventaire firmware reel.
+  \item Observabilite avancee: traces distribuees, SLO, runbooks.
+  \item MLOps: monitoring de drift, performance modele, dataset lineage.
+  \item Gouvernance multi-tenant stricte et retention politique.
+  \item Exports reglementaires et mode degrade explicite.
+\end{itemize}
+
+\section{8. Analyse architecture logicielle}
+\subsection{Evaluation}
+\begin{itemize}
+  \item Modularite frontend: bonne.
+  \item Backend: monolithe enrichi avec extensions; viable mais a cadrer.
+  \item Event-driven: present mais non strictement unifie.
+  \item IA microservice: bonne direction, integration encore hybride.
+\end{itemize}
+
+\subsection{Architecture cible recommandee}
+\begin{enumerate}
+  \item API Gateway + Auth service unique + RBAC policy centralisee.
+  \item Ingestion IoT unique (MQTT) + normalisation schema + event bus interne.
+  \item Service IA central d'inference versionnee.
+  \item Contrats API/evenements versionnes (OpenAPI + event schema).
+  \item Frontend branche sur etats data explicites (live/simulated/cached/mock).
+\end{enumerate}
+
+\subsection{Architecture cible enterprise}
+\begin{itemize}
+  \item Couche d'entree: API Gateway, Auth Service, rate limiting et policies de securite.
+  \item Couche metier: IoT Ingestion Service, Alert Service, Analytics Service, Device Service.
+  \item Couche IA: FastAPI centralise, model registry, inference service, monitoring des modeles.
+  \item Couche temps reel: MQTT Broker, normalizer, event bus, WebSocket Gateway, subscriptions front.
+  \item Couche donnees: MongoDB pour les objets metier, PostgreSQL pour les registres structurants, Redis pour cache/queues.
+  \item Couche front: dashboard modulaire, design system, state management explicite live/sim/mock/fallback.
+\end{itemize}
+
+\subsection{Contrats, schemas et standardisation}
+\begin{itemize}
+  \item Toutes les APIs doivent exposer \texttt{\{success, data, error, metadata\}}.
+  \item Les erreurs doivent etre normalisees par code, message, details et correlation\_id.
+  \item Les evenements MQTT et WebSocket doivent partager le meme schema canonique.
+  \item Les DTO doivent etre versionnes (v1, v2) avec validation Zod/Joi cote backend.
+  \item OpenAPI doit servir de source de verite pour les routes HTTP.
+\end{itemize}
+
+\subsection{Architecture temps reel cible}
+\begin{enumerate}
+  \item IoT Device publie vers un topic MQTT normalise.
+  \item Broker MQTT alimente un event normalizer avec idempotence et correlation id.
+  \item Event bus distribue les evenements vers alerting, analytics, IA et websocket.
+  \item WebSocket Gateway pousse vers le dashboard uniquement les vues abonnees.
+  \item Le frontend affiche clairement les modes LIVE, SIMULATION, MOCK et FALLBACK.
+\end{enumerate}
+
+\subsection{IA, MLOps et gouvernance}
+\begin{itemize}
+  \item Un service IA decisionnel doit produire health score, anomaly score et behavior analysis.
+  \item Un service IA explicatif doit generer les syntheses textuelles et recommandations.
+  \item Le model registry doit conserver version, dataset, metrics, date de promotion et rollback target.
+  \item Les predictions doivent remonter un \texttt{confidence score} et un \texttt{model\_mode}.
+  \item Les modeles doivent etre surveilles sur drift, calibration, latency et taux d'erreur.
+\end{itemize}
+
+\subsection{Simulation enterprise}
+\begin{itemize}
+  \item La simulation doit devenir un moteur backend event-driven avec \texttt{run\_id} et seeds reproductibles.
+  \item Chaque scenario doit simuler GPS, temperature, rythme cardiaque, batterie, geofence et panne reseau.
+  \item Les evenements de simulation doivent passer par le meme pipeline MQTT que les donnees reales.
+  \item Le dashboard doit montrer explicitement la provenance des donnees: LIVE, SIMULATION, MOCK ou FALLBACK.
+\end{itemize}
+
+\subsection{Observabilite et DevOps}
+\begin{itemize}
+  \item Metriques: latence API, latence MQTT, files d'attente, erreurs IA, taux d'alertes, uptime.
+  \item Logs: structure JSON, correlation\_id, audit logs admin, logs d'inference IA.
+  \item Traces: OpenTelemetry pour router les requetes entre gateway, services et broker.
+  \item Alerting: Prometheus + Grafana + Alertmanager + notifications critiques.
+  \item Protection: backups, rollback, health checks, readiness/liveness et rotation secrets.
+\end{itemize}
+
+\subsection{Device management}
+\begin{itemize}
+  \item Inventaire firmware et hardware par device.
+  \item Provisioning, rotation de certificats, stockage des identites de devices.
+  \item Heartbeat, batterie, connectivite, geofence, statut de securite.
+  \item OTA updates avec suivi d'etat et rollback firmware.
+\end{itemize}
+
+\subsection{Migration strategy}
+\begin{enumerate}
+  \item Phase A: introduire Auth Service, schema API commun et modele de reponse standard.
+  \item Phase B: unifier les evenements realtime et isoler le pipeline IA.
+  \item Phase C: deplacer la simulation vers le backend et brancher le dashboard sur les sources canoniquees.
+  \item Phase D: industrialiser observabilite, MLOps et device management.
+\end{enumerate}
+
+\subsection{Backlog critique priorise}
+\begin{longtable}{p{4.2cm}p{1.8cm}p{8.4cm}}
+\toprule
+\textbf{Chantier} & \textbf{Priorite} & \textbf{Effet attendu} \\
+\midrule
+Auth/RBAC centralise & P0 & Une seule source d'autorite pour les roles, permissions et tokens \\
+API/event contracts & P0 & Reduction des incoherences de payload et des integrations fragiles \\
+Realtime unifie & P0 & Moins de duplications et de disconnects inter-pages \\
+IA centralisee & P1 & Modele explicite, traçable et monitorable \\
+Simulation backend & P1 & Donnees reproductibles et pipeline canonique \\
+Observabilite & P1 & Diagnostic rapide des incidents et mesure SLA/SLO \\
+Device management & P2 & Ready pour exploitation terrain serieuse \\
+CI/CD et security hardening & P2 & Livraison plus sure et plus frequentable \\
+\bottomrule
+\end{longtable}
+
+\section{9. Evaluation professionnelle (notes /10)}
+\begin{longtable}{p{8.5cm}p{2cm}p{4cm}}
+\toprule
+\textbf{Axe} & \textbf{Note} & \textbf{Commentaire court} \\
+\midrule
+Architecture logicielle & 7.2 & Bonne base, besoin d'unification \\
+Frontend admin & 8.4 & Niveau visuel et UX eleve \\
+Backend API & 6.8 & Fonctionnel mais heterogene \\
+IA (maturite produit) & 6.1 & Potentiel fort, gouvernance insuffisante \\
+UX/UI & 8.2 & Solide et moderne \\
+Temps reel IoT & 7.0 & Bon socle, schemas a aligner \\
+Securite applicative & 5.9 & Chantiers prioritaires restants \\
+Qualite produit SaaS & 7.0 & MVP avance, pas encore enterprise \\
+Credibilite startup tech demo & 8.0 & Convaincant pour demo/invest \\
+Niveau ingenierie global & 7.4 & Bon niveau, dette d'industrialisation \\
+\bottomrule
+\end{longtable}
+
+\section{10. Roadmap d'amelioration recommandee}
+\subsection{Phase 1 (0-30 jours)}
+\begin{enumerate}
+  \item Unifier auth/RBAC et conventions roles.
+  \item Standardiser schema evenements realtime.
+  \item Rendre explicite le mode de donnees affiche (live/sim/fallback).
+  \item Supprimer fallback silencieux critiques en production.
+\end{enumerate}
+
+\subsection{Phase 2 (30-90 jours)}
+\begin{enumerate}
+  \item Versionner les contrats API et evenements.
+  \item Deplacer simulation vers backend event-driven.
+  \item Unifier pipeline IA et instrumenter metriques qualite.
+  \item Ajouter audit logs structurants et traçabilite actions.
+\end{enumerate}
+
+\subsection{Phase 3 (90-180 jours)}
+\begin{enumerate}
+  \item Multi-tenant robuste et securite zero-trust inter-services.
+  \item Device twin + OTA workflow complet.
+  \item Observabilite complete (metrics/logs/traces/SLO).
+  \item CI/CD qualite: tests integration, tests contrat, scans securite.
+\end{enumerate}
+
+\section{Conclusion}
+Smart Shepherd dispose d'une base technique ambitieuse et credible. Le produit est deja fort en UX et demonstration metier. Pour atteindre un standard SaaS IoT/IA enterprise, la priorite n'est pas d'ajouter des ecrans mais de renforcer la coherence transversale: securite, gouvernance des contrats, fiabilite realtime et industrialisation IA.
+
+\vspace{0.5cm}
+\textbf{Decision architecturale conseillee:} conserver la stack actuelle, mais lancer un programme d'unification technique sur 3 phases avec jalons de qualite mesurables.
+
+\end{document}

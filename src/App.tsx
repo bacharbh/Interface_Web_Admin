@@ -15,7 +15,6 @@ const MapMonitor = React.lazy(() => import('./pages/Map/MapMonitor'));
 const Users = React.lazy(() => import('./pages/Users/Users'));
 const Animals = React.lazy(() => import('./pages/Animals/Animals'));
 const AnimalProfile = React.lazy(() => import('./pages/Animals/AnimalProfile'));
-const CompareView = React.lazy(() => import('./pages/Animals/CompareView'));
 const AgendaView = React.lazy(() => import('./pages/Agenda/AgendaView'));
 const Alerts = React.lazy(() => import('./pages/Alerts/Alerts'));
 const Anomalies = React.lazy(() => import('./pages/Anomalies/Anomalies'));
@@ -428,17 +427,17 @@ function App() {
               <Route index element={<Navigate to="/dashboard" replace />} />
               <Route path="/ai" element={<Navigate to="/ai-dashboard" replace />} />
               <Route path="/troupeau" element={<Navigate to="/animals" replace />} />
-              <Route path="/troupeau/compare" element={<Navigate to="/compare" replace />} />
+              <Route path="/troupeau/compare" element={<Navigate to="/animals" replace />} />
               <Route
                 path="/labelling"
-                element={['admin', 'operator'].includes(normalizeRole(user?.role)) ? <LabellingPage /> : <Navigate to="/dashboard" replace />}
+                element={(user?.role ?? '').toLowerCase() === 'admin' ? <LabellingPage /> : <Navigate to="/dashboard" replace />}
               />
               <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/map" element={<ErrorBoundary fallback={<MapError />}><MapMonitor /></ErrorBoundary>} />
               <Route path="/animals" element={<Animals />} />
               <Route path="/animals/:id" element={<AnimalProfile />} />
               <Route path="/animal/:id" element={<LegacyAnimalRedirect />} />
-              <Route path="/compare" element={<CompareView />} />
+              <Route path="/compare" element={<Navigate to="/animals" replace />} />
               <Route path="/agenda" element={<AgendaView />} />
               <Route path="/alerts" element={<ErrorBoundary fallback={<AlertError />}><Alerts /></ErrorBoundary>} />
               <Route path="/anomalies" element={<Anomalies />} />
@@ -446,7 +445,7 @@ function App() {
               <Route path="/ai-dashboard" element={<AIPredictionDashboard />} />
 
               {/* Admin Only Routes */}
-              {['admin', 'operator'].includes(normalizeRole(user?.role)) && (
+              {(user?.role ?? '').toLowerCase() === 'admin' && (
                 <>
                   <Route path="/users" element={<Users />} />
                   <Route path="/hardware" element={<Hardware />} />

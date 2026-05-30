@@ -23,9 +23,13 @@ import historyRoutes from './routes/history.js';
 import weatherRoutes from './routes/weather.js';
 import aiPredictionRoutes from './routes/aiPrediction.js';
 import aiAnalysisRoutes from './routes/ai.js';
+import anomalyRoutes from './routes/anomalies.js';
 import reportsRoutes from './routes/reports.js';
 import agendaRoutes from './routes/agenda.js';
 import labellingRoutes from './routes/labelling.js';
+import settingsRoutes from './routes/settings.js';
+import authMiddleware from './middleware/auth.js';
+import usersRoutes from './src/routes/users.js';
 
 import aiService from './services/aiHealthPrediction.js';
 import { initializeMQTT } from './services/mqttService.js';
@@ -199,9 +203,12 @@ app.use('/api/history', historyRoutes);
 app.use('/api/weather', weatherRoutes);
 app.use('/api/ai', aiPredictionRoutes);
 app.use('/api/ai', aiAnalysisRoutes);
+app.use('/api/anomalies', anomalyRoutes);
 app.use('/api/reports', reportsRoutes);
 app.use('/api/agenda', agendaRoutes);
 app.use('/api/labelling', labellingRoutes);
+app.use('/api/settings', settingsRoutes);
+app.use('/api/users', authMiddleware, usersRoutes);
 
 // Attempt to load optional TypeScript-based routers if available.
 // These routers live under `backend/src/routes` (TypeScript) and may
@@ -217,12 +224,10 @@ app.use('/api/labelling', labellingRoutes);
       }
     };
 
-    const usersRouter = await load('./src/routes/users.js');
     const animalsRouter = await load('./src/routes/animals.js');
     const aiRouter = await load('./src/routes/ai.js');
     const notesRouter = await load('./src/routes/notes.js');
 
-    if (usersRouter) app.use('/api/users', usersRouter);
     if (animalsRouter) app.use('/api/animals', animalsRouter);
     if (aiRouter) app.use('/api/ai', aiRouter);
     if (notesRouter) app.use('/api/animals/:id/notes', notesRouter);
