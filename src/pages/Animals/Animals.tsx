@@ -143,11 +143,11 @@ const AnimalListItem = memo(function AnimalListItem({ index, style, data }: List
             <div className={`rounded-[8px] border px-3 py-2 ${HEALTH_LABEL_BORDERS[healthScore.label as keyof typeof HEALTH_LABEL_BORDERS]} ${HEALTH_LABEL_COLORS[healthScore.label as keyof typeof HEALTH_LABEL_COLORS]}`}>
               <div className="flex items-center justify-between gap-3">
                 <div>
-                  <p className="text-[12px] font-medium tabular-nums">{healthScore.score}/100</p>
+                  <p className="text-[12px] font-medium tabular-nums">{Math.round(healthScore.score)}/100</p>
                   <p className="text-[10px] uppercase tracking-[0.08em] opacity-80">{getHealthLabelText(healthScore.label as any)}</p>
                 </div>
                 <div className="flex h-8 w-8 items-center justify-center rounded-full border border-current/20">
-                  <span className="text-[10px] font-medium">{healthScore.mostConcerningMetric?.score ?? 0}</span>
+                  <span className="text-[10px] font-medium">{Math.round(healthScore.mostConcerningMetric?.score ?? 0)}</span>
                 </div>
               </div>
             </div>
@@ -363,7 +363,7 @@ function AnimalDetailPanel({ animal, onClose, onNavigate }: DetailPanelProps) {
                 <Thermometer className="w-4 h-4 text-orange-500" />
                 <p className="label-xs">Température</p>
               </div>
-              <p className={`title-md tabular-nums ${temperature > 40 ? 'text-red-600 dark:text-red-400' : 'text-gray-900 dark:text-white'}`}>{temperature}°C</p>
+              <p className={`title-md tabular-nums ${temperature > 40 ? 'text-red-600 dark:text-red-400' : 'text-gray-900 dark:text-white'}`}>{typeof temperature === 'number' ? temperature.toFixed(1) : '—'}°C</p>
             </div>
             <div className="p-3 rounded-xl border border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-800/40">
               <div className="flex items-center gap-1.5 mb-1">
@@ -504,9 +504,9 @@ export default function Animals() {
 
   const goToCompare = useCallback(() => {
     if (selected.length < 2) return;
-    const compareIds = selected.slice(0, 2);
-    navigate(`/compare?ids=${encodeURIComponent(compareIds.join(','))}`);
-  }, [navigate, selected]);
+    // Navigate to compare view with selected collar IDs
+    navigate(`/compare?ids=${selected.join(',')}`);
+  }, [selected, navigate]);
 
   const exportToCSV = useCallback(() => {
     const rows = filtered.map((animal) => [
@@ -626,7 +626,6 @@ export default function Animals() {
           <div className="mx-auto flex max-w-7xl items-center justify-between">
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-2">
-                <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-[var(--brand-primary)] text-[11px] font-medium text-white">{selected.length}</span>
                 <p className="text-[12px] font-medium text-[var(--text-primary)]">animal{selected.length > 1 ? 'x' : ''} sélectionné{selected.length > 1 ? 's' : ''}</p>
               </div>
               <p className="text-[11px] text-[var(--text-muted)]">

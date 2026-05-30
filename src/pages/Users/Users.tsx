@@ -32,18 +32,21 @@ const USER_QUERY_KEY = ['users'] as const;
 const ROLE_OPTIONS: Array<{ value: UserRole; label: string; description: string }> = [
   { value: 'admin', label: 'Administrateur', description: 'Accès complet à la plateforme' },
   { value: 'operator', label: 'Opérateur', description: 'Pilotage opérationnel et suivi terrain' },
+  { value: 'vet', label: 'Vétérinaire', description: 'Accès vétérinaire et validations cliniques' },
   { value: 'viewer', label: 'Lecteur', description: 'Consultation en lecture seule' },
 ];
 
 const ROLE_BADGE: Record<UserRole, string> = {
   admin: 'bg-purple-50 text-purple-600 border-purple-100 dark:bg-purple-500/10 dark:text-purple-400 dark:border-purple-500/20',
   operator: 'bg-cyan-50 text-cyan-600 border-cyan-100 dark:bg-cyan-500/10 dark:text-cyan-300 dark:border-cyan-500/20',
+  vet: 'bg-indigo-50 text-indigo-700 border-indigo-100 dark:bg-indigo-500/10 dark:text-indigo-300 dark:border-indigo-500/20',
   viewer: 'bg-emerald-50 text-emerald-600 border-emerald-100 dark:bg-emerald-500/10 dark:text-emerald-300 dark:border-emerald-500/20',
 };
 
 const ROLE_LABEL: Record<UserRole, string> = {
   admin: 'Administrateur',
   operator: 'Opérateur',
+  vet: 'Vétérinaire',
   viewer: 'Lecteur',
 };
 
@@ -120,12 +123,13 @@ const EmptyState = ({ onCreate }: { onCreate: () => void }) => (
 
 export default function Users() {
   const queryClient = useQueryClient();
-  const { data: users = [], isLoading, isError, error } = useQuery<UserItem[]>({
+  const { data: users = [], isLoading, isError, error, refetch } = useQuery<UserItem[]>({
     queryKey: USER_QUERY_KEY,
     queryFn: async () => fetchUsers().then((items) => items.map((item) => ({
       ...item,
       status: item.status ?? 'Actif',
     }))),
+    retry: false,
   });
 
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -315,6 +319,34 @@ export default function Users() {
     return `Ce compte est associé à ${animalCount} animal${animalCount > 1 ? 'aux' : ''} et ${collarCount} collier${collarCount > 1 ? 's' : ''}.`;
   }, [deleteTarget]);
 
+  if (isError) {
+    return (
+      <div className="space-y-6 max-w-7xl mx-auto animate-fade-in">
+        <div>
+          <h1 className="title-lg text-gray-900 dark:text-white tracking-tight flex items-center gap-3">
+            <UsersIcon className="w-8 h-8 text-primary" /> Gestion des utilisateurs
+          </h1>
+          <p className="body-md text-gray-500 dark:text-gray-400 mt-1">Gérez les accès et les rôles de votre équipe d'administration.</p>
+        </div>
+
+        <div className="bg-white dark:bg-card-dark rounded-2xl shadow-sm border border-red-100 dark:border-red-500/20 p-6">
+          <div className="flex flex-col items-center justify-center text-center gap-4 py-10">
+            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-red-50 text-red-500 dark:bg-red-500/10">
+              <AlertTriangle className="h-7 w-7" />
+            </div>
+            <div>
+              <h3 className="title-md text-gray-900 dark:text-white">Impossible de charger les utilisateurs</h3>
+              <p className="body-md text-gray-500 dark:text-gray-400 mt-1">{error instanceof Error ? error.message : 'Une erreur inattendue est survenue.'}</p>
+            </div>
+            <Button variant="secondary" onClick={() => refetch()}>
+              Réessayer
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6 max-w-7xl mx-auto animate-fade-in">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -344,25 +376,6 @@ export default function Users() {
             </thead>
             {isLoading ? (
               <SkeletonRows />
-            ) : isError ? (
-              <tbody>
-                <tr>
-                  <td colSpan={5} className="px-6 py-16">
-                    <div className="flex flex-col items-center justify-center text-center gap-4">
-                      <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-red-50 text-red-500 dark:bg-red-500/10">
-                        <AlertTriangle className="h-7 w-7" />
-                      </div>
-                      <div>
-                        <h3 className="title-md text-gray-900 dark:text-white">Impossible de charger les utilisateurs</h3>
-                        <p className="body-md text-gray-500 dark:text-gray-400 mt-1">{error instanceof Error ? error.message : 'Une erreur inattendue est survenue.'}</p>
-                      </div>
-                      <Button variant="secondary" onClick={() => queryClient.invalidateQueries({ queryKey: USER_QUERY_KEY })}>
-                        Réessayer
-                      </Button>
-                    </div>
-                  </td>
-                </tr>
-              </tbody>
             ) : users.length === 0 ? (
               <tbody>
                 <tr>

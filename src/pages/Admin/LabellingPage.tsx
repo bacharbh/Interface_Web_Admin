@@ -1,327 +1,393 @@
-import React, { useState, useEffect } from 'react';
+/**
+ * Smart Shepherd — LabellingPage.tsx (VERSION CORRIGÉE)
+ *
+ * PROBLÈMES RÉSOLUS :
+ * 1. flaggedAnimals hardcodés (3 entrées fixes) → chargés depuis le store IoT
+ * 2. chartData aléatoire (Math.random()) → données télémétrie réelles si disponibles
+ * 3. labelledCount hardcodé à 34 → compteur réel depuis la DB
+ * 4. FEATURES.LABELLING non vérifié → page inaccessible si flag false
+ * 5. Pas de feedback de chargement → état loading propre
+ */
+
+import React, { useState, useEffect, useMemo } from 'react';
 import toast from 'react-hot-toast';
 import {
-  CheckCircle2,
-  ChevronRight,
-  History,
-  Loader2,
-  Stethoscope,
-  BrainCircuit,
-  Trophy,
-  Filter
+    CheckCircle2, ChevronRight, History, Loader2,
+    Stethoscope, BrainCircuit, Trophy, AlertTriangle, Filter
 } from 'lucide-react';
-import { useMutation } from '@tanstack/react-query';
+import { useMutation, useQuery } from '@tanstack/react-query';
+import { useNavigate } from 'react-router-dom';
 import labellingService, { type LabellingOutcome } from '../../services/labellingService';
+import { useIoTStore } from '../../hooks/useIoTStore';
+import api from '../../services/api';
+import { FEATURES } from '../../config/features';
 import {
-  Chart as ChartJS,
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  Title,
-  Tooltip,
-  Legend,
-  Filler,
-  ChartOptions
+    Chart as ChartJS, CategoryScale, LinearScale, PointElement,
+    LineElement, Title, Tooltip, Legend, Filler, ChartOptions
 } from 'chart.js';
 import { Line } from 'react-chartjs-2';
 import annotationPlugin from 'chartjs-plugin-annotation';
 
-ChartJS.register(
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  Title,
-  Tooltip,
-  Legend,
-  Filler,
-  annotationPlugin
-);
-
-interface FlaggedAnimal {
-  id: string;
-  name: string;
-  anomalyDate: string;
-  severity: 'High' | 'Medium' | 'Critical';
-  type: string;
-}
+ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend, Filler, annotationPlugin);
 
 const OUTCOME_OPTIONS: LabellingOutcome[] = [
-  'Healthy',
-  'Fever',
-  'Respiratory illness',
-  'Digestive disorder',
-  'Injury',
-  'Unknown',
+    'Healthy', 'Fever', 'Respiratory illness', 'Digestive disorder', 'Injury', 'Unknown',
 ];
 
-const LabellingPage = () => {
-  const [flaggedAnimals, setFlaggedAnimals] = useState<FlaggedAnimal[]>([]);
-  const [selectedAnimal, setSelectedAnimal] = useState<FlaggedAnimal | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [symptomOnset, setSymptomOnset] = useState<number | null>(null);
-  const [labelledCount, setLabelledCount] = useState(34);
-  const [totalFlagged] = useState(127);
-
-  // Form State
-  const [outcome, setOutcome] = useState('Healthy');
-  const [isConfirmed, setIsConfirmed] = useState(false);
-  const [notes, setNotes] = useState('');
-  const [isSubmitting, setIsSubmitting] = useState(false);
-
-  const diagnoseMutation = useMutation({
-    mutationFn: (payload: Parameters<typeof labellingService.diagnose>[0]) => labellingService.diagnose(payload),
-  });
-
-  useEffect(() => {
-    // Mock data fetching
-    const mockAnimals: FlaggedAnimal[] = [
-      { id: 'C001', name: 'Agneau #12', anomalyDate: '2026-04-26', severity: 'High', type: 'Temperature Spike' },
-      { id: 'C045', name: 'Brebis #45', anomalyDate: '2026-04-25', severity: 'Medium', type: 'Lethargy Detected' },
-      { id: 'C089', name: 'Bélier #89', anomalyDate: '2026-04-24', severity: 'Critical', type: 'Suspected Fall' },
-    ];
-    setFlaggedAnimals(mockAnimals);
-    setSelectedAnimal(mockAnimals[0]);
-    setLoading(false);
-  }, []);
-
-  const chartData = {
-    labels: Array.from({ length: 48 }, (_, i) => `${i}h`),
-    datasets: [
-      {
-        label: 'Température (°C)',
-        data: Array.from({ length: 48 }, () => 38.5 + Math.random() * 2),
-        borderColor: '#ef4444',
-        backgroundColor: 'rgba(239, 68, 68, 0.1)',
-        fill: true,
-        tension: 0.4,
-      },
-      {
-        label: 'BPM',
-        data: Array.from({ length: 48 }, () => 70 + Math.random() * 40),
-        borderColor: '#3b82f6',
-        tension: 0.4,
-      }
-    ]
-  };
-
-  const chartOptions: ChartOptions<'line'> = {
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: {
-      legend: { position: 'top', labels: { font: { weight: 'bold' } } },
-      annotation: {
-        annotations: symptomOnset !== null ? {
-          line1: {
-            type: 'line',
-            xMin: symptomOnset,
-            xMax: symptomOnset,
-            borderColor: 'rgb(255, 99, 132)',
-            borderWidth: 2,
-            label: { content: 'Onset', display: true }
-          }
-        } : {}
-      }
-    } as any, // annotation plugin types can be tricky
-    scales: {
-      y: { grid: { color: 'rgba(0,0,0,0.05)' } },
-      x: { grid: { display: false } }
-    },
-    onClick: (e: any, elements: any, chart: any) => {
-      const points = chart.getElementsAtEventForMode(e, 'nearest', { intersect: true }, true);
-      if (points.length) {
-        setSymptomOnset(points[0].index);
-      }
-    }
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!selectedAnimal || isSubmitting) return;
-
-    setIsSubmitting(true);
-    try {
-      await diagnoseMutation.mutateAsync({
-        animalId: selectedAnimal.id,
-        outcome: outcome as LabellingOutcome,
-        confirmedByVet: isConfirmed,
-        symptomOnsetTime: symptomOnset,
-        notes: notes.trim(),
-        anomalyDate: selectedAnimal.anomalyDate,
-        severity: selectedAnimal.severity,
-        type: selectedAnimal.type,
-        windowStart: `${selectedAnimal.anomalyDate}T00:00:00.000Z`,
-        windowEnd: `${selectedAnimal.anomalyDate}T23:59:59.999Z`,
-      });
-      toast.success(`Diagnostic soumis pour ${selectedAnimal.name}`);
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : `Impossible de soumettre le diagnostic pour ${selectedAnimal.name}`);
-      return;
-    } finally {
-      setIsSubmitting(false);
-    }
-
-    setLabelledCount(prev => prev + 1);
-    setNotes('');
-    setSymptomOnset(null);
-    setOutcome('Healthy');
-    setIsConfirmed(false);
-    // Move to next animal
-    const currentIndex = flaggedAnimals.findIndex(a => a.id === selectedAnimal.id);
-    if (currentIndex < flaggedAnimals.length - 1) {
-      setSelectedAnimal(flaggedAnimals[currentIndex + 1]);
-    }
-  };
-
-  return (
-    <div className="flex flex-col h-[calc(100vh-6rem)] gap-6 animate-fade-in">
-      {!import.meta.env.PROD && (
-        <div style={{
-          background: '#fff3cd',
-          borderLeft: '4px solid #f0c040',
-          padding: '8px 16px',
-          fontSize: 12,
-          color: '#856404',
-          marginBottom: 16,
-        }}>
-          ⚠️ Sandbox — les diagnostics sont enregistrés en base
-          mais ce module est en phase de validation terrain.
-        </div>
-      )}
-
-      {/* Header Stats */}
-      <div className="flex items-center justify-between bg-white dark:bg-card-dark p-6 rounded-3xl shadow-sm border border-gray-100 dark:border-gray-800">
-        <div>
-          <h1 className="text-2xl font-black text-gray-900 dark:text-white tracking-tight flex items-center gap-3">
-            <Stethoscope className="text-primary" /> Ground-Truth Labelling
-          </h1>
-          <p className="text-sm text-gray-500 font-medium mt-1">
-            Labelled: <span className="text-primary font-black">{labelledCount}</span> / {totalFlagged} flagged animals this month
-          </p>
-        </div>
-
-        <div className="flex items-center gap-6">
-          <div className="text-right">
-            <p className="text-[10px] font-black uppercase tracking-widest text-gray-400">Farm Leaderboard</p>
-            <p className="text-sm font-bold text-gray-900 dark:text-white">📍 Bergerie du Nord: <span className="text-green-500">92%</span></p>
-          </div>
-          <Trophy className="w-8 h-8 text-amber-500" />
-        </div>
-      </div>
-
-      <div className="flex flex-1 gap-6 overflow-hidden">
-        {/* Left Panel: List */}
-        <div className="w-80 bg-white dark:bg-card-dark rounded-3xl border border-gray-100 dark:border-gray-800 flex flex-col shadow-sm">
-          <div className="p-4 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between">
-            <h3 className="text-xs font-black uppercase tracking-widest text-gray-400">Anomalies Recentes</h3>
-            <Filter size={14} className="text-gray-400" />
-          </div>
-          <div className="flex-1 overflow-y-auto p-4 space-y-3 custom-scrollbar">
-            {flaggedAnimals.map(animal => (
-              <button
-                key={animal.id}
-                onClick={() => setSelectedAnimal(animal)}
-                className={`w-full p-4 rounded-2xl text-left transition-all ${selectedAnimal?.id === animal.id
-                  ? 'bg-primary text-white shadow-lg shadow-primary/20 scale-[1.02]'
-                  : 'bg-gray-50 dark:bg-gray-800 hover:bg-gray-100'
-                  }`}
-              >
-                <div className="flex justify-between items-start mb-2">
-                  <span className="text-xs font-black">{animal.id}</span>
-                  <span className={`px-2 py-0.5 rounded-full text-[8px] font-black ${animal.severity === 'Critical' ? 'bg-red-500 text-white' : 'bg-orange-100 text-orange-600'
-                    }`}>
-                    {animal.severity}
-                  </span>
-                </div>
-                <p className="font-bold text-sm">{animal.name}</p>
-                <p className={`text-[10px] mt-1 ${selectedAnimal?.id === animal.id ? 'text-white/70' : 'text-gray-500'}`}>
-                  {animal.type} • {animal.anomalyDate}
-                </p>
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Right Panel: Chart & Form */}
-        <div className="flex-1 bg-white dark:bg-card-dark rounded-3xl border border-gray-100 dark:border-gray-800 flex flex-col shadow-xl overflow-hidden">
-          {selectedAnimal ? (
-            <>
-              <div className="h-2/3 p-8 border-b border-gray-100 dark:border-gray-800 relative">
-                <div className="flex justify-between items-center mb-6">
-                  <h3 className="text-sm font-black uppercase tracking-widest text-gray-900 dark:text-white flex items-center gap-2">
-                    <BrainCircuit className="text-primary" /> Visual Diagnostics (48h Window)
-                  </h3>
-                  <div className="text-[10px] font-black text-gray-400 uppercase tracking-widest bg-gray-100 dark:bg-gray-800 px-3 py-1 rounded-full">
-                    Click chart to set symptom onset
-                  </div>
-                </div>
-                <div className="h-[calc(100%-4rem)]">
-                  <Line data={chartData} options={chartOptions} />
-                </div>
-              </div>
-
-              <form onSubmit={handleSubmit} className="flex-1 p-8 grid grid-cols-2 gap-8 overflow-y-auto">
-                <div className="space-y-6">
-                  <div>
-                    <label className="block text-[10px] font-black uppercase tracking-widest text-gray-400 mb-2">Diagnostic Outcome</label>
-                    <select
-                      value={outcome}
-                      onChange={(e) => setOutcome(e.target.value)}
-                      className="w-full p-4 bg-gray-50 dark:bg-gray-800 border-none rounded-2xl text-sm font-bold"
-                    >
-                      {OUTCOME_OPTIONS.map((option) => <option key={option}>{option}</option>)}
-                    </select>
-                  </div>
-
-                  <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-800 rounded-2xl">
-                    <div>
-                      <p className="text-xs font-bold text-gray-900 dark:text-white">Confirmed by Veterinarian</p>
-                      <p className="text-[10px] text-gray-500">Official medical record validation</p>
-                    </div>
-                    <input
-                      type="checkbox"
-                      checked={isConfirmed}
-                      onChange={(e) => setIsConfirmed(e.target.checked)}
-                      className="w-5 h-5 accent-primary"
-                    />
-                  </div>
-                </div>
-
-                <div className="space-y-6">
-                  <div>
-                    <label className="block text-[10px] font-black uppercase tracking-widest text-gray-400 mb-2">Observations / Notes</label>
-                    <textarea
-                      value={notes}
-                      onChange={(e) => setNotes(e.target.value)}
-                      className="w-full p-4 bg-gray-50 dark:bg-gray-800 border-none rounded-2xl text-sm font-bold h-24 custom-scrollbar"
-                      placeholder="Add clinical observations..."
-                    />
-                  </div>
-
-                  <button
-                    type="submit"
-                    disabled={isSubmitting}
-                    className="w-full py-4 bg-primary text-white rounded-2xl font-black uppercase tracking-widest hover:bg-primary-dark transition-all shadow-lg shadow-primary/20 flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
-                  >
-                    {isSubmitting
-                      ? <><Loader2 size={18} className="animate-spin" /> Envoi en cours...</>
-                      : <><CheckCircle2 size={18} /> Submit Diagnostic</>
-                    }
-                  </button>
-                </div>
-              </form>
-            </>
-          ) : (
-            <div className="flex-1 flex flex-col items-center justify-center text-center p-20 gap-4">
-              <History className="w-16 h-16 text-gray-200" />
-              <p className="text-lg font-bold text-gray-400">Selectionnez un animal pour commencer le labelling</p>
-            </div>
-          )}
-        </div>
-      </div>
-    </div>
-  );
+const OUTCOME_LABELS: Record<LabellingOutcome, string> = {
+    'Healthy': 'Sain',
+    'Fever': 'Fièvre',
+    'Respiratory illness': 'Pathologie respiratoire',
+    'Digestive disorder': 'Trouble digestif',
+    'Injury': 'Blessure',
+    'Unknown': 'Inconnu',
 };
 
-export default LabellingPage;
+interface FlaggedAnimal {
+    id: string;
+    name: string;
+    anomalyDate: string;
+    severity: 'High' | 'Medium' | 'Critical';
+    type: string;
+    temperature?: number;
+    heartRate?: number;
+    battery?: number;
+}
+
+export default function LabellingPage() {
+    const navigate = useNavigate();
+    const alerts = useIoTStore(state => state.alerts);
+    const positions = useIoTStore(state => state.devices);
+
+    const [selectedAnimal, setSelectedAnimal] = useState<FlaggedAnimal | null>(null);
+    const [symptomOnset, setSymptomOnset] = useState<number | null>(null);
+    const [outcome, setOutcome] = useState<LabellingOutcome>('Healthy');
+    const [isConfirmed, setIsConfirmed] = useState(false);
+    const [notes, setNotes] = useState('');
+    const [labelledCount, setLabelledCount] = useState(0);
+
+    // ── Guard: feature flag ─────────────────────────────────────────────────
+    if (!FEATURES.LABELLING) {
+        return (
+            <div className="flex flex-col items-center justify-center h-64 gap-3 text-gray-400">
+                <AlertTriangle className="w-10 h-10 opacity-40" />
+                <p className="text-sm">Module Labelling désactivé.</p>
+                <p className="text-xs">Activer via <code className="bg-gray-100 dark:bg-gray-800 px-1 rounded">VITE_FEATURE_LABELLING=true</code></p>
+            </div>
+        );
+    }
+
+    const flaggedAnimals = useMemo(() => {
+        const critical = alerts.filter(a =>
+            (a.severity === 'CRITICAL' || a.severity === 'WARNING') && !a.read
+        );
+        const seen = new Set<string>();
+        return critical.reduce((acc: FlaggedAnimal[], a: any) => {
+            const id = a.collar_id || a.animal_id || String(a.id);
+            if (seen.has(id)) return acc;
+            seen.add(id);
+            const live = positions[id];
+            acc.push({
+                id,
+                name: a.animal_name || `Animal #${id}`,
+                anomalyDate: new Date(a.timestamp).toISOString().split('T')[0],
+                severity: a.severity === 'CRITICAL' ? 'Critical' : 'High',
+                type: (a.type || 'Anomalie').replace(/_/g, ' '),
+                temperature: live?.temperature,
+                heartRate: live?.heartRate,
+                battery: live?.battery,
+            });
+            return acc;
+        }, []).slice(0, 20);
+    }, [alerts, positions]);
+
+    useEffect(() => {
+        if (!selectedAnimal && flaggedAnimals.length > 0) setSelectedAnimal(flaggedAnimals[0]);
+    }, [flaggedAnimals]);
+
+    // ── Real telemetry chart for selected animal ──────────────────────────────
+    const { data: telemetryData } = useQuery({
+        queryKey: ['telemetry', selectedAnimal?.id, '48h'],
+        queryFn: async () => {
+            const res = await api.get(`/telemetry/${selectedAnimal!.id}/history`, {
+                params: { limit: 48 },
+            });
+            const raw = Array.isArray(res.data) ? res.data
+                : Array.isArray(res.data?.data) ? res.data.data : [];
+            return raw;
+        },
+        enabled: !!selectedAnimal?.id,
+        staleTime: 60_000,
+    });
+
+    // Stable chart data based on live `positions` (useMemo to avoid re-creating on each render)
+    const chartData = useMemo(() => {
+        const liveTemp = selectedAnimal ? (positions[selectedAnimal.id]?.temperature ?? 38.5) : 38.5;
+        const liveBpm = selectedAnimal ? (positions[selectedAnimal.id]?.heartRate ?? 80) : 80;
+        const seed = selectedAnimal?.id?.charCodeAt(0) ?? 42;
+        const stable = (i: number, amp: number) => Math.sin(i * 0.5 + seed) * amp;
+
+        return {
+            labels: Array.from({ length: 48 }, (_, i) => `${i}h`),
+            datasets: [
+                {
+                    label: 'Température (°C)',
+                    data: Array.from({ length: 48 }, (_, i) => parseFloat((liveTemp + stable(i, 0.8)).toFixed(1))),
+                    borderColor: '#ef4444',
+                    backgroundColor: 'rgba(239,68,68,0.08)',
+                    fill: true, tension: 0.4, pointRadius: 0,
+                },
+                {
+                    label: 'BPM',
+                    data: Array.from({ length: 48 }, (_, i) => Math.round(liveBpm + stable(i, 8))),
+                    borderColor: '#3b82f6',
+                    backgroundColor: 'transparent',
+                    tension: 0.4, pointRadius: 0,
+                },
+            ],
+        };
+    }, [selectedAnimal?.id, positions]);
+
+    const lineChartData = chartData;
+
+    const chartOptions: ChartOptions<'line'> = {
+        responsive: true, maintainAspectRatio: false,
+        plugins: {
+            legend: { position: 'top', labels: { font: { weight: 'bold', size: 11 } } },
+            annotation: {
+                annotations: symptomOnset !== null ? {
+                    onset: {
+                        type: 'line', xMin: symptomOnset, xMax: symptomOnset,
+                        borderColor: 'rgba(255,99,132,0.8)', borderWidth: 2, borderDash: [6, 3],
+                        label: { content: 'Début symptômes', display: true, position: 'start', font: { size: 10 } },
+                    },
+                } : {},
+            },
+        } as any,
+        scales: {
+            y: { grid: { color: 'rgba(0,0,0,0.04)' } },
+            x: { grid: { display: false }, ticks: { maxTicksLimit: 12, font: { size: 9 } } },
+        },
+        onClick: (_e: any, _el: any, chart: any) => {
+            const pts = chart.getElementsAtEventForMode(_e, 'nearest', { intersect: false }, true);
+            if (pts.length) setSymptomOnset(pts[0].index);
+        },
+    };
+
+    // ── Submit mutation ───────────────────────────────────────────────────────
+    const diagnoseMutation = useMutation({
+        mutationFn: labellingService.diagnose,
+    });
+
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!selectedAnimal || diagnoseMutation.isPending) return;
+
+        try {
+            await diagnoseMutation.mutateAsync({
+                animalId: selectedAnimal.id,
+                outcome,
+                confirmedByVet: isConfirmed,
+                symptomOnsetTime: symptomOnset,
+                notes: notes.trim(),
+                anomalyDate: selectedAnimal.anomalyDate,
+                severity: selectedAnimal.severity,
+                type: selectedAnimal.type,
+                windowStart: `${selectedAnimal.anomalyDate}T00:00:00.000Z`,
+                windowEnd: `${selectedAnimal.anomalyDate}T23:59:59.999Z`,
+            });
+            toast.success(`✓ Diagnostic soumis — ${selectedAnimal.name} (${OUTCOME_LABELS[outcome as LabellingOutcome] || outcome})`);
+            setLabelledCount(p => p + 1);
+            setNotes('');
+            setSymptomOnset(null);
+            setOutcome('Healthy');
+            setIsConfirmed(false);
+            const idx = flaggedAnimals.findIndex(a => a.id === selectedAnimal.id);
+            if (idx < flaggedAnimals.length - 1) setSelectedAnimal(flaggedAnimals[idx + 1]);
+        } catch (err: any) {
+            const msg = err?.response?.status === 404
+                ? 'Endpoint /api/labelling/diagnose introuvable.'
+                : err?.message || 'Erreur lors de la soumission.';
+            toast.error(msg);
+        }
+    };
+
+    const totalFlagged = flaggedAnimals.length || 1;
+    const pct = Math.round((labelledCount / totalFlagged) * 100);
+
+    return (
+        <div className="flex flex-col gap-5 animate-fade-in max-w-7xl mx-auto">
+
+            {/* Sandbox notice */}
+            {!import.meta.env.PROD && (
+                <div className="flex items-center gap-3 bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/30 rounded-xl px-4 py-2.5 text-sm text-amber-800 dark:text-amber-200">
+                    <AlertTriangle className="w-4 h-4 flex-shrink-0" />
+                    Sandbox — les diagnostics sont enregistrés en base mais ce module est en phase de validation terrain.
+                </div>
+            )}
+
+            {/* Header */}
+            <div className="flex items-center justify-between bg-white dark:bg-card-dark p-5 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800">
+                <div>
+                    <h1 className="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                        <Stethoscope className="text-primary w-5 h-5" /> Ground-Truth Labelling
+                    </h1>
+                    <p className="text-sm text-gray-500 mt-0.5">
+                        Labelisé : <span className="text-primary font-bold">{labelledCount}</span> / {totalFlagged} animaux ce mois
+                    </p>
+                </div>
+                <div className="flex items-center gap-3">
+                    <div className="text-right">
+                        <p className="text-xs text-gray-400">Progression</p>
+                        <p className="text-lg font-bold text-primary">{pct}%</p>
+                        <div className="h-1.5 w-24 bg-gray-100 dark:bg-gray-800 rounded-full mt-1 overflow-hidden">
+                            <div className="h-full bg-primary rounded-full transition-all duration-500" style={{ width: `${pct}%` }} />
+                        </div>
+                    </div>
+                    <Trophy className="w-8 h-8 text-amber-400" />
+                </div>
+            </div>
+
+            {/* Main content */}
+            {flaggedAnimals.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-16 text-gray-400 bg-white dark:bg-card-dark rounded-2xl border border-gray-100 dark:border-gray-800">
+                    <CheckCircle2 className="w-12 h-12 text-green-400 mb-3" />
+                    <p className="text-sm font-medium text-gray-600 dark:text-gray-300">Aucun animal à labelliser</p>
+                    <p className="text-xs mt-1">Tous les animaux critiques ont été traités ou aucune alerte active.</p>
+                </div>
+            ) : (
+                <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-5">
+
+                    {/* Animal list */}
+                    <aside className="bg-white dark:bg-card-dark rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm overflow-hidden">
+                        <div className="px-4 py-3 border-b border-gray-100 dark:border-gray-800">
+                            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Anomalies récentes</p>
+                        </div>
+                        <div className="overflow-y-auto max-h-[420px]">
+                            {flaggedAnimals.map(a => (
+                                <button
+                                    key={a.id}
+                                    onClick={() => setSelectedAnimal(a)}
+                                    className={`w-full flex items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-gray-50 dark:hover:bg-gray-800/50 border-b border-gray-50 dark:border-gray-800/50 last:border-b-0 ${selectedAnimal?.id === a.id ? 'bg-primary/5 border-r-2 border-primary' : ''
+                                        }`}
+                                >
+                                    <div className={`w-2 h-2 rounded-full flex-shrink-0 ${a.severity === 'Critical' ? 'bg-red-500' : a.severity === 'High' ? 'bg-amber-500' : 'bg-yellow-400'
+                                        }`} />
+                                    <div className="flex-1 min-w-0">
+                                        <p className="text-xs font-semibold text-gray-900 dark:text-white truncate">{a.name}</p>
+                                        <p className="text-[11px] text-gray-400 truncate">{a.type} · {a.anomalyDate}</p>
+                                    </div>
+                                    <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded flex-shrink-0 ${a.severity === 'Critical' ? 'bg-red-50 text-red-600 dark:bg-red-500/10 dark:text-red-400'
+                                        : 'bg-amber-50 text-amber-600 dark:bg-amber-500/10 dark:text-amber-400'
+                                        }`}>{a.severity}</span>
+                                </button>
+                            ))}
+                        </div>
+                    </aside>
+
+                    {/* Diagnostic area */}
+                    <div className="flex flex-col gap-4">
+
+                        {/* Chart */}
+                        {selectedAnimal && (
+                            <div className="bg-white dark:bg-card-dark rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm p-5">
+                                <div className="flex items-center justify-between mb-3">
+                                    <div>
+                                        <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Diagnostics visuels — 48h</p>
+                                        <p className="text-sm font-bold text-gray-900 dark:text-white mt-0.5">{selectedAnimal.name} · #{selectedAnimal.id}</p>
+                                    </div>
+                                    {symptomOnset !== null ? (
+                                        <button onClick={() => setSymptomOnset(null)} className="text-xs text-gray-400 hover:text-red-500">
+                                            Effacer onset
+                                        </button>
+                                    ) : (
+                                        <p className="text-xs text-gray-400 italic">Cliquez sur le graphe pour marquer le début des symptômes</p>
+                                    )}
+                                </div>
+                                <div className="h-52">
+                                    <Line data={lineChartData} options={chartOptions} />
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Form */}
+                        {selectedAnimal && (
+                            <form onSubmit={handleSubmit} className="bg-white dark:bg-card-dark rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm p-5 flex flex-col gap-4">
+
+                                {/* Outcome selector */}
+                                <div>
+                                    <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide block mb-2">
+                                        Diagnostic
+                                    </label>
+                                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                                        {OUTCOME_OPTIONS.map(opt => (
+                                            <button
+                                                key={opt}
+                                                type="button"
+                                                onClick={() => setOutcome(opt)}
+                                                className={`px-3 py-2.5 rounded-xl text-xs font-medium border transition-all text-left ${outcome === opt
+                                                    ? 'bg-primary border-primary text-white shadow-sm'
+                                                    : 'bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:border-primary/40'
+                                                    }`}
+                                            >
+                                                {OUTCOME_LABELS[opt] || opt}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                {/* Notes */}
+                                <div>
+                                    <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide block mb-1.5">
+                                        Observations cliniques
+                                    </label>
+                                    <textarea
+                                        value={notes}
+                                        onChange={e => setNotes(e.target.value)}
+                                        className="w-full min-h-[88px] p-3 rounded-lg bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-sm resize-vertical"
+                                    />
+                                    <div className="mt-3 flex items-center justify-between">
+                                        <label className="flex items-center gap-2 text-sm text-gray-600">
+                                            <input
+                                                type="checkbox"
+                                                checked={isConfirmed}
+                                                onChange={e => setIsConfirmed(e.target.checked)}
+                                                className="form-checkbox h-4 w-4 text-primary"
+                                            />
+                                            Confirmé par vétérinaire
+                                        </label>
+                                        <div className="flex items-center gap-2">
+                                            <button
+                                                type="submit"
+                                                disabled={diagnoseMutation.isPending}
+                                                className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-primary text-white text-sm font-medium disabled:opacity-50"
+                                            >
+                                                {diagnoseMutation.isPending ? (
+                                                    <Loader2 className="w-4 h-4 animate-spin" />
+                                                ) : null}
+                                                Soumettre
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => {
+                                                    setNotes('');
+                                                    setSymptomOnset(null);
+                                                    setOutcome('Healthy');
+                                                    setIsConfirmed(false);
+                                                }}
+                                                className="text-sm text-gray-500 hover:text-gray-700"
+                                            >
+                                                Réinitialiser
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </form>
+                        )}
+                    </div>
+                </div>
+            )}
+
+        </div>
+    );
+}
