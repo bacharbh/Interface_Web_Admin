@@ -17,13 +17,11 @@ import GeofenceLayer from './GeofenceLayer';
 import MapControls, { TILE_LAYERS } from './MapControls';
 import UserLocationMarker from '../../components/UserLocationMarker';
 import { useTheme } from '../../contexts/ThemeContext';
-import { useMqtt } from '../../contexts/MqttContext';
 import { useFarmConfig } from '../../hooks/useFarmConfig';
 import { IAnimal, IGeofenceZone } from '../../types';
 import { getCurrentWeather, getWeatherAlerts } from '../../services/weatherService';
-import { Cloud, Sun, CloudRain, Thermometer, Wind, Activity, Layers, ArrowRightToLine, ArrowLeftToLine, Sparkles, AlertTriangle } from 'lucide-react';
+import { Cloud, Sun, CloudRain, Thermometer, Wind, Route, Waves, Radar, Sparkles, PenSquare, Trash2, Ban } from 'lucide-react';
 import Button from '../../components/ui/Button';
-import { applySimulationScenario, getSimulationSettings, resetSimulation, updateSimulationConfig, type AlertGenerationRate, type GroupBehavior, type SimulationScenario, type SimulationSpeed, type SpawnDensity } from '../../utils/simulation';
 
 interface AnimalPosition extends Pick<IAnimal, 'collar_id' | 'name' | 'lat' | 'lng' | 'battery' | 'health' | 'status' | 'speed' | 'temperature' | 'heading' | 'breed' | 'lastUpdate' | 'heartRate' | 'rssi' | 'activity_level' | 'sector' | 'activity'> {
   id: string;
@@ -70,7 +68,6 @@ interface RealTimeMapProps {
   onZoneCreated: (zone: IGeofenceZone) => void;
   onZoneEdited: (zones: IGeofenceZone[]) => void;
   onZoneDeleted: (ids: number[]) => void;
-  isSimulation: boolean;
   isConnected: boolean;
   onViewportChange: (zoom: number, bounds: ViewBounds) => void;
   center?: [number, number];
@@ -371,19 +368,16 @@ const RealTimeMap = React.memo(({
   onZoneCreated,
   onZoneEdited,
   onZoneDeleted,
-  isSimulation,
   isConnected,
   onViewportChange,
   tileLayerOverride,
   imperativeRef,
 }: RealTimeMapProps) => {
   const { theme } = useTheme();
-  const { toggleSimulation } = useMqtt();
   const mapRef = React.useRef<any>(null);
   const [searchParams] = useSearchParams();
   const focusId = searchParams.get('focus');
   const farmConfig = useFarmConfig();
-  const [simulationSettings, setSimulationSettings] = useState(() => getSimulationSettings());
   const [activeLayer, setActiveLayer] = useState<keyof typeof TILE_LAYERS>(theme === 'dark' ? 'dark' : 'street');
   const [tileUrl, setTileUrl] = useState(TILE_LAYERS[theme === 'dark' ? 'dark' : 'street'].url);
   const [showWeather, setShowWeather] = useState(false);
@@ -395,12 +389,7 @@ const RealTimeMap = React.memo(({
   const [showTrails, setShowTrails] = useState(false);
   const [heatmapDensity, setHeatmapDensity] = useState(0); // 0 means off
   const [displayMode, setDisplayMode] = useState<'markers' | 'heatmap'>('markers');
-  const [showControls, setShowControls] = useState(true);
   const [currentZoom, setCurrentZoom] = useState(14);
-
-  useEffect(() => {
-    updateSimulationConfig(simulationSettings);
-  }, [simulationSettings]);
 
   useEffect(() => {
     if (!tileLayerOverride) return;
@@ -429,15 +418,11 @@ const RealTimeMap = React.memo(({
 
   const activeAnimalCount = processedAnimals.length;
   const autoRenderMode = useMemo(() => {
-    if (!simulationSettings.autoClusteringEnabled) {
-      return currentZoom < 12 ? 'cluster' : currentZoom < 15 ? 'simple' : 'detailed';
-    }
-
-    if (activeAnimalCount > 300 || simulationSettings.animalCount > 300) return 'heatmap';
-    if (activeAnimalCount > 150 || simulationSettings.animalCount > 150) return 'cluster';
-    if (activeAnimalCount > 50 || simulationSettings.animalCount > 50) return 'cluster';
+    if (activeAnimalCount > 300) return 'heatmap';
+    if (activeAnimalCount > 150) return 'cluster';
+    if (activeAnimalCount > 50) return 'cluster';
     return currentZoom < 15 ? 'simple' : 'detailed';
-  }, [activeAnimalCount, currentZoom, simulationSettings.animalCount, simulationSettings.autoClusteringEnabled]);
+  }, [activeAnimalCount, currentZoom]);
 
   const effectiveDisplayMode = displayMode === 'heatmap' || autoRenderMode === 'heatmap' ? 'heatmap' : 'markers';
   const renderMode = effectiveDisplayMode === 'markers' ? autoRenderMode : 'heatmap';
@@ -468,9 +453,8 @@ const RealTimeMap = React.memo(({
       return [total.lat / animalPositions.length, total.lng / animalPositions.length];
     }
 
-    // Fallback: farm center or a default near Europe (FR)
     if (farmCenter) return farmCenter;
-    return [46.2276, 2.2137];
+    return null;
   }, [animalPositions, farmCenter]);
 
   const stableGhostAnimals = useMemo(() => {
@@ -552,10 +536,6 @@ const RealTimeMap = React.memo(({
 
   const handleToggleWeather = () => {
     setShowWeather((current) => !current);
-  };
-
-  const handleToggleSimulation = () => {
-    toggleSimulation();
   };
 
   const handleStartPolygonDraw = () => {
@@ -641,6 +621,9 @@ const RealTimeMap = React.memo(({
 
   return (
     <div className="flex flex-1 relative h-full min-h-[520px] overflow-hidden rounded-[10px] border border-[var(--card-border)] bg-white dark:bg-[var(--card-bg)]">
+      <div className="pointer-events-none absolute inset-0 z-[600] bg-[radial-gradient(circle_at_18%_20%,rgba(16,185,129,0.16),transparent_36%),radial-gradient(circle_at_82%_78%,rgba(14,165,233,0.14),transparent_34%)]" />
+      <div className="pointer-events-none absolute inset-x-0 top-0 z-[610] h-28 bg-gradient-to-b from-black/20 via-black/5 to-transparent" />
+
       <MapContainer
         center={initialCenter}
         zoom={14}
@@ -762,14 +745,12 @@ const RealTimeMap = React.memo(({
         <UserLocationMarker showAccuracy={true} autoTrack={true} />
 
         <MapControls
-          isSimulation={isSimulation}
           isConnected={isConnected}
           activeLayer={activeLayer}
           onLayerChange={setActiveLayer}
           recenterCenter={initialCenter}
           showWeather={showWeather}
           onToggleWeather={handleToggleWeather}
-          onToggleSimulation={handleToggleSimulation}
         />
       </MapContainer>
 
@@ -818,157 +799,93 @@ const RealTimeMap = React.memo(({
         </div>
       )}
 
-      {/* Floating Simulation Panel */}
-      <div className={`pointer-events-none absolute bottom-6 left-6 z-[1000] w-[24rem] max-w-[calc(100vw-3rem)] rounded-[20px] border border-[var(--card-border)] bg-white/95 p-4 shadow-2xl shadow-black/10 backdrop-blur-md transition-all duration-500 ease-out dark:bg-[var(--card-bg)]/95 ${showControls ? 'translate-x-0 opacity-100 scale-100' : '-translate-x-[120%] opacity-0 scale-95'}`}>
-        <Button
-          onClick={() => setShowControls(!showControls)}
-          variant="ghost"
-          size="sm"
-          className="pointer-events-auto absolute -right-12 top-1/2 -translate-y-1/2 border border-[var(--card-border)] bg-white/90 p-3 text-[var(--text-secondary)] backdrop-blur-xl hover:border-[#c8dfd6] hover:text-[var(--brand-primary)] dark:bg-[var(--card-bg)]/90"
-        >
-          {showControls ? <ArrowLeftToLine size={20} /> : <ArrowRightToLine size={20} />}
-        </Button>
-
-        <div className="pointer-events-auto space-y-4">
-          <div className="flex items-center justify-between gap-3">
-            <div>
-              <h4 className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.08em] text-[var(--text-muted)]">
-                <Layers size={14} className="text-[var(--brand-primary)]" /> Simulation GIS
-              </h4>
-              <p className="mt-1 text-[12px] text-[var(--text-secondary)]">{activeAnimalCount} animaux actifs, mode {effectiveDisplayMode === 'heatmap' ? 'heatmap' : renderMode}</p>
-            </div>
-            <span className={`rounded-full border px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.08em] ${simulationSettings.autoClusteringEnabled ? 'border-emerald-200 bg-emerald-50 text-emerald-700' : 'border-[var(--card-border)] bg-[var(--bg-secondary)] text-[var(--text-muted)]'}`}>
-              {simulationSettings.autoClusteringEnabled ? 'Auto cluster' : 'Manual'}
-            </span>
+      <div className="absolute bottom-6 left-6 z-[1000] w-[22rem] max-w-[calc(100vw-3rem)] rounded-2xl border border-white/40 bg-white/85 p-4 shadow-[0_18px_45px_rgba(15,23,42,0.18)] backdrop-blur-md dark:border-white/10 dark:bg-[#0b1220]/80">
+        <div className="mb-3 flex items-center justify-between">
+          <div>
+            <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-emerald-700 dark:text-emerald-300">Map Studio</p>
+            <p className="text-xs text-slate-600 dark:text-slate-300">{activeAnimalCount} animaux visibles</p>
           </div>
+          <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2.5 py-1 text-[10px] font-semibold text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-200">
+            <Sparkles className="h-3.5 w-3.5" />
+            live
+          </span>
+        </div>
 
-          <div className="grid grid-cols-3 gap-2 rounded-[16px] border border-[var(--card-border)] bg-[#fafaf8] p-2 dark:bg-white/3">
+        <div className="grid grid-cols-3 gap-2">
+          <button
+            onClick={() => setDisplayMode('markers')}
+            className={`rounded-xl px-3 py-2 text-[11px] font-semibold transition-all ${displayMode === 'markers'
+              ? 'bg-emerald-600 text-white shadow-md shadow-emerald-600/30'
+              : 'bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-white/10 dark:text-slate-200 dark:hover:bg-white/15'
+              }`}
+          >
+            <Radar className="mx-auto mb-1 h-3.5 w-3.5" />
+            markers
+          </button>
+          <button
+            onClick={() => {
+              setDisplayMode('heatmap');
+              if (heatmapDensity === 0) setHeatmapDensity(24);
+            }}
+            className={`rounded-xl px-3 py-2 text-[11px] font-semibold transition-all ${displayMode === 'heatmap'
+              ? 'bg-sky-600 text-white shadow-md shadow-sky-600/30'
+              : 'bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-white/10 dark:text-slate-200 dark:hover:bg-white/15'
+              }`}
+          >
+            <Waves className="mx-auto mb-1 h-3.5 w-3.5" />
+            heatmap
+          </button>
+          <button
+            onClick={() => {
+              setDisplayMode('markers');
+              setHeatmapDensity(0);
+            }}
+            className="rounded-xl bg-slate-100 px-3 py-2 text-[11px] font-semibold text-slate-600 transition-all hover:bg-slate-200 dark:bg-white/10 dark:text-slate-200 dark:hover:bg-white/15"
+          >
+            <Sparkles className="mx-auto mb-1 h-3.5 w-3.5" />
+            auto
+          </button>
+        </div>
+
+        <div className="mt-3 rounded-xl border border-slate-200/70 bg-white/75 p-3 dark:border-white/10 dark:bg-white/5">
+          <div className="mb-2 flex items-center justify-between text-[11px]">
+            <span className="font-medium text-slate-700 dark:text-slate-200">Traces historiques</span>
             <button
-              onClick={() => setDisplayMode('markers')}
-              className={`rounded-[12px] px-3 py-2 text-[11px] font-semibold transition-colors ${displayMode === 'markers' ? 'bg-primary text-white shadow-sm' : 'text-[var(--text-muted)] hover:bg-white/70 dark:hover:bg-white/5'}`}
+              onClick={() => setShowTrails((v) => !v)}
+              className={`rounded-full px-2.5 py-1 font-semibold ${showTrails ? 'bg-emerald-600 text-white' : 'bg-slate-200 text-slate-700 dark:bg-white/15 dark:text-slate-200'}`}
             >
-              Markers
-            </button>
-            <button
-              onClick={() => {
-                setDisplayMode('heatmap');
-                if (heatmapDensity === 0) setHeatmapDensity(24);
-              }}
-              className={`rounded-[12px] px-3 py-2 text-[11px] font-semibold transition-colors ${displayMode === 'heatmap' ? 'bg-primary text-white shadow-sm' : 'text-[var(--text-muted)] hover:bg-white/70 dark:hover:bg-white/5'}`}
-            >
-              Heatmap
-            </button>
-            <button
-              onClick={() => {
-                setDisplayMode('markers');
-                setHeatmapDensity(0);
-              }}
-              className="rounded-[12px] px-3 py-2 text-[11px] font-semibold text-[var(--text-muted)] transition-colors hover:bg-white/70 dark:hover:bg-white/5"
-            >
-              Auto
+              {showTrails ? 'ON' : 'OFF'}
             </button>
           </div>
 
-          <div className="grid gap-3 md:grid-cols-2">
-            <label className="space-y-2 rounded-[14px] border border-[var(--card-border)] bg-[#fafaf8] p-3 text-[11px] font-medium text-[var(--text-primary)] dark:bg-white/3">
-              <div className="flex items-center justify-between">
-                <span>Animal count</span>
-                <span className="text-[var(--brand-primary)]">{simulationSettings.animalCount}</span>
-              </div>
-              <input type="range" min="20" max="400" step="10" value={simulationSettings.animalCount} onChange={(event) => setSimulationSettings((current) => ({ ...current, animalCount: parseInt(event.target.value, 10) }))} className="h-1.5 w-full cursor-pointer appearance-none rounded-lg bg-[var(--card-border)] accent-[var(--brand-primary)]" />
-            </label>
-            <label className="space-y-2 rounded-[14px] border border-[var(--card-border)] bg-[#fafaf8] p-3 text-[11px] font-medium text-[var(--text-primary)] dark:bg-white/3">
-              <div className="flex items-center justify-between">
-                <span>Simulation speed</span>
-                <span className="text-[var(--brand-primary)] capitalize">{simulationSettings.simulationSpeed}</span>
-              </div>
-              <select value={simulationSettings.simulationSpeed} onChange={(event) => setSimulationSettings((current) => ({ ...current, simulationSpeed: event.target.value as SimulationSpeed }))} className="w-full rounded-[10px] border border-[var(--card-border)] bg-white px-3 py-2 text-[12px] text-[var(--text-primary)] outline-none dark:bg-[var(--card-bg)]">
-                <option value="slow">Slow</option>
-                <option value="normal">Normal</option>
-                <option value="fast">Fast</option>
-              </select>
-            </label>
-            <label className="space-y-2 rounded-[14px] border border-[var(--card-border)] bg-[#fafaf8] p-3 text-[11px] font-medium text-[var(--text-primary)] dark:bg-white/3">
-              <div className="flex items-center justify-between">
-                <span>Spawn density</span>
-                <span className="text-[var(--brand-primary)] capitalize">{simulationSettings.spawnDensity}</span>
-              </div>
-              <select value={simulationSettings.spawnDensity} onChange={(event) => setSimulationSettings((current) => ({ ...current, spawnDensity: event.target.value as SpawnDensity }))} className="w-full rounded-[10px] border border-[var(--card-border)] bg-white px-3 py-2 text-[12px] text-[var(--text-primary)] outline-none dark:bg-[var(--card-bg)]">
-                <option value="sparse">Sparse</option>
-                <option value="medium">Medium</option>
-                <option value="dense">Dense</option>
-              </select>
-            </label>
-            <label className="space-y-2 rounded-[14px] border border-[var(--card-border)] bg-[#fafaf8] p-3 text-[11px] font-medium text-[var(--text-primary)] dark:bg-white/3">
-              <div className="flex items-center justify-between">
-                <span>Spawn radius</span>
-                <span className="text-[var(--brand-primary)]">{simulationSettings.spawnRadius.toFixed(1)}x</span>
-              </div>
-              <input type="range" min="0.6" max="3" step="0.2" value={simulationSettings.spawnRadius} onChange={(event) => setSimulationSettings((current) => ({ ...current, spawnRadius: parseFloat(event.target.value) }))} className="h-1.5 w-full cursor-pointer appearance-none rounded-lg bg-[var(--card-border)] accent-[var(--brand-primary)]" />
-            </label>
-            <label className="space-y-2 rounded-[14px] border border-[var(--card-border)] bg-[#fafaf8] p-3 text-[11px] font-medium text-[var(--text-primary)] dark:bg-white/3">
-              <div className="flex items-center justify-between">
-                <span>Group behavior</span>
-                <span className="text-[var(--brand-primary)] capitalize">{simulationSettings.groupBehavior}</span>
-              </div>
-              <select value={simulationSettings.groupBehavior} onChange={(event) => setSimulationSettings((current) => ({ ...current, groupBehavior: event.target.value as GroupBehavior }))} className="w-full rounded-[10px] border border-[var(--card-border)] bg-white px-3 py-2 text-[12px] text-[var(--text-primary)] outline-none dark:bg-[var(--card-bg)]">
-                <option value="compact">Compact</option>
-                <option value="natural">Natural</option>
-                <option value="random">Random</option>
-              </select>
-            </label>
-            <label className="space-y-2 rounded-[14px] border border-[var(--card-border)] bg-[#fafaf8] p-3 text-[11px] font-medium text-[var(--text-primary)] dark:bg-white/3">
-              <div className="flex items-center justify-between">
-                <span>Alert rate</span>
-                <span className="text-[var(--brand-primary)] capitalize">{simulationSettings.alertGenerationRate}</span>
-              </div>
-              <select value={simulationSettings.alertGenerationRate} onChange={(event) => setSimulationSettings((current) => ({ ...current, alertGenerationRate: event.target.value as AlertGenerationRate }))} className="w-full rounded-[10px] border border-[var(--card-border)] bg-white px-3 py-2 text-[12px] text-[var(--text-primary)] outline-none dark:bg-[var(--card-bg)]">
-                <option value="low">Low</option>
-                <option value="medium">Medium</option>
-                <option value="high">High</option>
-              </select>
-            </label>
+          <div className="mt-2 flex items-center justify-between text-[11px] text-slate-600 dark:text-slate-300">
+            <span className="inline-flex items-center gap-1"><Route className="h-3.5 w-3.5" /> Densite heatmap</span>
+            <span className="font-semibold">{heatmapDensity > 0 ? heatmapDensity : 'OFF'}</span>
           </div>
+          <input
+            type="range"
+            min="0"
+            max="50"
+            step="5"
+            value={heatmapDensity}
+            onChange={(event) => setHeatmapDensity(parseInt(event.target.value, 10))}
+            className="mt-2 h-1.5 w-full cursor-pointer appearance-none rounded-lg bg-slate-200 accent-emerald-600 dark:bg-white/10"
+          />
+        </div>
 
-          <div className="grid grid-cols-2 gap-2">
-            <button onClick={() => setSimulationSettings((current) => ({ ...current, batteryDrainEnabled: !current.batteryDrainEnabled }))} className={`rounded-[12px] border px-3 py-2 text-left text-[11px] font-semibold transition-colors ${simulationSettings.batteryDrainEnabled ? 'border-amber-200 bg-amber-50 text-amber-700' : 'border-[var(--card-border)] bg-white text-[var(--text-muted)]'}`}>
-              <div className="flex items-center gap-2"><AlertTriangle size={13} /> Battery drain {simulationSettings.batteryDrainEnabled ? 'ON' : 'OFF'}</div>
-            </button>
-            <button onClick={() => setSimulationSettings((current) => ({ ...current, autoClusteringEnabled: !current.autoClusteringEnabled }))} className={`rounded-[12px] border px-3 py-2 text-left text-[11px] font-semibold transition-colors ${simulationSettings.autoClusteringEnabled ? 'border-emerald-200 bg-emerald-50 text-emerald-700' : 'border-[var(--card-border)] bg-white text-[var(--text-muted)]'}`}>
-              <div className="flex items-center gap-2"><Sparkles size={13} /> Auto clustering {simulationSettings.autoClusteringEnabled ? 'ON' : 'OFF'}</div>
-            </button>
-          </div>
-
-          <div className="grid grid-cols-2 gap-2 rounded-[16px] border border-[var(--card-border)] bg-[#fafaf8] p-2 dark:bg-white/3">
-            <button onClick={() => { resetSimulation(); setSimulationSettings((current) => ({ ...current, scenario: 'normal' })); }} className="rounded-[12px] border border-[var(--card-border)] bg-white px-3 py-2 text-[11px] font-semibold text-[var(--text-primary)] transition-colors hover:border-[var(--brand-primary)] hover:text-[var(--brand-primary)] dark:bg-[var(--card-bg)]">Generate Scenario</button>
-            <button onClick={() => { applySimulationScenario('emergency' as SimulationScenario); setSimulationSettings((current) => ({ ...current, scenario: 'emergency', alertGenerationRate: 'high', groupBehavior: 'compact', spawnDensity: 'dense' })); }} className="rounded-[12px] border border-red-200 bg-red-50 px-3 py-2 text-[11px] font-semibold text-red-700 transition-colors hover:border-red-300">Emergency</button>
-            <button onClick={() => { applySimulationScenario('lost_sheep' as SimulationScenario); setSimulationSettings((current) => ({ ...current, scenario: 'lost_sheep', groupBehavior: 'random', spawnDensity: 'sparse' })); }} className="rounded-[12px] border border-amber-200 bg-amber-50 px-3 py-2 text-[11px] font-semibold text-amber-700 transition-colors hover:border-amber-300">Lost Sheep</button>
-            <button onClick={() => { applySimulationScenario('battery_failure' as SimulationScenario); setSimulationSettings((current) => ({ ...current, scenario: 'battery_failure', alertGenerationRate: 'high', batteryDrainEnabled: true })); }} className="rounded-[12px] border border-violet-200 bg-violet-50 px-3 py-2 text-[11px] font-semibold text-violet-700 transition-colors hover:border-violet-300">Battery Failure</button>
-          </div>
-
-          <div className="grid grid-cols-3 gap-2">
-            <button onClick={handleStartPolygonDraw} className="rounded-[12px] border border-[var(--card-border)] bg-white px-3 py-2 text-[11px] font-semibold text-[var(--text-primary)] transition-colors hover:border-[var(--brand-primary)] hover:text-[var(--brand-primary)] dark:bg-[var(--card-bg)]">Draw Zone</button>
-            <button onClick={handleDeleteMode} className="rounded-[12px] border border-[var(--card-border)] bg-white px-3 py-2 text-[11px] font-semibold text-[var(--text-primary)] transition-colors hover:border-[var(--danger)] hover:text-[var(--danger)] dark:bg-[var(--card-bg)]">Delete Zone</button>
-            <button onClick={handleCancelGeomanMode} className="rounded-[12px] border border-[var(--card-border)] bg-white px-3 py-2 text-[11px] font-semibold text-[var(--text-primary)] transition-colors hover:border-[var(--warning)] hover:text-[var(--warning)] dark:bg-[var(--card-bg)]">Cancel</button>
-          </div>
-
-          <div className="flex items-center justify-between rounded-[14px] border border-[var(--card-border)] bg-[#fafaf8] px-3 py-2 text-[11px] dark:bg-white/3">
-            <span className="font-medium text-[var(--text-primary)]">Tracer chemins</span>
-            <label className="relative inline-flex cursor-pointer items-center">
-              <input type="checkbox" checked={showTrails} onChange={(event) => setShowTrails(event.target.checked)} className="sr-only peer" />
-              <div className="peer h-6 w-11 rounded-full bg-gray-200 after:absolute after:left-[2px] after:top-[2px] after:h-5 after:w-5 after:rounded-full after:border after:border-gray-300 after:bg-white after:transition-all after:content-[''] peer-checked:bg-primary peer-checked:after:translate-x-full peer-dark:bg-gray-700 peer-dark:after:border-gray-600"></div>
-            </label>
-          </div>
-
-          <div className="rounded-[14px] border border-[var(--card-border)] bg-[#fafaf8] p-3 dark:bg-white/3">
-            <div className="mb-2 flex items-center justify-between">
-              <p className="flex items-center gap-1.5 text-[11px] font-medium text-[var(--text-primary)]"><Activity size={12} /> Heatmap density</p>
-              <span className="text-[11px] text-[var(--brand-primary)]">{heatmapDensity > 0 ? `${heatmapDensity}` : 'OFF'}</span>
-            </div>
-            <input type="range" min="0" max="50" step="5" value={heatmapDensity} onChange={(event) => setHeatmapDensity(parseInt(event.target.value, 10))} className="h-1.5 w-full cursor-pointer appearance-none rounded-lg bg-[var(--card-border)] accent-[var(--brand-primary)]" />
-          </div>
+        <div className="mt-3 grid grid-cols-3 gap-2">
+          <button onClick={handleStartPolygonDraw} className="inline-flex items-center justify-center gap-1 rounded-xl border border-slate-200 bg-white px-2 py-2 text-[11px] font-semibold text-slate-700 hover:border-emerald-400 hover:text-emerald-700 dark:border-white/10 dark:bg-white/5 dark:text-slate-200">
+            <PenSquare className="h-3.5 w-3.5" /> zone
+          </button>
+          <button onClick={handleDeleteMode} className="inline-flex items-center justify-center gap-1 rounded-xl border border-slate-200 bg-white px-2 py-2 text-[11px] font-semibold text-slate-700 hover:border-red-400 hover:text-red-700 dark:border-white/10 dark:bg-white/5 dark:text-slate-200">
+            <Trash2 className="h-3.5 w-3.5" /> delete
+          </button>
+          <button onClick={handleCancelGeomanMode} className="inline-flex items-center justify-center gap-1 rounded-xl border border-slate-200 bg-white px-2 py-2 text-[11px] font-semibold text-slate-700 hover:border-amber-400 hover:text-amber-700 dark:border-white/10 dark:bg-white/5 dark:text-slate-200">
+            <Ban className="h-3.5 w-3.5" /> cancel
+          </button>
         </div>
       </div>
+
     </div>
   );
 });

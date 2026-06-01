@@ -788,87 +788,11 @@ class AIHealthPredictionService {
 
 class AIHealthPredictionServiceStub {
   async initialize() {
-    console.warn('[AI] initialize skipped (tfjs missing) — using mock data');
+    console.warn('[AI] initialize skipped (tfjs missing)');
   }
 
   async getAllPredictions() {
-    // Return mock data for UI to display when TensorFlow is unavailable
-    return [
-      {
-        sheepId: 'sheep-001',
-        name: 'Mouton 1',
-        breed: 'Mérinos',
-        age: 3,
-        anomalies: {
-          anomalies: [],
-          riskScore: 35
-        },
-        healthPrediction: {
-          prediction: {
-            predictedValues: {
-              heartRate: 85,
-              temperature: 38.8,
-              battery: 72,
-              signalStrength: -50,
-              activity: 'grazing'
-            },
-            riskScore: 35,
-            issues: [],
-            trend: 'stable'
-          },
-          confidence: 0.82
-        },
-        riskScore: {
-          overallScore: 35,
-          level: 'low',
-          components: {
-            anomalies: 20,
-            prediction: 30,
-            trends: 35,
-            base: 50
-          },
-          recommendations: ['État de santé stable', 'Surveiller la température']
-        },
-        lastUpdate: new Date()
-      },
-      {
-        sheepId: 'sheep-002',
-        name: 'Mouton 2',
-        breed: 'Suffolk',
-        age: 2,
-        anomalies: {
-          anomalies: [],
-          riskScore: 55
-        },
-        healthPrediction: {
-          prediction: {
-            predictedValues: {
-              heartRate: 95,
-              temperature: 39.2,
-              battery: 45,
-              signalStrength: -65,
-              activity: 'walking'
-            },
-            riskScore: 55,
-            issues: ['Batterie faible'],
-            trend: 'declining'
-          },
-          confidence: 0.78
-        },
-        riskScore: {
-          overallScore: 55,
-          level: 'medium',
-          components: {
-            anomalies: 50,
-            prediction: 55,
-            trends: 60,
-            base: 50
-          },
-          recommendations: ['Remplacer la batterie du collier', 'Examiner l\'animal']
-        },
-        lastUpdate: new Date()
-      }
-    ];
+    return [];
   }
 
   async detectAnomalies() {
@@ -880,7 +804,7 @@ class AIHealthPredictionServiceStub {
   }
 
   async calculateRiskScore() {
-    return { overallScore: 50, level: 'unknown', error: 'AI unavailable' };
+    return { overallScore: 0, level: 'unknown', error: 'AI unavailable' };
   }
 }
 

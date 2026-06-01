@@ -1,6 +1,9 @@
 import React, { useState, useCallback, useEffect, useMemo, useRef, Suspense } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
+import { MapContainer, Marker, TileLayer, useMap } from 'react-leaflet';
+import L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
 import {
   Activity, AlertTriangle, Battery, ChevronRight, Cpu,
   Layers, Maximize2, MapPin, RefreshCw, Search, Shield,
@@ -29,13 +32,25 @@ const STATUS_CONFIG: Record<StatusFilter, { label: string; color: string; dot: s
   CRITICAL: { label: 'Critiques', color: 'text-red-600', dot: '#dc2626' },
 };
 
+const DEFAULT_USER_MAP_CENTER: [number, number] = [35.8245, 10.6346];
+
+const USER_LOCATION_ICON = L.icon({
+  iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
+  iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
+  shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
+  iconSize: [25, 41],
+  iconAnchor: [12, 41],
+  popupAnchor: [1, -34],
+  shadowSize: [41, 41],
+});
+
 // ─── Component ────────────────────────────────────────────────────────────────
 export default function MapMonitor() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const focusId = searchParams.get('focus');
 
-  const { isConnected, isSimulation } = useMqtt();
+  const { isConnected } = useMqtt();
   const isOfflineData = useIoTStore(state => state.isOfflineData);
   const { animalsList, kpis } = useRealtimePositions();
   const history = useIoTStore(state => state.history);
@@ -44,7 +59,7 @@ export default function MapMonitor() {
   const [selectedAnimalId, setSelectedAnimalId] = useState<string | null>(focusId);
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('ALL');
   const [query, setQuery] = useState('');
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [detailOpen, setDetailOpen] = useState(false);
   const [tileLayer, setTileLayer] = useState<'street' | 'satellite' | 'dark'>('street');
   const mapFocusRef = useRef<((lat: number, lng: number, zoom?: number) => void) | null>(null);
@@ -117,43 +132,35 @@ export default function MapMonitor() {
 
   return (
     <div className="relative flex flex-col h-[calc(100vh-4rem)] bg-[#f7f6f3] dark:bg-gray-950 overflow-hidden">
-      
+
       {/* ── Map area (Full Background) ────────────────────────────────────────────────────── */}
       <div className="absolute inset-0 z-0">
-        <Suspense fallback={
-          <div className="absolute inset-0 flex items-center justify-center bg-gray-100 dark:bg-gray-900">
-            <div className="flex flex-col items-center gap-3 text-gray-400">
-              <RefreshCw className="w-6 h-6 animate-spin" />
-              <span className="text-sm">Chargement de la carte…</span>
+        {animalsList.length > 0 ? (
+          <Suspense fallback={
+            <div className="absolute inset-0 flex items-center justify-center bg-gray-100 dark:bg-gray-900">
+              <div className="flex flex-col items-center gap-3 text-gray-400">
+                <RefreshCw className="w-6 h-6 animate-spin" />
+                <span className="text-sm">Chargement de la carte…</span>
+              </div>
             </div>
-          </div>
-        }>
-          <LazyRealTimeMap
-            animalsList={filteredAnimals}
-            history={history}
-            zones={zones}
-            selectedAnimalId={selectedAnimalId}
-            onSelectAnimal={handleSelectAnimal}
-            onZoneCreated={handleZoneCreated}
-            onZoneEdited={handleZoneEdited}
-            onZoneDeleted={handleZoneDeleted}
-            isSimulation={isSimulation}
-            isConnected={isConnected}
-            onViewportChange={() => { }}
-            tileLayerOverride={tileLayer === 'street' ? 'streets' : tileLayer}
-            imperativeRef={mapFocusRef}
-          />
-        </Suspense>
-
-        {/* No animals overlay */}
-        {animalsList.length === 0 && (
-          <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-[2000]">
-            <div className="bg-white/90 dark:bg-gray-900/90 backdrop-blur-md rounded-2xl border border-gray-200 dark:border-gray-700 px-6 py-5 shadow-lg text-center max-w-xs">
-              <MapPin className="w-8 h-8 text-gray-300 mx-auto mb-2" />
-              <p className="text-sm font-medium text-gray-600 dark:text-gray-300">Aucun animal localisé</p>
-              <p className="text-xs text-gray-400 mt-1">Démarrez la simulation ou connectez le broker MQTT</p>
-            </div>
-          </div>
+          }>
+            <LazyRealTimeMap
+              animalsList={filteredAnimals}
+              history={history}
+              zones={zones}
+              selectedAnimalId={selectedAnimalId}
+              onSelectAnimal={handleSelectAnimal}
+              onZoneCreated={handleZoneCreated}
+              onZoneEdited={handleZoneEdited}
+              onZoneDeleted={handleZoneDeleted}
+              isConnected={isConnected}
+              onViewportChange={() => { }}
+              tileLayerOverride={tileLayer === 'street' ? 'streets' : tileLayer}
+              imperativeRef={mapFocusRef}
+            />
+          </Suspense>
+        ) : (
+          <EmptyLiveGeoMap />
         )}
       </div>
 
@@ -168,7 +175,7 @@ export default function MapMonitor() {
               <span className="text-lg font-extrabold text-gray-900 dark:text-white">{animalsList.length}</span>
             </div>
             <div className="w-px h-8 bg-gray-200 dark:bg-gray-700" />
-            
+
             {/* KPI Pills */}
             {(['SAFE', 'OUT_OF_ZONE', 'LOW_BATTERY', 'CRITICAL'] as const).map(s => (
               <button
@@ -189,7 +196,7 @@ export default function MapMonitor() {
           </div>
 
           <div className="flex items-center gap-3 pl-4 ml-4 border-l border-gray-200 dark:border-gray-700">
-            <LiveBadge isConnected={isConnected} isSimulation={isSimulation} />
+            <LiveBadge isConnected={isConnected} />
             <button
               onClick={() => setSidebarOpen(p => !p)}
               className={`p-2.5 rounded-xl transition-all ${sidebarOpen ? 'bg-primary text-white shadow-md shadow-primary/20' : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'}`}
@@ -271,6 +278,70 @@ export default function MapMonitor() {
           )}
         </aside>
       </div>
+    </div>
+  );
+}
+
+function RecenterOnUserPosition({ position }: { position: [number, number] | null }) {
+  const map = useMap();
+
+  useEffect(() => {
+    if (!position) return;
+    map.setView(position, 13, { animate: false });
+  }, [map, position]);
+
+  return null;
+}
+
+function EmptyLiveGeoMap() {
+  const [userPosition, setUserPosition] = useState<[number, number] | null>(null);
+  const [geoError, setGeoError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!navigator.geolocation) {
+      setGeoError('Geolocalisation non disponible sur ce navigateur.');
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      ({ coords }) => {
+        setUserPosition([coords.latitude, coords.longitude]);
+        setGeoError(null);
+      },
+      () => {
+        setGeoError('Geolocalisation refusee. Activez la permission pour centrer la carte.');
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 60000,
+      }
+    );
+  }, []);
+
+  return (
+    <div className="absolute inset-0 z-0">
+      <MapContainer
+        center={userPosition ?? DEFAULT_USER_MAP_CENTER}
+        zoom={13}
+        zoomControl={true}
+        scrollWheelZoom={true}
+        className="h-full w-full"
+        style={{ height: '100%', width: '100%' }}
+      >
+        <TileLayer
+          attribution='&copy; OpenStreetMap contributors'
+          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+        />
+        <RecenterOnUserPosition position={userPosition} />
+        {userPosition && <Marker position={userPosition} icon={USER_LOCATION_ICON} />}
+      </MapContainer>
+
+      {geoError && (
+        <div className="pointer-events-none absolute bottom-4 left-1/2 z-[1200] -translate-x-1/2 rounded-xl border border-amber-200 bg-white/90 px-3 py-2 text-xs text-amber-700 shadow-md dark:border-amber-900/60 dark:bg-gray-900/90 dark:text-amber-300">
+          {geoError}
+        </div>
+      )}
     </div>
   );
 }

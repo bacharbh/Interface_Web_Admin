@@ -19,10 +19,10 @@ const LiveBadge: React.FC<LiveBadgeProps> = ({
   label,
   className = ""
 }) => {
-  const displayLabel = label || (isSimulation ? 'SIMULATION' : isConnected ? 'EN DIRECT' : isOfflineData ? 'HORS-LIGNE (CACHE)' : 'OFFLINE');
-  const color = isSimulation ? '#F59E0B' : isConnected ? '#00A96E' : isOfflineData ? '#F59E0B' : '#EF4444';
+  const displayLabel = label || (isConnected ? 'EN DIRECT' : isOfflineData ? 'HORS-LIGNE (CACHE)' : 'OFFLINE');
+  const color = isConnected ? '#00A96E' : isOfflineData ? '#F59E0B' : '#EF4444';
 
-  const shouldPulse = Boolean(isSimulation && import.meta.env.DEV);
+  const shouldPulse = false;
 
   return (
     <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/60 dark:bg-[#071422]/60 ${className}`} style={{ border: '1px solid rgba(15,23,42,0.04)' }}>

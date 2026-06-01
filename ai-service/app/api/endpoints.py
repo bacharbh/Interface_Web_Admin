@@ -70,35 +70,29 @@ async def predict_health(request: HealthCheckRequest):
 
 @router.get("/battery-rul/{device_id}", response_model=BatteryResponse)
 async def predict_battery(device_id: str):
-    # In a real app, we would fetch current features from Redis/DB
-    # Mocking features: [current_voltage, discharge_rate_7d, temperature_avg, charge_cycles_count]
-    mock_features = [3.7, 0.05, 25.4, 42] 
-    
-    hours, conf, rec = await battery_model.predict(mock_features)
-    return {
-        "estimatedHoursRemaining": hours,
-        "confidence": conf,
-        "recommendation": rec
-    }
+    raise HTTPException(status_code=503, detail="Aucune donnee disponible pour ce device")
 
 @router.post("/predict-position", response_model=PositionPredictResponse)
 async def predict_position(request: PositionPredictRequest):
-    # Calculate herd displacement from herdPositions
-    # Simplified for demo: assume small shift
-    herd_dx = 0.0001
-    herd_dy = 0.0001
-    
-    # Assume velocity from previous points (mocked)
-    last_v = [0.00001, 0.00001]
-    
+    if len(request.herdPositions) < 2:
+        raise HTTPException(status_code=404, detail="Aucune donnee disponible")
+
+    latest = request.herdPositions[-1]
+    previous = request.herdPositions[-2]
+    herd_dx = latest.lat - previous.lat
+    herd_dy = latest.lng - previous.lng
+
+    last_v = [herd_dx, herd_dy]
+
     est_lat, est_lng, radius = gps_kalman.predict_position(
-        request.lastKnownGps, 
-        last_v, 
+        request.lastKnownGps,
+        last_v,
         [herd_dx, herd_dy]
     )
-    
+
     return {
         "estimatedLat": est_lat,
         "estimatedLng": est_lng,
         "confidenceRadiusMeters": radius
     }
+

@@ -66,14 +66,14 @@ interface ChartData {
 
 export default function Dashboard() {
   const navigate = useNavigate();
-  const { isConnected, isSimulation, toggleSimulation } = useMqtt();
+  const { isConnected } = useMqtt();
   const positions = useIoTStore(state => state.devices);
   const setDevices = useIoTStore(state => state.setDevices);
   const history = useIoTStore(state => state.history);
   const alerts = useIoTStore(state => state.alerts);
 
   useEffect(() => {
-    if (isConnected || isSimulation || Object.keys(positions).length > 0) return;
+    if (isConnected || Object.keys(positions).length > 0) return;
     let cancelled = false;
     api.get('/sheep', { params: { limit: 300 } })
       .then((res) => {
@@ -91,7 +91,7 @@ export default function Dashboard() {
       })
       .catch(() => { });
     return () => { cancelled = true; };
-  }, [isConnected, isSimulation]);
+  }, [isConnected]);
 
   const [zones, setZones] = useState<IGeofenceZone[]>([]);
 
@@ -151,9 +151,11 @@ export default function Dashboard() {
     return mapPreviewAnimals[0]?.id ?? atRiskAnimalList[0]?.id ?? null;
   }, [atRiskAnimalList, mapPreviewAnimals]);
 
-  const openMap = useCallback(() => {
-    if (mapFocusTargetId) {
-      navigate(`/map?focus=${encodeURIComponent(String(mapFocusTargetId))}`);
+  const openMap = useCallback((focusId?: string | number) => {
+    const targetId = focusId ?? mapFocusTargetId;
+
+    if (targetId) {
+      navigate(`/map?focus=${encodeURIComponent(String(targetId))}`);
       return;
     }
 
@@ -194,7 +196,7 @@ export default function Dashboard() {
   const [layout, setLayout] = useState(DEFAULT_LAYOUT);
   const [isChartPaused, setIsChartPaused] = useState(false);
   const latestDataRef = useRef({ animals: 0, alerts: 0 });
-  const simulationStartLabel = historicData.labels[historicData.labels.length - 1] ?? null;
+  const latestSyncLabel = historicData.labels[historicData.labels.length - 1] ?? null;
 
   // DND Sensors
   const sensors = useSensors(
@@ -417,18 +419,18 @@ export default function Dashboard() {
 
   // Memoized chart options
   const chartOptions = useMemo<ChartOptions<'line'>>(() => {
-    const chartAnnotations = simulationStartLabel
+    const chartAnnotations = latestSyncLabel
       ? {
         line1: {
           type: 'line' as const,
           scaleID: 'x',
-          value: simulationStartLabel,
+          value: latestSyncLabel,
           borderColor: '#3b82f6',
           borderWidth: 2,
           borderDash: [5, 5],
           label: {
             display: true,
-            content: 'Démarrage simulation',
+            content: 'Dernière synchronisation',
             position: 'start' as const,
             backgroundColor: 'rgba(59, 130, 246, 0.8)',
             color: '#fff',
@@ -483,7 +485,7 @@ export default function Dashboard() {
         }
       }
     };
-  }, [isChartPaused, simulationStartLabel]);
+  }, [isChartPaused, latestSyncLabel]);
 
   if (!isLoaded) {
     return (
@@ -662,15 +664,23 @@ export default function Dashboard() {
 
       {/* Quick Overview */}
       <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_300px] gap-3.5 mb-4 items-start">
-        <section className="bg-white dark:bg-card-dark p-4 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800 flex flex-col gap-3">
-          <h3 className="title-sm text-gray-900 dark:text-white flex items-center gap-2">
-            <MapPin className="w-4 h-4 text-primary" /> Aperçu géographique en direct
-          </h3>
-          <MiniMapPreview
-            animals={mapPreviewAnimals}
-            geofence={primaryGeofence}
-            onExpand={openMap}
-          />
+        <section className="relative overflow-hidden rounded-2xl border border-slate-200/70 bg-[linear-gradient(135deg,#f0f9ff_0%,#f8fafc_48%,#ecfeff_100%)] shadow-sm dark:border-slate-700/70 dark:bg-[linear-gradient(135deg,#0f172a_0%,#111827_52%,#0b1220_100%)]">
+          <div className="pointer-events-none absolute -right-16 -top-20 h-52 w-52 rounded-full bg-emerald-400/20 blur-3xl dark:bg-emerald-500/10" />
+          <div className="pointer-events-none absolute -left-20 -bottom-24 h-56 w-56 rounded-full bg-sky-400/20 blur-3xl dark:bg-sky-500/10" />
+
+          <div className="relative z-10 px-4 pt-4 pb-2">
+            <h3 className="title-sm text-gray-900 dark:text-white flex items-center gap-2">
+              <MapPin className="w-4 h-4 text-primary" /> Aperçu géographique en direct
+            </h3>
+          </div>
+
+          <div className="relative z-10 px-3 pb-3">
+            <MiniMapPreview
+              animals={mapPreviewAnimals}
+              geofence={primaryGeofence}
+              onExpand={openMap}
+            />
+          </div>
         </section>
 
         <aside className="w-full">

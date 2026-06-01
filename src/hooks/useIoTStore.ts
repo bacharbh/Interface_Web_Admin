@@ -153,11 +153,11 @@ export const useIoTStore = create<IoTState>()(
     needsCharging: [],
     aiSettings: loadAISettings(),
     isConnected: false,
-    isSimulation: true,
+    isSimulation: false,
     isOfflineData: false,
 
     setConnected: (status) => set({ isConnected: status, isOfflineData: !status && !navigator.onLine }),
-    setSimulation: (status) => set({ isSimulation: status }),
+    setSimulation: () => set({ isSimulation: false }),
 
     loadOfflineData: async () => {
       const cachedDevices = await loadData('last_known_devices');

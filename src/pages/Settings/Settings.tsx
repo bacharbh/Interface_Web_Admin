@@ -7,8 +7,6 @@ import {
 } from 'lucide-react';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useIoTStore } from '../../hooks/useIoTStore';
-import { useMqtt } from '../../contexts/MqttContext';
-import { updateSimulationConfig } from '../../utils/simulation';
 import api from '../../services/api';
 import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
@@ -126,7 +124,6 @@ function RangeField({ label, name, value, min, max, step, unit, color, hint, onC
 // ─── Main ─────────────────────────────────────────────────────────────────
 const Settings = () => {
   const { theme, toggleTheme } = useTheme();
-  const { isSimulation, toggleSimulation } = useMqtt();
   const devices = useIoTStore(state => state.devices);
   const deviceCount = Object.keys(devices).length;
 
@@ -163,16 +160,12 @@ const Settings = () => {
         // Only persist non-secret preferences; broker credentials should not remain readable in localStorage.
         localStorage.setItem(STORAGE_KEY, JSON.stringify(persistedConfig));
 
-        // Apply simulation changes immediately
-        updateSimulationConfig(config.simAnimalCount, config.simRefreshMs);
-
         setSaved(true);
         toast.success('Réglages MQTT enregistrés.');
         window.setTimeout(() => setSaved(false), 3000);
       } catch (error) {
         console.warn('Failed to save MQTT settings to backend, keeping local copy only.', error);
         localStorage.setItem(STORAGE_KEY, JSON.stringify(persistedConfig));
-        updateSimulationConfig(config.simAnimalCount, config.simRefreshMs);
         setSaved(true);
         toast.error('Réglages sauvegardés localement, mais le backend est indisponible.');
         window.setTimeout(() => setSaved(false), 3000);
@@ -197,7 +190,6 @@ const Settings = () => {
   const TABS = [
     { id: 'connectivity', label: 'Connectivité', icon: <Server className="w-4 h-4" /> },
     { id: 'appearance', label: 'Apparence', icon: <Palette className="w-4 h-4" /> },
-    { id: 'simulation', label: 'Simulation', icon: <Cpu className="w-4 h-4" /> },
     { id: 'thresholds', label: 'Seuils', icon: <Bell className="w-4 h-4" /> },
     { id: 'data', label: 'Données', icon: <Download className="w-4 h-4" /> },
   ];
@@ -281,55 +273,6 @@ const Settings = () => {
                         }`}>
                       {opt.icon} {opt.label}
                       {theme === opt.value && <CheckCircle className="ml-auto h-4 w-4 text-[var(--brand-primary)]" />}
-                    </Button>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </Section>
-        )}
-
-        {/* ── SIMULATION ── */}
-        {activeTab === 'simulation' && (
-          <Section icon={<Cpu className="w-6 h-6" />} title="Simulation IoT" subtitle={`${deviceCount} appareils actifs en ce moment`} color="green">
-            <div className="space-y-6">
-              {/* Simulation toggle */}
-              <div className="flex items-center justify-between rounded-[10px] border border-[var(--card-border)] bg-[#fafaf8] p-4 dark:bg-white/3">
-                <div>
-                  <p className="text-[12px] font-medium text-[var(--text-primary)]">Mode simulation</p>
-                  <p className="mt-0.5 text-[11px] text-[var(--text-muted)]">
-                    {isSimulation ? 'Données générées aléatoirement' : 'Connecté au broker MQTT réel'}
-                  </p>
-                </div>
-                <Button type="button" onClick={toggleSimulation} variant={isSimulation ? 'primary' : 'secondary'}
-                  className={`relative h-7 w-14 rounded-full transition-colors ${isSimulation ? 'bg-[var(--brand-primary)]' : 'bg-[var(--card-border)]'}`}>
-                  <span className={`absolute top-1 h-5 w-5 rounded-full bg-white transition-transform ${isSimulation ? 'translate-x-8' : 'translate-x-1'}`} />
-                </Button>
-              </div>
-
-              <RangeField label="Nombre d'animaux simulés" name="simAnimalCount"
-                value={config.simAnimalCount} onChange={handleChange}
-                min={10} max={500} step={10} unit=" animaux"
-                color="text-green-600 dark:text-green-400"
-                hint="Redémarrez la simulation pour appliquer le changement de count."
-              />
-
-              <div>
-                <p className="label-xs mb-3">Vitesse de rafraîchissement</p>
-                <div className="grid grid-cols-3 gap-2">
-                  {[
-                    { label: '1s — Rapide', value: 1000 },
-                    { label: '3s — Normal', value: 3000 },
-                    { label: '5s — Économique', value: 5000 },
-                  ].map(opt => (
-                    <Button key={opt.value} type="button"
-                      onClick={() => setConfig(p => ({ ...p, simRefreshMs: opt.value }))}
-                      variant={config.simRefreshMs === opt.value ? 'primary' : 'secondary'}
-                      className={`rounded-[10px] border p-3 text-[12px] font-medium transition-colors ${config.simRefreshMs === opt.value
-                        ? 'border-[var(--brand-primary)]'
-                        : 'border-[var(--card-border)] text-[var(--text-muted)]'
-                        }`}>
-                      {opt.label}
                     </Button>
                   ))}
                 </div>

@@ -2,7 +2,6 @@ import React, { createContext, useContext, useEffect, useState, useCallback, use
 import { connectMqtt } from '../services/mqttService';
 import { useAuth } from './AuthContext';
 import { useIoTStore, queueIoTUpdate, Alert } from '../hooks/useIoTStore';
-import { startSimulation, stopSimulation } from '../utils/simulation';
 import { notificationService } from '../services/notificationService';
 import { MqttClient } from 'mqtt';
 
@@ -26,7 +25,7 @@ export const useMqtt = () => {
 
 export const MqttProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user } = useAuth();
-  const { isSimulation, setSimulation, setConnected, addAlert } = useIoTStore();
+  const { setConnected, addAlert } = useIoTStore();
   const [client, setClient] = useState<MqttClient | null>(null);
   const [internalConnected, setInternalConnected] = useState(false);
   const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -61,11 +60,11 @@ export const MqttProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const delay = Math.min(1000 * Math.pow(2, Math.floor(Math.random() * 3)), 30000);
     reconnectTimeoutRef.current = setTimeout(() => {
       reconnectTimeoutRef.current = null;
-      if (user && !isSimulation) {
+      if (user) {
         initializeMqtt();
       }
     }, delay);
-  }, [user, isSimulation]);
+  }, [user]);
 
   // Initialize MQTT connection
   const initializeMqtt = useCallback(() => {
@@ -147,36 +146,26 @@ export const MqttProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, [cleanup, setConnected, addAlert, reconnect]);
 
-  // Sync simulation lifecycle
-  useEffect(() => {
-    if (isSimulation) {
-      startSimulation();
-    } else {
-      stopSimulation();
-    }
-    return () => stopSimulation();
-  }, [isSimulation]);
-
   // Real MQTT Logic
   useEffect(() => {
-    if (user && !isSimulation) {
+    if (user) {
       initializeMqtt();
     } else {
       cleanup();
     }
 
     return cleanup;
-  }, [user, isSimulation, initializeMqtt, cleanup]);
+  }, [user, initializeMqtt, cleanup]);
 
   const toggleSimulation = useCallback(() => {
-    setSimulation(!isSimulation);
-  }, [isSimulation, setSimulation]);
+    // Simulation mode is disabled in production-only data mode.
+  }, []);
 
   return (
     <MqttContext.Provider value={{
       client: clientRef.current,
-      isConnected: isSimulation ? true : internalConnected,
-      isSimulation,
+      isConnected: internalConnected,
+      isSimulation: false,
       toggleSimulation,
       reconnect,
       brokerUrl,

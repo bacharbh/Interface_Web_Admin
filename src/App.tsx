@@ -385,6 +385,8 @@ const AuthenticatedAppWrapper = () => {
 function App() {
   const { user, loading } = useAuth();
   const [appReady, setAppReady] = useState(false);
+  const normalizedUserRole = normalizeRole(user?.role);
+  const hasAdminAccess = normalizedUserRole === 'admin' || normalizedUserRole === 'super_admin';
 
   useEffect(() => {
     if (!loading) {
@@ -430,7 +432,7 @@ function App() {
               <Route path="/troupeau/compare" element={<Navigate to="/animals" replace />} />
               <Route
                 path="/labelling"
-                element={(user?.role ?? '').toLowerCase() === 'admin' ? <LabellingPage /> : <Navigate to="/dashboard" replace />}
+                element={hasAdminAccess ? <LabellingPage /> : <Navigate to="/dashboard" replace />}
               />
               <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/map" element={<ErrorBoundary fallback={<MapError />}><MapMonitor /></ErrorBoundary>} />
@@ -445,7 +447,7 @@ function App() {
               <Route path="/ai-dashboard" element={<AIPredictionDashboard />} />
 
               {/* Admin Only Routes */}
-              {(user?.role ?? '').toLowerCase() === 'admin' && (
+              {hasAdminAccess && (
                 <>
                   <Route path="/users" element={<Users />} />
                   <Route path="/hardware" element={<Hardware />} />

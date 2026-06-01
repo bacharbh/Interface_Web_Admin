@@ -9,10 +9,13 @@ interface MiniMapWidgetProps {
 }
 
 export default function MiniMapWidget({ animals }: MiniMapWidgetProps) {
-  const center: [number, number] = useMemo(() => {
-    if (animals.length === 0) return [33.885, -5.54];
-    const validAnimals = animals.filter((animal) => typeof animal.lat === 'number' && typeof animal.lng === 'number');
-    if (validAnimals.length === 0) return [33.885, -5.54];
+  const validAnimals = useMemo(
+    () => animals.filter((animal) => typeof animal.lat === 'number' && typeof animal.lng === 'number'),
+    [animals]
+  );
+
+  const center: [number, number] | null = useMemo(() => {
+    if (validAnimals.length === 0) return null;
 
     const { sumLat, sumLng } = validAnimals.reduce((acc, animal) => {
       acc.sumLat += animal.lat ?? 0;
@@ -21,10 +24,14 @@ export default function MiniMapWidget({ animals }: MiniMapWidgetProps) {
     }, { sumLat: 0, sumLng: 0 });
 
     return [sumLat / validAnimals.length, sumLng / validAnimals.length];
-  }, [animals]);
+  }, [validAnimals]);
 
-  if (animals.length === 0) {
-    return <div className="p-6 bg-white dark:bg-card-dark rounded-2xl border border-gray-100 dark:border-gray-800 animate-pulse h-full min-h-[250px]" />;
+  if (animals.length === 0 || validAnimals.length === 0 || !center) {
+    return (
+      <div className="flex min-h-[250px] items-center justify-center rounded-2xl border border-gray-100 bg-white p-6 text-sm text-gray-500 dark:border-gray-800 dark:bg-card-dark dark:text-gray-300">
+        Aucune donnee disponible
+      </div>
+    );
   }
 
   return (
@@ -47,9 +54,9 @@ export default function MiniMapWidget({ animals }: MiniMapWidgetProps) {
             url="https://{s}.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}{r}.png"
             attribution=""
           />
-          {animals.slice(0, 150).map(animal => {
-            const lat = typeof animal.lat === 'number' ? animal.lat : 33.885;
-            const lng = typeof animal.lng === 'number' ? animal.lng : -5.54;
+          {validAnimals.slice(0, 150).map(animal => {
+            const lat = animal.lat as number;
+            const lng = animal.lng as number;
             const isCritical = animal.status === 'CRITICAL';
             const isOutOfZone = animal.status === 'OUT_OF_ZONE';
             const color = isCritical ? '#ef4444' : isOutOfZone ? '#f59e0b' : '#3b82f6';

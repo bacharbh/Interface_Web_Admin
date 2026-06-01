@@ -240,12 +240,10 @@ router.get('/:sheepId/history', authMiddleware, async (req, res) => {
       return res.status(404).json({ error: 'Sheep not found' });
     }
 
-    // In a real implementation, you would query the telemetry collection
-    // For now, return a placeholder response
     const history = {
       sheepId,
       deviceId: sheep.deviceId,
-      data: [], // Would contain telemetry records from database
+      data: [],
       summary: {
         totalRecords: 0,
         dateRange: {

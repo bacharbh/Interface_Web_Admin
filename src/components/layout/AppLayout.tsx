@@ -25,7 +25,7 @@ const AppLayout: React.FC = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const { open: searchOpen, setOpen: setSearchOpen } = useGlobalSearch();
   const { user } = useAuth();
-  const { isConnected, isSimulation } = useMqtt();
+  const { isConnected } = useMqtt();
   const setDevices = useIoTStore(state => state.setDevices);
   const setAlerts = useIoTStore(state => state.setAlerts);
   const alerts = useIoTStore(state => state.alerts);
@@ -125,10 +125,6 @@ const AppLayout: React.FC = () => {
   // Call initData once when user is available
   useEffect(() => {
     if (user) {
-      if (isSimulation) {
-        return;
-      }
-
       const start = async () => {
         if (PERSISTENCE_MODE === 'api' && typeof indexedDB !== 'undefined') {
           try {
@@ -153,7 +149,7 @@ const AppLayout: React.FC = () => {
       };
       start();
     }
-  }, [user, isSimulation, initData]);
+  }, [user, initData]);
 
   useEffect(() => {
     setIsSidebarOpen(false);

@@ -397,14 +397,6 @@ class WeatherService {
   }
 
   /**
-   * Obtenir une condition aléatoire pour la simulation
-   */
-  getRandomCondition() {
-    const conditions = ['Clear', 'Clouds', 'Rain', 'Snow', 'Thunderstorm'];
-    return conditions[Math.floor(Math.random() * conditions.length)];
-  }
-
-  /**
    * Analyser les alertes météo préventives
    */
   analyzeWeatherAlerts(weatherData) {

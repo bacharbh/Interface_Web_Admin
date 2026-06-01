@@ -1,11 +1,10 @@
-"""Health LSTM model wrapper with a graceful fallback when TensorFlow/SHAP
-are not available. This lets the AI service start in 'mock' mode on systems
-where installing TensorFlow is not feasible (e.g., Windows + Python 3.14).
+"""Health LSTM model wrapper.
+
+Predictions are only returned when the real model runtime is available.
 """
-import os
 import numpy as np
 
-# Try to import heavy ML deps; fall back to mocks when unavailable
+# Try to import heavy ML deps
 try:
     import tensorflow as tf  # type: ignore
     HAS_TF = True
@@ -32,20 +31,9 @@ class HealthLSTMModel:
         self.num_features = 5
 
     async def load(self):
-        # If explicitly asked to use mock or TF missing, keep a lightweight mock
-        use_mock = os.getenv('AI_USE_MOCK', 'false').lower() in ('1', 'true', 'yes')
-        if use_mock or not HAS_TF:
-            # Create a trivial placeholder model representation
-            self.model = 'mock-model'
-            # Create a simple explainer surrogate if SHAP available
-            if HAS_SHAP:
-                sample_input = np.random.random((10, self.window_size, self.num_features)).astype(np.float32)
-                try:
-                    self.explainer = shap.Explainer(lambda x: np.zeros((len(x), 1)), sample_input)
-                except Exception:
-                    self.explainer = None
-            else:
-                self.explainer = None
+        if not HAS_TF:
+            self.model = None
+            self.explainer = None
             return
 
         # Build real TF model
@@ -82,17 +70,11 @@ class HealthLSTMModel:
         return model
 
     async def predict(self, window_data: np.ndarray):
-        # If TF missing or mock mode, return a deterministic safe mock
         if self.model is None:
             await self.load()
 
-        use_mock = os.getenv('AI_USE_MOCK', 'false').lower() in ('1', 'true', 'yes')
-        if use_mock or not HAS_TF:
-            # Produce a low random risk with a stable explanation
-            risk_score = float(np.clip(np.mean(window_data) % 1.0, 0.0, 1.0)) if isinstance(window_data, np.ndarray) else 0.05
-            explanation = {f: 0.2 for f in self.feature_names}
-            top_contributor = self.feature_names[0]
-            return risk_score, explanation, top_contributor
+        if self.model is None or not HAS_TF:
+            raise RuntimeError('Health model unavailable')
 
         # Real inference path
         prediction = self.model.predict(window_data)

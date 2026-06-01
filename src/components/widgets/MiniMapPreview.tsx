@@ -20,7 +20,7 @@ export type LatLng = [number, number] | { lat: number; lng: number };
 export interface MiniMapPreviewProps {
   animals: Animal[];
   geofence: LatLng[];
-  onExpand: () => void;
+  onExpand: (focusId?: string | number) => void;
 }
 
 type NormalizedCoord = [number, number];
@@ -142,13 +142,12 @@ const MiniMapPreview: React.FC<MiniMapPreviewProps> = ({
   geofence = [],
   onExpand
 }) => {
-  const isSimulation = useIoTStore((state) => state.isSimulation);
   const setDevices = useIoTStore((state) => state.setDevices);
   const refreshInFlightRef = useRef(false);
 
   // 30-second interval refresh for animal positions (updates global store)
   useInterval(async () => {
-    if (isSimulation || refreshInFlightRef.current) return;
+    if (refreshInFlightRef.current) return;
     refreshInFlightRef.current = true;
 
     try {
@@ -156,20 +155,22 @@ const MiniMapPreview: React.FC<MiniMapPreviewProps> = ({
       if (response?.data && Array.isArray(response.data)) {
         const devices: Record<string, any> = {};
         response.data.forEach((animal: any) => {
-          const id = animal.collar_id || animal.id || `device_${Date.now()}`;
+          const id = animal.collar_id || animal.id;
+          if (!id) return;
+          if (typeof animal.lat !== 'number' || typeof animal.lng !== 'number') return;
           const refreshedAt = new Date().toISOString();
           devices[id] = {
             id,
             collar_id: animal.collar_id || animal.id,
-            name: animal.name || `Animal ${id}`,
-            lat: animal.lat || 0,
-            lng: animal.lng || 0,
-            battery: animal.battery ?? 100,
-            temperature: animal.temperature ?? 38,
-            heartRate: animal.heart_rate || animal.heartRate || 75,
-            health: animal.health || 'Good',
-            status: animal.status || 'SAFE',
-            activity: animal.activity || 0,
+            name: animal.name,
+            lat: animal.lat,
+            lng: animal.lng,
+            battery: animal.battery,
+            temperature: animal.temperature,
+            heartRate: animal.heart_rate || animal.heartRate,
+            health: animal.health,
+            status: animal.status,
+            activity: animal.activity,
             lastSeen: animal.lastSeen || animal.lastUpdate || animal.updatedAt || refreshedAt,
             lastUpdate: animal.lastUpdate || animal.lastSeen || animal.updatedAt || refreshedAt,
             updatedAt: animal.updatedAt || animal.lastUpdate || animal.lastSeen || refreshedAt,
@@ -280,10 +281,13 @@ const MiniMapPreview: React.FC<MiniMapPreviewProps> = ({
             fillColor: color,
             fillOpacity: 0.95,
           }}
+          eventHandlers={{
+            click: () => onExpand(animal.id),
+          }}
         />
       );
     });
-  }, [validAnimals]);
+  }, [onExpand, validAnimals]);
 
   const memoizedPolygon = useMemo(() => {
     if (geofencePositions.length === 0) return null;
@@ -304,12 +308,14 @@ const MiniMapPreview: React.FC<MiniMapPreviewProps> = ({
 
   return (
     <div
-      className="w-full relative shadow-sm border border-slate-100 dark:border-slate-800/80 bg-white dark:bg-card-dark select-none z-0 overflow-hidden"
+      className="w-full relative border border-white/50 dark:border-slate-700/60 bg-slate-900/5 dark:bg-slate-900/35 shadow-[0_16px_38px_rgba(15,23,42,0.14)] select-none z-0 overflow-hidden"
       style={{
-        height: '240px',
-        borderRadius: '12px'
+        height: '248px',
+        borderRadius: '14px'
       }}
     >
+      <div className="pointer-events-none absolute inset-0 z-[900] bg-[radial-gradient(circle_at_80%_12%,rgba(16,185,129,0.14),transparent_40%),radial-gradient(circle_at_15%_86%,rgba(14,165,233,0.13),transparent_36%)]" />
+
       <div className="absolute top-3 left-3 z-[1000] bg-white/90 dark:bg-card-dark/95 backdrop-blur-md px-3 py-1.5 rounded-xl shadow-sm border border-slate-100 dark:border-slate-800 text-[11px] font-semibold text-slate-800 dark:text-slate-200 pointer-events-none flex items-center transition-all select-none">
         <span>🟢 {inZoneCount} animaux en zone</span>
         <span className="mx-1.5 text-slate-300 dark:text-slate-700">/</span>

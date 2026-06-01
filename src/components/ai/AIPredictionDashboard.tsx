@@ -60,7 +60,6 @@ import AIInsightsFeed from './AIInsightsFeed';
 import AnomalyHeatmap from '../widgets/AnomalyHeatmap';
 import api from '../../services/api.js';
 import { useIoTStore } from '../../hooks/useIoTStore';
-import { scoreAnimalHealth } from '../../ai/healthScoring';
 import SeverityBadge from '../ui/SeverityBadge';
 import KPICard from '../ui/KpiCard';
 import Button from '../ui/Button';
@@ -124,114 +123,6 @@ interface PredictionData {
     recommendations: string[];
   };
 }
-
-const clamp = (value: number, min: number, max: number) => Math.max(min, Math.min(max, value));
-
-const resolveRiskLevel = (riskScore: number): 'low' | 'medium' | 'high' | 'critical' => {
-  if (riskScore >= 80) return 'critical';
-  if (riskScore >= 60) return 'high';
-  if (riskScore >= 35) return 'medium';
-  return 'low';
-};
-
-const resolveActivityLabel = (animal: any, riskScore: number) => {
-  if (typeof animal.activity === 'string' && animal.activity.trim()) return animal.activity;
-  if (typeof animal.status === 'string' && animal.status === 'CRITICAL') return 'resting';
-  if (riskScore >= 60) return 'reduced';
-  if (riskScore >= 35) return 'active';
-  return 'grazing';
-};
-
-const buildSimulationPrediction = (animal: any, alerts: any[]): PredictionData => {
-  const score = scoreAnimalHealth(animal, alerts);
-  const riskScore = clamp(100 - score.score, 0, 100);
-  const level = resolveRiskLevel(riskScore);
-  const sheepId = animal.sheepId || animal.collar_id;
-  const recentAlerts = alerts.filter((alert) => alert.collar_id === animal.collar_id).slice(0, 3);
-
-  return {
-    sheepId,
-    collar_id: animal.collar_id,
-    name: animal.name || sheepId,
-    breed: animal.breed || 'Inconnue',
-    age: Number(animal.age ?? 0) || 0,
-    anomalies: {
-      anomalies: recentAlerts.map((alert) => ({
-        timestamp: alert.timestamp || new Date().toISOString(),
-        type: alert.type || 'SIMULATION_ALERT',
-        severity: alert.severity || 'WARNING',
-        score: clamp(alert.severity === 'CRITICAL' ? 0.95 : alert.severity === 'WARNING' ? 0.75 : 0.45, 0, 1),
-        values: {
-          battery: animal.battery,
-          temperature: animal.temperature,
-          heartRate: animal.heartRate,
-          rssi: animal.rssi,
-        },
-      })),
-      riskScore,
-    },
-    healthPrediction: {
-      prediction: {
-        predictedValues: {
-          heartRate: Math.round(Number.isFinite(animal.heartRate) ? animal.heartRate : 75 + (riskScore * 0.2)),
-          temperature: Number((Number.isFinite(animal.temperature) ? animal.temperature : 38.6 + (riskScore * 0.01)).toFixed(1)),
-          battery: Math.round(Number.isFinite(animal.battery) ? animal.battery : 0),
-          signalStrength: Math.round(Number.isFinite(animal.rssi) ? animal.rssi : -60),
-          activity: resolveActivityLabel(animal, riskScore),
-        },
-        riskScore,
-        issues: recentAlerts.map((alert) => alert.message || alert.type || 'Alerte de simulation'),
-        trend: riskScore >= 60 ? 'degrading' : riskScore >= 35 ? 'watchful' : 'stable',
-      },
-      confidence: Number((1 - riskScore / 100).toFixed(2)),
-    },
-    riskScore: {
-      overallScore: riskScore,
-      level,
-      components: {
-        anomalies: clamp(score.recentAlertCount * 15, 0, 100),
-        prediction: clamp(riskScore, 0, 100),
-        trends: clamp(riskScore + ((animal.speed ?? 0) * 5), 0, 100),
-        base: clamp(100 - score.score, 0, 100),
-      },
-      recommendations: recentAlerts.length > 0
-        ? ['Vérifier les capteurs simulés', 'Surveiller l’évolution sur le prochain cycle']
-        : ['État simulé stable', 'Conserver la surveillance active'],
-    },
-  };
-};
-
-const buildSummaryFromPredictions = (predictions: PredictionData[]): HealthSummary => {
-  const totalAnimals = predictions.length;
-  const riskDistribution = predictions.reduce((accumulator, prediction) => {
-    accumulator[prediction.riskScore.level] += 1;
-    return accumulator;
-  }, { low: 0, medium: 0, high: 0, critical: 0 });
-
-  const averageRiskScore = totalAnimals > 0
-    ? Math.round(predictions.reduce((sum, prediction) => sum + prediction.riskScore.overallScore, 0) / totalAnimals)
-    : 0;
-
-  const animalsWithAnomalies = predictions.filter((prediction) => prediction.anomalies.anomalies.length > 0 || prediction.riskScore.level !== 'low').length;
-
-  const highRiskAnimals = predictions
-    .filter((prediction) => prediction.riskScore.level !== 'low')
-    .slice(0, 5)
-    .map((prediction) => ({
-      sheepId: prediction.sheepId,
-      name: prediction.name,
-      riskScore: prediction.riskScore.overallScore,
-      level: prediction.riskScore.level,
-    }));
-
-  return {
-    totalAnimals,
-    riskDistribution,
-    averageRiskScore,
-    animalsWithAnomalies,
-    highRiskAnimals,
-  };
-};
 
 interface HealthSummary {
   totalAnimals: number;
@@ -812,10 +703,6 @@ const AIPredictionDashboard: React.FC = () => {
   const devices = useIoTStore(state => state.devices);
   const alerts = useIoTStore(state => state.alerts);
   const aiAlerts = useIoTStore(state => state.aiAlerts);
-  const isSimulation = useIoTStore(state => state.isSimulation);
-
-  const simulationPredictions = useMemo(() => Object.values(devices).map((animal) => buildSimulationPrediction(animal, alerts)), [devices, alerts]);
-  const simulationSummary = useMemo(() => buildSummaryFromPredictions(simulationPredictions), [simulationPredictions]);
 
   // Derived Summary from real-time store
   const reactiveSummary = useMemo(() => {
@@ -841,14 +728,11 @@ const AIPredictionDashboard: React.FC = () => {
     };
   }, [devices, aiAlerts]);
 
-  // Use the simulation summary first when the app is in simulation mode.
-  const finalSummary = isSimulation ? simulationSummary : (healthSummary || simulationSummary || reactiveSummary);
+  const finalSummary = healthSummary || reactiveSummary;
   const confidence = finalSummary.totalAnimals > 0
     ? Math.max(0, Math.min(100, Math.round(100 - finalSummary.averageRiskScore)))
     : null;
-  const backendLimitationNote = isSimulation
-    ? 'Mode simulation actif — valeurs calculées localement à partir du troupeau simulé.'
-    : 'Connexion backend limitée — valeurs locales calculées en relais.';
+  const backendLimitationNote = 'Connexion backend limitee — valeurs locales calculees en relais.';
 
   const toggleLanguage = () => {
     const newLang = i18n.language === 'fr' ? 'ar' : 'fr';
@@ -872,9 +756,7 @@ const AIPredictionDashboard: React.FC = () => {
       if (predictionsData?.success === false || predictionsDataFromApi?.success === false || preds.length === 0) {
         setPredictions([]);
         setHealthSummary(null);
-        if (!isSimulation) {
-          setError('Aucune prédiction disponible');
-        }
+        setError('Aucune donnee disponible');
         return;
       }
 
@@ -890,19 +772,17 @@ const AIPredictionDashboard: React.FC = () => {
     } catch (err) {
       console.error('[AIPredictionDashboard] Erreur fetchData:', err);
 
-      setPredictions(simulationPredictions);
-      setHealthSummary(simulationSummary);
+      setPredictions([]);
+      setHealthSummary(null);
 
-      if (!isSimulation) {
-        const message = (err as any)?.response?.status >= 500 || (err as any)?.code === 'ERR_NETWORK'
-          ? 'Connexion backend limitée — données locales affichées.'
-          : 'Chargement des prédictions indisponible.';
-        setError(message);
-      }
+      const message = (err as any)?.response?.status >= 500 || (err as any)?.code === 'ERR_NETWORK'
+        ? 'Aucune donnee disponible'
+        : 'Chargement des predictions indisponible.';
+      setError(message);
     } finally {
       setLoading(false);
     }
-  }, [isSimulation, simulationPredictions, simulationSummary]);
+  }, []);
 
   const handleRetrain = useCallback(async () => {
     try {
@@ -923,18 +803,10 @@ const AIPredictionDashboard: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    if (isSimulation) {
-      setPredictions(simulationPredictions);
-      setHealthSummary(simulationSummary);
-      setError(null);
-      setLoading(false);
-      return;
-    }
-
     fetchData(true);
     const interval = setInterval(() => fetchData(false), 30000);
     return () => clearInterval(interval);
-  }, [fetchData, isSimulation, simulationPredictions, simulationSummary]);
+  }, [fetchData]);
 
   if (loading) {
     return (
@@ -986,7 +858,7 @@ const AIPredictionDashboard: React.FC = () => {
                 <p className="body-md text-gray-500 dark:text-gray-400">
                   {t('dashboard.subtitle')}
                 </p>
-                {!isSimulation && error && (
+                {error && (
                   <span
                     className="inline-flex max-w-[28rem] items-center gap-1 rounded-full border border-amber-200 bg-amber-50 px-2.5 py-1 text-[10px] font-medium text-amber-700 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-200"
                     title={error}
@@ -1013,13 +885,6 @@ const AIPredictionDashboard: React.FC = () => {
                 variant="secondary"
                 className="px-6 py-3 text-[11px]"
                 onClick={() => {
-                  if (isSimulation) {
-                    setPredictions(simulationPredictions);
-                    setHealthSummary(simulationSummary);
-                    setError(null);
-                    infoToast('Mode simulation actif — valeurs locales déjà synchronisées');
-                    return;
-                  }
                   void fetchData();
                 }}
                 aria-label={t('common.sync')}

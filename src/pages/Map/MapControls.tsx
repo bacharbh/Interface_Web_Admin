@@ -24,17 +24,15 @@ export const TILE_LAYERS: Record<string, any> = {
 };
 
 interface MapControlsProps {
-  isSimulation: boolean;
   isConnected: boolean;
   activeLayer: string;
   onLayerChange: (layer: string) => void;
   recenterCenter: [number, number];
   showWeather: boolean;
   onToggleWeather: () => void;
-  onToggleSimulation: () => void;
 }
 
-const MapControls = React.memo(({ isSimulation, isConnected, activeLayer, onLayerChange, recenterCenter, showWeather, onToggleWeather }: MapControlsProps) => {
+const MapControls = React.memo(({ isConnected, activeLayer, onLayerChange, recenterCenter, showWeather, onToggleWeather }: MapControlsProps) => {
   const [showLegend, setShowLegend] = React.useState(true);
 
   const handleCenterOnUser = () => {
@@ -64,10 +62,10 @@ const MapControls = React.memo(({ isSimulation, isConnected, activeLayer, onLaye
       {/* Top Left: Layer controls & Live Badge */}
       <div className="absolute top-4 left-4 z-[1000] flex max-w-[calc(100vw-2rem)] flex-col gap-2 sm:max-w-[720px]">
         <div className="flex flex-wrap items-center gap-2 rounded-full border border-[var(--card-border)] bg-white px-3 py-2 shadow-lg shadow-black/5 dark:bg-[var(--card-bg)]">
-          <LiveBadge isConnected={isConnected} isSimulation={isSimulation} />
-          
+          <LiveBadge isConnected={isConnected} />
+
           <div className="hidden h-4 w-px bg-[var(--card-border)] sm:block" />
-          
+
           <div className="flex gap-1">
             {Object.entries(TILE_LAYERS).map(([key, config]) => (
               <Button
@@ -75,11 +73,10 @@ const MapControls = React.memo(({ isSimulation, isConnected, activeLayer, onLaye
                 onClick={() => onLayerChange(key)}
                 size="sm"
                 variant={activeLayer === key ? 'primary' : 'ghost'}
-                className={`uppercase tracking-wider rounded-full px-4 py-1.5 text-[11px] font-bold transition-colors ${
-                  activeLayer === key
+                className={`uppercase tracking-wider rounded-full px-4 py-1.5 text-[11px] font-bold transition-colors ${activeLayer === key
                     ? 'bg-[#00A96E] text-white hover:bg-[#009662]'
                     : 'bg-transparent text-[var(--text-secondary)] hover:bg-gray-100 dark:hover:bg-gray-800'
-                }`}
+                  }`}
               >
                 {config.name}
               </Button>
@@ -90,27 +87,26 @@ const MapControls = React.memo(({ isSimulation, isConnected, activeLayer, onLaye
 
       {/* Top Right: Weather toggle */}
       <div className="absolute top-4 right-4 z-[1000]">
-          <Button
-            onClick={onToggleWeather}
-            size="sm"
-            variant={showWeather ? 'primary' : 'ghost'}
-            className={`inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-[12px] font-semibold border border-[var(--card-border)] bg-white shadow-lg shadow-black/5 dark:bg-[var(--card-bg)] ${
-              showWeather ? 'text-[#00A96E]' : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
+        <Button
+          onClick={onToggleWeather}
+          size="sm"
+          variant={showWeather ? 'primary' : 'ghost'}
+          className={`inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-[12px] font-semibold border border-[var(--card-border)] bg-white shadow-lg shadow-black/5 dark:bg-[var(--card-bg)] ${showWeather ? 'text-[#00A96E]' : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
             }`}
-          >
-            <Sun className="h-4 w-4" />
-            Météo
-          </Button>
-          {/* "Ma position" button to center map on user */}
-          <Button
-            onClick={handleCenterOnUser}
-            size="sm"
-            variant="ghost"
-            className="inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-[12px] font-semibold border border-[var(--card-border)] bg-white shadow-lg shadow-black/5 dark:bg-[var(--card-bg)] text-[var(--text-secondary)] hover:text-primary"
-          >
-            <Target className="h-4 w-4" />
-            Ma position
-          </Button>
+        >
+          <Sun className="h-4 w-4" />
+          Météo
+        </Button>
+        {/* "Ma position" button to center map on user */}
+        <Button
+          onClick={handleCenterOnUser}
+          size="sm"
+          variant="ghost"
+          className="inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-[12px] font-semibold border border-[var(--card-border)] bg-white shadow-lg shadow-black/5 dark:bg-[var(--card-bg)] text-[var(--text-secondary)] hover:text-primary"
+        >
+          <Target className="h-4 w-4" />
+          Ma position
+        </Button>
       </div>
 
       {/* Bottom Right: Actions */}
@@ -122,7 +118,7 @@ const MapControls = React.memo(({ isSimulation, isConnected, activeLayer, onLaye
         >
           <Target className="w-5 h-5" />
         </button>
-        
+
         <button
           onClick={toggleFullscreen}
           title="Toggle Fullscreen"
@@ -140,28 +136,28 @@ const MapControls = React.memo(({ isSimulation, isConnected, activeLayer, onLaye
       </div>
 
       {/* Bottom Left: Legend */}
-        {/* Legend with toggle */}
-        <div className="absolute bottom-6 left-6 z-[1000] min-w-[150px]">
-          <Button
-            onClick={toggleLegend}
-            size="sm"
-            variant="ghost"
-            className="mb-2 flex items-center gap-1.5 px-2 py-1 bg-white/90 dark:bg-card-dark/95 backdrop-blur-md rounded-md border border-[var(--card-border)] shadow-sm"
-          >
-            {showLegend ? 'Cacher légende' : 'Afficher légende'}
-          </Button>
-          {showLegend && (
-            <div className="rounded-[14px] border border-[var(--card-border)] bg-white px-4 py-4 shadow-lg shadow-black/5 dark:bg-[var(--card-bg)]">
-              <h4 className="mb-3 text-[10px] font-bold uppercase tracking-widest text-[#9ca3af]">Légende</h4>
-              <div className="flex flex-col gap-3">
-                <LegendItem color="bg-[#00A96E]" label="Sain & Zone" />
-                <LegendItem color="bg-[#EF4444]" label="Sortie de Zone" />
-                <LegendItem color="bg-[#F59E0B]" label="Batterie Faible" />
-                <LegendItem color="bg-[#991B1B]" label="État Critique" />
-              </div>
+      {/* Legend with toggle */}
+      <div className="absolute bottom-6 left-6 z-[1000] min-w-[150px]">
+        <Button
+          onClick={toggleLegend}
+          size="sm"
+          variant="ghost"
+          className="mb-2 flex items-center gap-1.5 px-2 py-1 bg-white/90 dark:bg-card-dark/95 backdrop-blur-md rounded-md border border-[var(--card-border)] shadow-sm"
+        >
+          {showLegend ? 'Cacher légende' : 'Afficher légende'}
+        </Button>
+        {showLegend && (
+          <div className="rounded-[14px] border border-[var(--card-border)] bg-white px-4 py-4 shadow-lg shadow-black/5 dark:bg-[var(--card-bg)]">
+            <h4 className="mb-3 text-[10px] font-bold uppercase tracking-widest text-[#9ca3af]">Légende</h4>
+            <div className="flex flex-col gap-3">
+              <LegendItem color="bg-[#00A96E]" label="Sain & Zone" />
+              <LegendItem color="bg-[#EF4444]" label="Sortie de Zone" />
+              <LegendItem color="bg-[#F59E0B]" label="Batterie Faible" />
+              <LegendItem color="bg-[#991B1B]" label="État Critique" />
             </div>
-          )}
-        </div>
+          </div>
+        )}
+      </div>
     </>
   );
 });
