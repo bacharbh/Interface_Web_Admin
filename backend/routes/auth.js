@@ -2,9 +2,12 @@ import express from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import Joi from 'joi';
+import dotenv from 'dotenv';
 import User from '../models/User.js';
 import rateLimit from 'express-rate-limit';
 import mongoose from 'mongoose';
+
+dotenv.config();
 
 const router = express.Router();
 
