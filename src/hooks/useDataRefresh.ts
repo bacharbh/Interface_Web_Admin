@@ -13,6 +13,13 @@ export function useDataRefresh(intervalMs: number = 5000) {
 
     useEffect(() => {
         const refreshData = async () => {
+            // Skip refreshing from backend when gateway isn't connected and
+            // we don't have offline data. This prevents populating the UI
+            // with backend (simulated) records when the MQTT gateway is down.
+            const state = useIoTStore.getState();
+            if (!state.isConnected && !state.isOfflineData) {
+                return;
+            }
             if (isRefreshingRef.current) return;
 
             isRefreshingRef.current = true;

@@ -26,9 +26,17 @@ interface AppConfig {
   accentColor: string;
 }
 
+const NUMERIC_FIELDS = new Set<keyof AppConfig>([
+  'batteryThreshold',
+  'tempMaxThreshold',
+  'timeoutAlert',
+  'simAnimalCount',
+  'simRefreshMs',
+]);
+
 const DEFAULT_CONFIG: AppConfig = {
-  mqttHost: 'wss://test.mosquitto.org',
-  mqttPort: '8081',
+  mqttHost: '',
+  mqttPort: '',
   mqttUser: '',
   mqttPass: '',
   batteryThreshold: 20,
@@ -138,7 +146,15 @@ const Settings = () => {
         const parsed = JSON.parse(raw) as Partial<AppConfig>;
         // Never persist MQTT passwords in browser storage; keep them ephemeral in component state only.
         const { mqttPass: _ignoredPassword, ...rest } = parsed;
-        setConfig({ ...DEFAULT_CONFIG, ...rest, mqttPass: '' });
+        setConfig({
+          ...DEFAULT_CONFIG,
+          ...rest,
+          mqttHost: String(rest.mqttHost ?? ''),
+          mqttPort: String(rest.mqttPort ?? ''),
+          mqttUser: String(rest.mqttUser ?? ''),
+          mqttPass: '',
+          accentColor: String(rest.accentColor ?? DEFAULT_CONFIG.accentColor),
+        });
       } catch {
         // Ignore corrupted settings rather than rehydrating unsafe data.
       }
@@ -147,7 +163,11 @@ const Settings = () => {
 
   const handleChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    setConfig(prev => ({ ...prev, [name]: isNaN(Number(value)) ? value : Number(value) }));
+    const fieldName = name as keyof AppConfig;
+    setConfig(prev => ({
+      ...prev,
+      [fieldName]: NUMERIC_FIELDS.has(fieldName) ? Number(value) : value,
+    }));
   }, []);
 
   const handleSave = (e: React.FormEvent) => {

@@ -4,8 +4,11 @@ import { AlertTriangle } from 'lucide-react';
 
 const LSTMAlertBanner = () => {
     const devices = useIoTStore(state => state.devices);
+    const isConnected = useIoTStore(state => state.isConnected);
+    const isOfflineData = useIoTStore(state => state.isOfflineData);
 
     const criticalAnimals = useMemo(() => {
+        if (!isConnected && !isOfflineData) return [];
         return Object.values(devices)
             .filter(animal =>
                 animal &&

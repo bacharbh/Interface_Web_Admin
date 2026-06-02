@@ -13,6 +13,7 @@ import {
   downloadCSVReport
 } from './utils/analyticsHelpers';
 import { useIoTStore } from '../../hooks/useIoTStore';
+import { useIoTStore as _useIoTStore } from '../../hooks/useIoTStore';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -113,6 +114,8 @@ const Analytics = () => {
   // ── Query 1: GET /api/sheep → live KPIs (battery, temp, most active) ────────
   const fetchSheepData = async (): Promise<any[]> => {
     try {
+      const storeState = _useIoTStore.getState();
+      if (!storeState.isConnected && !storeState.isOfflineData) return [];
       const res = await api.get('/sheep', {
         headers: token ? { Authorization: `Bearer ${token}` } : undefined
       });
@@ -120,7 +123,7 @@ const Analytics = () => {
       if (Array.isArray(res.data)) data = res.data;
       else if (res.data?.data && Array.isArray(res.data.data)) data = res.data.data;
       else if (res.data?.sheep && Array.isArray(res.data.sheep)) data = res.data.sheep;
-      
+
       if (data.length > 0) return data;
       // If empty, fallback to store (e.g. simulation mode)
       return Object.values(useIoTStore.getState().devices);
@@ -204,24 +207,24 @@ const Analytics = () => {
     if (!sheepData || sheepData.length === 0) {
       return { avgBattery: 0, avgTemp: 0, mostActiveId: 'N/A', totalPoints: history?.length || 0 };
     }
-    
+
     const total = sheepData.length;
     const avgBattery = sheepData.reduce((a, s) => a + (s.battery ?? 0), 0) / total;
     const avgTemp = sheepData.reduce((a, s) => a + (s.temperature ?? 0), 0) / total;
-    
+
     let mostActiveId = sheepData[0].collar_id || sheepData[0]._id || sheepData[0].id || 'N/A';
-    
+
     if (history && history.length > 0) {
-       const counts: Record<string, number> = {};
-       let max = 0;
-       for (let i = 0; i < history.length; i++) {
-         const id = String(history[i].animalId);
-         counts[id] = (counts[id] || 0) + 1;
-         if (counts[id] > max) {
-           max = counts[id];
-           mostActiveId = id;
-         }
-       }
+      const counts: Record<string, number> = {};
+      let max = 0;
+      for (let i = 0; i < history.length; i++) {
+        const id = String(history[i].animalId);
+        counts[id] = (counts[id] || 0) + 1;
+        if (counts[id] > max) {
+          max = counts[id];
+          mostActiveId = id;
+        }
+      }
     }
 
     return {

@@ -65,6 +65,8 @@ interface HardwareItem {
 const Hardware = () => {
   const navigate = useNavigate();
   const devicesMap = useIoTStore(state => state.devices);
+  const isConnected = useIoTStore(state => state.isConnected);
+  const isOfflineData = useIoTStore(state => state.isOfflineData);
   const [searchTerm, setSearchTerm] = useState('');
   const [filter, setFilter] = useState<HardwareStatus | 'ALL'>('ALL');
 
@@ -75,7 +77,7 @@ const Hardware = () => {
       const payload = response.data?.data ?? response.data?.sheep ?? response.data;
       return Array.isArray(payload) ? payload : [];
     },
-    enabled: Object.keys(devicesMap).length === 0,
+    enabled: Object.keys(devicesMap).length === 0 && (isConnected || isOfflineData),
     staleTime: 30_000,
   });
 
@@ -122,58 +124,60 @@ const Hardware = () => {
   const isEmpty = displayHardware.length === 0;
 
   return (
-    <div className="max-w-7xl mx-auto space-y-6 pb-20 px-4 animate-fade-in">
+    <div className="max-w-7xl mx-auto space-y-5 pb-16 px-4 animate-fade-in">
       {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 glass p-6 rounded-3xl border border-white/20 dark:border-slate-800/50 shadow-xl shadow-primary/5">
+      <div className="flex items-start justify-between gap-4">
         <div>
-          <h2 className="title-lg text-slate-900 dark:text-white tracking-tight leading-none">Flotte matérielle</h2>
-          <p className="label-xs mt-2">
+          <h2 className="text-2xl font-semibold text-gray-900 dark:text-white">Flotte matérielle</h2>
+          <p className="text-sm text-gray-500 mt-1">
             {kpis.total} Colliers IoT · Données temps réel
           </p>
         </div>
         <div className="flex items-center gap-2">
           <span className="flex h-2 w-2 rounded-full bg-green-400 animate-pulse" />
-          <span className="label-xs">Flux direct</span>
+          <span className="text-sm text-gray-600">Flux direct</span>
         </div>
       </div>
 
       {/* KPI Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         {[
-          { icon: <Cpu className="w-5 h-5 text-primary" />, label: 'Total appareils', value: kpis.total, color: 'text-slate-800 dark:text-white' },
-          { icon: <CheckCircle className="w-5 h-5 text-green-500" />, label: 'Déployés', value: kpis.deployed, color: 'text-green-600 dark:text-green-400' },
-          { icon: <Battery className="w-5 h-5 text-amber-500" />, label: 'Alerte batterie', value: kpis.lowBatt, color: 'text-amber-600 dark:text-amber-400' },
-          { icon: <AlertTriangle className="w-5 h-5 text-red-500" />, label: 'Hors ligne', value: kpis.offline, color: 'text-red-600 dark:text-red-400' },
+          { icon: <Cpu className="w-8 h-8 text-gray-300" />, label: 'Total appareils', value: kpis.total, color: 'text-gray-900 dark:text-white' },
+          { icon: <CheckCircle className="w-8 h-8 text-gray-200" />, label: 'Déployés', value: kpis.deployed, color: 'text-green-600 dark:text-green-400' },
+          { icon: <Battery className="w-8 h-8 text-gray-200" />, label: 'Alerte batterie', value: kpis.lowBatt, color: 'text-amber-600 dark:text-amber-400' },
+          { icon: <AlertTriangle className="w-8 h-8 text-gray-200" />, label: 'Hors ligne', value: kpis.offline, color: 'text-red-600 dark:text-red-400' },
         ].map(({ icon, label, value, color }) => (
-          <div key={label} className="glass p-5 rounded-2xl border border-white/20 dark:border-slate-800 flex flex-col gap-2 relative overflow-hidden">
-            <div className="absolute top-0 right-0 p-4 opacity-10">{React.cloneElement(icon, { className: 'w-16 h-16' })}</div>
-            <div className="flex items-center gap-2">{icon}<span className="label-xs">{label}</span></div>
-            <span className={`value-xl tabular-nums ${color}`}>{value}</span>
+          <div key={label} className="bg-white dark:bg-gray-800 p-4 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm flex items-center justify-between">
+            <div>
+              <span className="text-sm text-gray-500 mb-1 block">{label}</span>
+              <span className={`text-2xl font-bold ${color}`}>{value}</span>
+            </div>
+            {icon}
           </div>
         ))}
       </div>
 
       {/* Filters & Table */}
-      <div className="glass rounded-3xl border border-white/20 dark:border-slate-800 shadow-xl overflow-hidden bg-white/50 dark:bg-slate-900/50">
-        <div className="p-4 border-b border-white/20 dark:border-slate-800 flex flex-col sm:flex-row gap-4 justify-between items-center bg-white/40 dark:bg-slate-800/40">
-          <div className="relative w-full sm:w-72">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+      <div className="bg-white dark:bg-gray-800 rounded-3xl border border-gray-100 dark:border-gray-700 shadow-sm overflow-hidden">
+        <div className="p-4 border-b border-gray-100 dark:border-gray-700 flex flex-col sm:flex-row gap-4 justify-between items-center">
+          <div className="relative w-full sm:w-96">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
             <input
               type="text"
               placeholder="Rechercher Collier ID ou Animal…"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-2.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:ring-2 focus:ring-primary focus:border-transparent outline-none dark:text-white transition-all shadow-sm"
+              className="w-full pl-10 pr-4 py-3 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none dark:text-white transition-all"
             />
           </div>
-          <div className="flex bg-slate-100 dark:bg-slate-900/50 p-1 rounded-2xl border border-black/5 dark:border-white/5 overflow-x-auto w-full sm:w-auto gap-1">
+          <div className="flex bg-gray-100 dark:bg-gray-700 p-1 rounded-xl overflow-x-auto gap-1">
             {(['ALL', 'DEPLOYED', 'LOW_BATT', 'OFFLINE'] as const).map(f => (
               <button
                 key={f}
                 onClick={() => setFilter(f)}
-                className={`px-4 py-2 rounded-xl label-xs font-black transition-all whitespace-nowrap ${filter === f
-                  ? 'bg-white dark:bg-slate-800 text-primary shadow-sm'
-                  : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'
+                className={`px-4 py-2 rounded-lg text-xs font-medium transition-all whitespace-nowrap ${filter === f
+                  ? 'bg-white dark:bg-gray-600 text-emerald-700 dark:text-emerald-300 shadow-sm'
+                  : 'text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200'
                   }`}
               >
                 {f === 'ALL' ? 'Tous' : f.replace('_', ' ').toLowerCase()}
@@ -184,11 +188,11 @@ const Hardware = () => {
 
         <div className="overflow-x-auto">
           {isEmpty ? (
-            <div className="py-20 text-center space-y-4">
-              <Radio className="w-12 h-12 mx-auto mb-4 text-gray-200 animate-pulse" />
-              <p className="label-sm font-black text-gray-400">Aucun appareil détecté</p>
-              <p className="text-xs text-gray-500">Activez la simulation ou vérifiez la connexion MQTT.</p>
-              <Button variant="secondary" onClick={() => navigate('/settings')} className="inline-flex items-center gap-2">
+            <div className="py-24 text-center space-y-3">
+              <Radio className="w-14 h-14 mx-auto mb-2 text-gray-300 animate-pulse" />
+              <p className="text-sm font-medium text-gray-500">Aucun appareil détecté</p>
+              <p className="text-xs text-gray-400">Vérifiez la connexion MQTT.</p>
+              <Button variant="secondary" onClick={() => navigate('/settings')} className="inline-flex items-center gap-2 mt-1 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 border border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-200">
                 Aller aux paramètres
               </Button>
             </div>

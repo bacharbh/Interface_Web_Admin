@@ -21,59 +21,10 @@ export const useAgendaEvents = (month: Date) => {
         queryFn: async () => {
             try {
                 const events = await fetchEvents(from, to);
-                if (events.length > 0) {
-                    return events;
-                }
+                return events;
             } catch {
-                // Fall back below.
+                return [];
             }
-
-            if (import.meta.env.DEV) {
-                const base = new Date();
-                return [
-                    {
-                        id: 'mock-agenda-1',
-                        title: 'Visite vétérinaire',
-                        type: 'checkup',
-                        startAt: new Date(base.getTime() + 2 * 60 * 60 * 1000).toISOString(),
-                        endAt: new Date(base.getTime() + 3 * 60 * 60 * 1000).toISOString(),
-                        animalIds: ['C001'],
-                        veterinarian: 'Dr. Martin',
-                        notes: 'Contrôle de routine',
-                        recurrence: 'none',
-                        reminderMinutes: 60,
-                        status: 'upcoming',
-                    },
-                    {
-                        id: 'mock-agenda-2',
-                        title: 'Vaccination troupeau',
-                        type: 'vaccine',
-                        startAt: new Date(base.getTime() + 24 * 60 * 60 * 1000).toISOString(),
-                        endAt: new Date(base.getTime() + 25 * 60 * 60 * 1000).toISOString(),
-                        animalIds: ['C045', 'C089'],
-                        veterinarian: 'Dr. Martin',
-                        notes: 'Lot principal',
-                        recurrence: 'none',
-                        reminderMinutes: 120,
-                        status: 'upcoming',
-                    },
-                    {
-                        id: 'mock-agenda-3',
-                        title: 'Traitement localisé',
-                        type: 'treatment',
-                        startAt: new Date(base.getTime() + 3 * 24 * 60 * 60 * 1000).toISOString(),
-                        endAt: new Date(base.getTime() + 3 * 24 * 60 * 60 * 1000 + 45 * 60 * 1000).toISOString(),
-                        animalIds: ['C012'],
-                        veterinarian: 'Dr. Martin',
-                        notes: 'Suivi post-anomalie',
-                        recurrence: 'none',
-                        reminderMinutes: 30,
-                        status: 'upcoming',
-                    },
-                ];
-            }
-
-            return [];
         },
         staleTime: 30_000,
         refetchInterval: 60_000,

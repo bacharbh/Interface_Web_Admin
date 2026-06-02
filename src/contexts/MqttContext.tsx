@@ -8,8 +8,6 @@ import { MqttClient } from 'mqtt';
 interface MqttContextType {
   client: MqttClient | null;
   isConnected: boolean;
-  isSimulation: boolean;
-  toggleSimulation: () => void;
   reconnect: () => void;
   brokerUrl: string;
   brokerMode: 'local' | 'remote';
@@ -25,11 +23,24 @@ export const useMqtt = () => {
 
 export const MqttProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user } = useAuth();
-  const { setConnected, addAlert } = useIoTStore();
+  const { setConnected, addAlert, setDevices, setAlerts } = useIoTStore();
   const [client, setClient] = useState<MqttClient | null>(null);
   const [internalConnected, setInternalConnected] = useState(false);
   const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const clientRef = useRef<MqttClient | null>(null);
+
+  // Clear all localStorage data to start clean
+  useEffect(() => {
+    try {
+      // Clear all storage keys
+      localStorage.clear();
+      setDevices({});
+      setAlerts([]);
+      console.log('All cached data cleared');
+    } catch (e) {
+      console.warn('Failed to clear storage:', e);
+    }
+  }, [setDevices, setAlerts]);
 
   // Get broker URL and mode from environment
   const brokerUrl = import.meta.env.VITE_MQTT_URL || 'ws://localhost:1883';
@@ -71,7 +82,9 @@ export const MqttProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       cleanup();
 
-      const mqttClient = connectMqtt('admin', 'admin_password');
+      const mqttUsername = import.meta.env.VITE_MQTT_USERNAME || 'admin';
+      const mqttPassword = import.meta.env.VITE_MQTT_PASSWORD || 'admin_password';
+      const mqttClient = connectMqtt(mqttUsername, mqttPassword);
       clientRef.current = mqttClient;
 
       const onConnect = () => {
@@ -157,16 +170,10 @@ export const MqttProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return cleanup;
   }, [user, initializeMqtt, cleanup]);
 
-  const toggleSimulation = useCallback(() => {
-    // Simulation mode is disabled in production-only data mode.
-  }, []);
-
   return (
     <MqttContext.Provider value={{
       client: clientRef.current,
       isConnected: internalConnected,
-      isSimulation: false,
-      toggleSimulation,
       reconnect,
       brokerUrl,
       brokerMode

@@ -73,7 +73,13 @@ export default function Dashboard() {
   const alerts = useIoTStore(state => state.alerts);
 
   useEffect(() => {
-    if (isConnected || Object.keys(positions).length > 0) return;
+    // Keep dashboard zeroed and inactive until a real hardware/MQTT
+    // connection is established. Do not populate devices from the
+    // API when the gateway is offline — this prevents simulated/default
+    // values from appearing in the UI.
+    if (!isConnected) return;
+    if (Object.keys(positions).length > 0) return;
+
     let cancelled = false;
     api.get('/sheep', { params: { limit: 300 } })
       .then((res) => {
@@ -379,13 +385,11 @@ export default function Dashboard() {
     return () => clearTimeout(timer);
   }, []);
 
-  // Track render performance
-  useEffect(() => {
-    renderCountRef.current += 1;
-    if (import.meta.env.DEV && import.meta.env.MODE === 'development' && renderCountRef.current % 100 === 0) {
-      console.warn(`Dashboard rendered ${renderCountRef.current} times - check for performance issues`);
-    }
-  });
+  // Track render performance (increment ref directly on render)
+  renderCountRef.current += 1;
+  if (import.meta.env.DEV && import.meta.env.MODE === 'development' && renderCountRef.current % 100 === 0) {
+    console.warn(`Dashboard rendered ${renderCountRef.current} times - check for performance issues`);
+  }
 
   // Memoized chart data to prevent unnecessary re-renders
   const chartData = useMemo(() => ({
@@ -526,8 +530,9 @@ export default function Dashboard() {
             onClick={resetLayout}
             variant="ghost"
             className="px-3 py-2 rounded-xl label-xs text-gray-400 hover:text-primary transition-colors flex items-center gap-2"
+            aria-label="Réinitialiser l'ordre des KPI"
           >
-            <RotateCcw className="w-3.5 h-3.5" />
+            <RotateCcw className="w-3.5 h-3.5" aria-hidden="true" />
             Réinitialiser l'ordre
           </Button>
 
@@ -535,6 +540,7 @@ export default function Dashboard() {
             onClick={() => setIsChartPaused(!isChartPaused)}
             variant={isChartPaused ? 'secondary' : 'ghost'}
             className="px-3 py-2 rounded-xl label-xs"
+            aria-label={isChartPaused ? "Reprendre les mises à jour du graphique" : "Mettre en pause les mises à jour du graphique"}
           >
             {isChartPaused ? '▶️' : '⏸️'} {isChartPaused ? 'Reprendre' : 'Pause'}
           </Button>
@@ -550,10 +556,10 @@ export default function Dashboard() {
 
       {/* Critical Alerts Banner */}
       {criticalAlerts.length > 0 && (
-        <div className="bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/30 rounded-xl p-4">
+        <div role="alert" aria-live="assertive" className="bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/30 rounded-xl p-4">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div className="flex items-center gap-3">
-              <ShieldAlert className="w-5 h-5 text-red-600 dark:text-red-400 flex-shrink-0" />
+              <ShieldAlert className="w-5 h-5 text-red-600 dark:text-red-400 flex-shrink-0" aria-hidden="true" />
               <span className="font-semibold text-red-800 dark:text-red-200">
                 {criticalAlerts.length} alerte{criticalAlerts.length > 1 ? 's' : ''} critique{criticalAlerts.length > 1 ? 's' : ''} nécessite{criticalAlerts.length > 1 ? 'nt' : ''} votre attention
               </span>
@@ -561,6 +567,7 @@ export default function Dashboard() {
             <Button
               onClick={() => navigate('/alerts?filter=critical')}
               className="px-4 py-2 bg-red-600 hover:bg-red-700 border-transparent text-white rounded-lg text-sm font-medium transition-colors shadow-sm whitespace-nowrap"
+              aria-label={`Voir les ${criticalAlerts.length} alertes critiques`}
             >
               Voir les {criticalAlerts.length} alertes &rarr;
             </Button>
@@ -788,10 +795,13 @@ function SortableKpiItem({ id, children }: { id: string; children: React.ReactNo
       <div
         {...attributes}
         {...listeners}
+        role="button"
+        tabIndex={0}
+        aria-label={`Réorganiser le KPI ${id}`}
         className="absolute top-2 left-2 p-1 text-gray-300 hover:text-primary opacity-0 group-hover:opacity-100 transition-opacity cursor-grab active:cursor-grabbing z-20"
         title="Faire glisser pour réorganiser"
       >
-        <GripVertical size={16} />
+        <GripVertical size={16} aria-hidden="true" />
       </div>
       {children}
     </div>

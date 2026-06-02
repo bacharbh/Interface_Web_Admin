@@ -98,7 +98,7 @@ export interface Alert {
   read: boolean;
   readAt?: string;
   message?: string;
-  source?: 'socket' | 'simulation' | 'mqtt';
+  source?: 'socket' | 'mqtt';
 }
 
 interface IoTState {
@@ -109,12 +109,10 @@ interface IoTState {
 
   // Connection Status
   isConnected: boolean;
-  isSimulation: boolean;
   isOfflineData: boolean;
 
   // Actions
   setConnected: (status: boolean) => void;
-  setSimulation: (status: boolean) => void;
   loadOfflineData: () => Promise<void>;
 
   // Atomic Updates
@@ -153,22 +151,13 @@ export const useIoTStore = create<IoTState>()(
     needsCharging: [],
     aiSettings: loadAISettings(),
     isConnected: false,
-    isSimulation: false,
     isOfflineData: false,
 
     setConnected: (status) => set({ isConnected: status, isOfflineData: !status && !navigator.onLine }),
-    setSimulation: () => set({ isSimulation: false }),
 
     loadOfflineData: async () => {
-      const cachedDevices = await loadData('last_known_devices');
-      const cachedAlerts = await loadData('last_known_alerts');
-      if (cachedDevices || cachedAlerts) {
-        set({
-          devices: cachedDevices || {},
-          alerts: cachedAlerts || [],
-          isOfflineData: true
-        });
-      }
+      // Don't load cached data to keep pages empty initially
+      console.log('Offline data loading disabled for clean state');
     },
 
     setDevices: (devices) => {
@@ -268,9 +257,9 @@ export const useIoTStore = create<IoTState>()(
 
     addAlert: (alert) => set((state) => {
       const alertPriority = (a: Alert) => {
-        if (a.source === 'socket') return 3;
-        if (a.source === 'mqtt') return 2;
-        return 1;
+        if (a.source === 'socket') return 2;
+        if (a.source === 'mqtt') return 1;
+        return 0;
       };
 
       const toTs = (a: Alert) => {

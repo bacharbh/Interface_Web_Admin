@@ -47,7 +47,7 @@ const AnomalyRegistry: React.FC = () => {
     const [anomalyRecords, setAnomalyRecords] = useState<AnomalyRecord[]>([]);
     const [aiAnalysis, setAiAnalysis] = useState<AIAnalysis | null>(null);
     const [isLoading, setIsLoading] = useState(false);
-    const [lastSimulationUpdate, setLastSimulationUpdate] = useState<Date | null>(null);
+    const [lastDataUpdate, setLastDataUpdate] = useState<Date | null>(null);
     const [lastAIUpdate, setLastAIUpdate] = useState<Date | null>(null);
     const anomaliesRef = useRef<Map<string, number>>(new Map()); // Track anomaly history
     const lastAIRequestAtRef = useRef<number>(0);
@@ -145,7 +145,7 @@ const AnomalyRegistry: React.FC = () => {
         if (signature !== lastAnomalySignatureRef.current) {
             lastAnomalySignatureRef.current = signature;
             setAnomalyRecords(newRecords);
-            setLastSimulationUpdate(new Date());
+            setLastDataUpdate(new Date());
 
             if (newRecords.length > 0 && signature !== lastPersistedAnomalySignatureRef.current) {
                 void persistAnomalies(newRecords, signature);
@@ -234,7 +234,7 @@ const AnomalyRegistry: React.FC = () => {
     useEffect(() => {
         refreshTimerRef.current = setInterval(() => {
             // Force a refresh by updating timestamp
-            setLastSimulationUpdate(new Date());
+            setLastDataUpdate(new Date());
         }, 5000);
 
         return () => {
@@ -281,20 +281,20 @@ const AnomalyRegistry: React.FC = () => {
     const atRiskCount = aiAnalysis?.riskAnimalIds?.length ?? 0;
 
     return (
-        <div className="space-y-6 p-6">
+        <div className="space-y-5 p-5">
             {/* Header */}
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between mb-4">
                 <div>
-                    <h1 className="text-3xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
-                        <AlertTriangle className="w-8 h-8 text-orange-500" />
+                    <h1 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                        <AlertTriangle className="w-7 h-7 text-orange-500" />
                         Registre d'Anomalies
                     </h1>
-                    <p className="text-gray-600 dark:text-gray-400 mt-1">
+                    <p className="text-gray-600 dark:text-gray-400 mt-1 text-sm">
                         Suivi automatique des anomalies détectées avec analyse IA en temps réel
                     </p>
                 </div>
                 <div className="flex gap-2">
-                    <Button variant="primary" onClick={() => setAnomalyRecords([])} className="inline-flex items-center gap-2">
+                    <Button variant="primary" onClick={() => setAnomalyRecords([])} className="inline-flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700">
                         <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
                         {isLoading ? 'Analyse...' : 'Actualiser'}
                     </Button>
@@ -302,41 +302,46 @@ const AnomalyRegistry: React.FC = () => {
             </div>
 
             {/* Status indicators */}
-            <div className="grid grid-cols-3 gap-4">
-                <div className="bg-white dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
-                    <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
-                        <Clock className="w-4 h-4" />
-                        Dernière mise à jour simulation
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div className="bg-white dark:bg-gray-800 rounded-xl p-5 border border-gray-200 dark:border-gray-700 shadow-sm">
+                    <div className="flex items-center justify-between mb-2">
+                        <span className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                            Dernière mise à jour
+                        </span>
+                        <Clock className="w-5 h-5 text-gray-400" />
                     </div>
-                    <p className="text-lg font-semibold text-gray-900 dark:text-white mt-1">
-                        {lastSimulationUpdate?.toLocaleTimeString('fr-FR') || 'En attente...'}
+                    <p className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
+                        {lastDataUpdate?.toLocaleTimeString('fr-FR') || 'En attente...'}
                     </p>
-                    <div className="mt-2 text-sm text-gray-600 dark:text-gray-400 flex gap-3">
-                        <span>Total animaux: <strong className="text-gray-900 dark:text-white">{totalAnimals}</strong></span>
-                        <span>Anomalies: <strong className="text-gray-900 dark:text-white">{anomaliesCount}</strong></span>
+                    <div className="text-sm text-gray-600 dark:text-gray-400">
+                        Total animaux: <strong className="text-gray-900 dark:text-white">{totalAnimals}</strong> | Anomalies: <strong className="text-gray-900 dark:text-white">{anomaliesCount}</strong>
                     </div>
                 </div>
 
-                <div className="bg-white dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
-                    <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
-                        <TrendingUp className="w-4 h-4" />
-                        Dernière analyse IA
+                <div className="bg-white dark:bg-gray-800 rounded-xl p-5 border border-gray-200 dark:border-gray-700 shadow-sm">
+                    <div className="flex items-center justify-between mb-2">
+                        <span className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                            Dernière analyse IA
+                        </span>
+                        <TrendingUp className="w-5 h-5 text-gray-400" />
                     </div>
-                    <p className="text-lg font-semibold text-gray-900 dark:text-white mt-1">
+                    <p className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
                         {lastAIUpdate?.toLocaleTimeString('fr-FR') || 'Non disponible'}
                     </p>
-                    <div className="mt-2 text-sm text-gray-600 dark:text-gray-400">
-                        <span>Analysés: <strong className="text-gray-900 dark:text-white">{totalAnimals}</strong></span>
+                    <div className="text-sm text-gray-600 dark:text-gray-400">
+                        Analysés: <strong className="text-gray-900 dark:text-white">{totalAnimals}</strong>
                     </div>
                 </div>
 
-                <div className={`rounded-lg p-4 border-2 ${aiAnalysis ? getRiskLevelColor(aiAnalysis.riskLevel) : 'bg-gray-100 dark:bg-gray-800 border-gray-300 dark:border-gray-700'}`}>
-                    <div className="text-sm font-semibold text-gray-700 dark:text-gray-300">Niveau de risque global</div>
-                    <p className="text-2xl font-bold mt-1">
+                <div className={`rounded-xl p-5 border border-gray-200 dark:border-gray-700 shadow-sm ${aiAnalysis ? getRiskLevelColor(aiAnalysis.riskLevel) : 'bg-gray-100 dark:bg-gray-800'}`}>
+                    <div className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                        Niveau de risque global
+                    </div>
+                    <p className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
                         {aiAnalysis?.riskLevel || 'N/A'}
                     </p>
-                    <div className="mt-2 text-sm text-gray-600 dark:text-gray-400">
-                        <span>Animaux à risque: <strong className="text-gray-900 dark:text-white">{atRiskCount}</strong></span>
+                    <div className="text-sm text-gray-600 dark:text-gray-400">
+                        Animaux à risque: <strong className="text-gray-900 dark:text-white">{atRiskCount}</strong>
                     </div>
                 </div>
             </div>
@@ -434,7 +439,7 @@ const AnomalyRegistry: React.FC = () => {
             {allAnomalyRecords.length === 0 && (
                 <div className="text-center py-12">
                     <p className="text-gray-600 dark:text-gray-400">
-                        En attente des données de simulation...
+                        En attente des données...
                     </p>
                 </div>
             )}

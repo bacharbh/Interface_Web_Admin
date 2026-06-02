@@ -5,9 +5,11 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
 import AddEventModal from './AddEventModal';
 import Button from '../../components/ui/Button';
+import { SkeletonCard } from '../../components/ui/Skeleton';
 import api from '../../services/api';
 import { createEvent, deleteEvent, updateEvent, type AgendaEvent, type NewAgendaEvent, type AgendaEventType } from '../../services/agendaService';
 import { agendaQueryKey, useAgendaEvents } from '../../hooks/useAgendaEvents';
+import { useIoTStore } from '../../hooks/useIoTStore';
 
 type ViewMode = 'month' | 'week' | 'list';
 
@@ -77,7 +79,10 @@ const AgendaView: React.FC = () => {
         }
     }, [params]);
 
-    const { events } = useAgendaEvents(monthAnchor);
+    const { events, isLoading: eventsLoading, error: eventsError } = useAgendaEvents(monthAnchor);
+
+    const isConnected = useIoTStore(state => state.isConnected);
+    const isOfflineData = useIoTStore(state => state.isOfflineData);
 
     const animalsQuery = useQuery<AnimalOption[]>({
         queryKey: ['agenda-animals'],
@@ -94,6 +99,7 @@ const AgendaView: React.FC = () => {
             return payload.map((animal: Record<string, unknown>) => formatAnimalLabel(animal));
         },
         staleTime: 5 * 60 * 1000,
+        enabled: isConnected || isOfflineData,
     });
 
     const monthGrid = useMemo(() => toMonthGrid(monthAnchor), [monthAnchor]);
@@ -226,149 +232,170 @@ const AgendaView: React.FC = () => {
                 </div>
             </div>
 
-            <div className="grid gap-4 md:grid-cols-3">
-                {upcomingEvents.map((event) => (
-                    <button
-                        key={event.id}
-                        type="button"
-                        onClick={() => openEditModal(event)}
-                        className="rounded-2xl border border-gray-200 bg-white p-4 text-left shadow-sm transition hover:-translate-y-0.5 hover:shadow-md dark:border-gray-800 dark:bg-card-dark"
-                    >
-                        <div className="flex items-center gap-3">
-                            <span className="h-3 w-3 rounded-full" style={{ background: EVENT_COLORS[event.type] }} />
-                            <div className="text-xs uppercase tracking-wide text-gray-500">Prochain événement</div>
-                        </div>
-                        <div className="mt-3 font-semibold text-gray-900 dark:text-white">{event.title}</div>
-                        <div className="mt-1 text-sm text-gray-500 dark:text-gray-400">{format(parseISO(event.startAt), 'dd MMM yyyy • HH:mm')}</div>
-                    </button>
-                ))}
-            </div>
-
-            {events.length === 0 && (
-                <div className="rounded-2xl border border-dashed border-gray-300 bg-white px-6 py-10 text-center shadow-sm dark:border-gray-700 dark:bg-card-dark">
-                    <p className="text-base font-semibold text-gray-900 dark:text-white">Aucun événement ce mois</p>
-                    <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">Cliquez sur "Ajouter" pour planifier une visite.</p>
+            {eventsLoading ? (
+                <div className="grid gap-4 md:grid-cols-3">
+                    <SkeletonCard />
+                    <SkeletonCard />
+                    <SkeletonCard />
                 </div>
-            )}
-
-            {view === 'month' && (
-                <div className="grid grid-cols-7 gap-2">
-                    {monthGrid.map((day) => {
-                        const dayKey = format(day, 'yyyy-MM-dd');
-                        const dayEvents = eventsByDate[dayKey] ?? [];
-
-                        return (
-                            <div key={dayKey} className={`rounded-lg border p-3 ${isSameMonth(day, monthAnchor) ? '' : 'opacity-40'}`}>
-                                <div className="flex items-start justify-between">
-                                    <div className="text-sm font-bold">{format(day, 'd')}</div>
-                                </div>
-                                <div className="mt-2 space-y-1">
-                                    {dayEvents.slice(0, 3).map((event) => (
-                                        <button
-                                            key={event.id}
-                                            type="button"
-                                            onClick={() => openEditModal(event)}
-                                            className="flex w-full items-center gap-2 rounded-lg px-2 py-1 text-left hover:bg-gray-50 dark:hover:bg-gray-800"
-                                        >
-                                            <span className="h-2 w-2 rounded-full" style={{ background: EVENT_COLORS[event.type] }} />
-                                            <div className="min-w-0 flex-1 truncate text-xs">{event.title} • {format(parseISO(event.startAt), 'HH:mm')}</div>
-                                        </button>
-                                    ))}
-                                    {dayEvents.length > 3 && <div className="text-xs text-gray-400">+ {dayEvents.length - 3} autres</div>}
-                                </div>
-                            </div>
-                        );
-                    })}
+            ) : eventsError ? (
+                <div className="rounded-2xl border border-red-200 bg-red-50 p-4 dark:border-red-500/30 dark:bg-red-500/10">
+                    <p className="text-red-700 dark:text-red-400 font-semibold">Impossible de charger les événements.</p>
+                    <p className="text-red-600 dark:text-red-500 text-sm mt-1">
+                        {eventsError instanceof Error ? eventsError.message : "Veuillez vérifier votre connexion et réessayer."}
+                    </p>
                 </div>
-            )}
-
-            {view === 'week' && (
-                <div className="rounded-2xl border bg-white p-4 dark:bg-card-dark">
-                    <h3 className="title-sm mb-3">Semaine</h3>
-                    <div className="grid grid-cols-7 gap-2">
-                        {Array.from({ length: 7 }).map((_, index) => {
-                            const day = addDays(startOfWeek(monthAnchor, { weekStartsOn: 1 }), index);
-                            const dayKey = format(day, 'yyyy-MM-dd');
-                            const dayEvents = eventsByDate[dayKey] ?? [];
-
-                            return (
-                                <div key={dayKey} className="rounded-lg border p-2">
-                                    <div className="text-xs font-bold">{format(day, 'EEEE d')}</div>
-                                    <div className="mt-2 space-y-1">
-                                        {dayEvents.map((event) => (
-                                            <button key={event.id} type="button" onClick={() => openEditModal(event)} className="flex w-full items-center gap-2 rounded-md px-2 py-1 text-left text-xs hover:bg-gray-50 dark:hover:bg-gray-800">
-                                                <span className="h-2 w-2 rounded-full" style={{ background: EVENT_COLORS[event.type] }} />
-                                                <div className="truncate">{format(parseISO(event.startAt), 'HH:mm')} • {event.title}</div>
-                                            </button>
-                                        ))}
-                                    </div>
+            ) : (
+                <>
+                    <div className="grid gap-4 md:grid-cols-3">
+                        {upcomingEvents.map((event) => (
+                            <button
+                                key={event.id}
+                                type="button"
+                                onClick={() => openEditModal(event)}
+                                className="rounded-2xl border border-gray-200 bg-white p-4 text-left shadow-sm transition hover:-translate-y-0.5 hover:shadow-md dark:border-gray-800 dark:bg-card-dark"
+                            >
+                                <div className="flex items-center gap-3">
+                                    <span className="h-3 w-3 rounded-full" style={{ background: EVENT_COLORS[event.type] }} />
+                                    <div className="text-xs uppercase tracking-wide text-gray-500">Prochain événement</div>
                                 </div>
-                            );
-                        })}
-                    </div>
-                </div>
-            )}
-
-            {view === 'list' && (() => {
-                const now = new Date();
-                const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-                const tomorrowStart = addDays(todayStart, 1);
-
-                const sections: Array<{ label: string; events: AgendaEvent[] }> = [
-                    {
-                        label: 'En cours',
-                        events: sortByStart(
-                            events.filter((event) => {
-                                const start = new Date(event.startAt).getTime();
-                                const end = new Date(event.endAt).getTime();
-                                return start <= now.getTime() && end >= now.getTime();
-                            })
-                        ),
-                    },
-                    {
-                        label: 'À venir',
-                        events: sortByStart(
-                            events.filter((event) => new Date(event.startAt).getTime() >= tomorrowStart.getTime())
-                        ),
-                    },
-                    {
-                        label: 'Passés',
-                        events: sortByStart(
-                            events.filter((event) => new Date(event.endAt).getTime() < todayStart.getTime())
-                        ),
-                    },
-                ];
-
-                return (
-                    <div className="space-y-4">
-                        {sections.map(({ label, events: sectionEvents }) => (
-                            <div key={label} className="rounded-2xl border bg-white p-4 dark:bg-card-dark">
-                                <h3 className="title-sm mb-3">{label}</h3>
-                                {sectionEvents.length === 0 ? (
-                                    <p className="text-sm text-gray-400">Aucun événement.</p>
-                                ) : (
-                                    sectionEvents.map((event) => (
-                                        <div key={event.id} className="flex items-center justify-between gap-4 border-b py-2 last:border-b-0">
-                                            <button type="button" onClick={() => openEditModal(event)} className="flex min-w-0 flex-1 items-center gap-3 text-left">
-                                                <div className="flex h-8 w-8 items-center justify-center rounded-full flex-shrink-0" style={{ background: EVENT_COLORS[event.type] }} />
-                                                <div className="min-w-0">
-                                                    <div className="font-bold text-gray-900 dark:text-white">{event.title}</div>
-                                                    <div className="text-xs text-gray-500 dark:text-gray-400">
-                                                        {format(parseISO(event.startAt), 'dd/MM/yyyy • HH:mm')} • {event.animalIds.length} animaux
-                                                    </div>
-                                                </div>
-                                            </button>
-                                            <span className={`rounded-full px-2 py-1 text-xs ${event.status === 'upcoming' ? 'bg-blue-50 text-blue-700' : event.status === 'done' ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'}`}>
-                                                {event.status}
-                                            </span>
-                                        </div>
-                                    ))
-                                )}
-                            </div>
+                                <div className="mt-3 font-semibold text-gray-900 dark:text-white">{event.title}</div>
+                                <div className="mt-1 text-sm text-gray-500 dark:text-gray-400">{format(parseISO(event.startAt), 'dd MMM yyyy • HH:mm')}</div>
+                            </button>
                         ))}
                     </div>
-                );
-            })()}
+
+                    {events.length === 0 && (
+                        <div className="rounded-2xl border border-dashed border-gray-300 bg-white px-6 py-10 text-center shadow-sm dark:border-gray-700 dark:bg-card-dark">
+                            <p className="text-base font-semibold text-gray-900 dark:text-white">Aucun événement ce mois</p>
+                            <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">Cliquez sur "Ajouter" pour planifier une visite.</p>
+                        </div>
+                    )}
+                </>
+            )}
+
+            {!eventsLoading && !eventsError && (
+                <>
+                    {view === 'month' && (
+                        <div className="grid grid-cols-7 gap-2">
+                            {monthGrid.map((day) => {
+                                const dayKey = format(day, 'yyyy-MM-dd');
+                                const dayEvents = eventsByDate[dayKey] ?? [];
+
+                                return (
+                                    <div key={dayKey} className={`rounded-lg border p-3 ${isSameMonth(day, monthAnchor) ? '' : 'opacity-40'}`}>
+                                        <div className="flex items-start justify-between">
+                                            <div className="text-sm font-bold">{format(day, 'd')}</div>
+                                        </div>
+                                        <div className="mt-2 space-y-1">
+                                            {dayEvents.slice(0, 3).map((event) => (
+                                                <button
+                                                    key={event.id}
+                                                    type="button"
+                                                    onClick={() => openEditModal(event)}
+                                                    className="flex w-full items-center gap-2 rounded-lg px-2 py-1 text-left hover:bg-gray-50 dark:hover:bg-gray-800"
+                                                >
+                                                    <span className="h-2 w-2 rounded-full" style={{ background: EVENT_COLORS[event.type] }} />
+                                                    <div className="min-w-0 flex-1 truncate text-xs">{event.title} • {format(parseISO(event.startAt), 'HH:mm')}</div>
+                                                </button>
+                                            ))}
+                                            {dayEvents.length > 3 && <div className="text-xs text-gray-400">+ {dayEvents.length - 3} autres</div>}
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    )}
+
+                    {view === 'week' && (
+                        <div className="rounded-2xl border bg-white p-4 dark:bg-card-dark">
+                            <h3 className="title-sm mb-3">Semaine</h3>
+                            <div className="grid grid-cols-7 gap-2">
+                                {Array.from({ length: 7 }).map((_, index) => {
+                                    const day = addDays(startOfWeek(monthAnchor, { weekStartsOn: 1 }), index);
+                                    const dayKey = format(day, 'yyyy-MM-dd');
+                                    const dayEvents = eventsByDate[dayKey] ?? [];
+
+                                    return (
+                                        <div key={dayKey} className="rounded-lg border p-2">
+                                            <div className="text-xs font-bold">{format(day, 'EEEE d')}</div>
+                                            <div className="mt-2 space-y-1">
+                                                {dayEvents.map((event) => (
+                                                    <button key={event.id} type="button" onClick={() => openEditModal(event)} className="flex w-full items-center gap-2 rounded-md px-2 py-1 text-left text-xs hover:bg-gray-50 dark:hover:bg-gray-800">
+                                                        <span className="h-2 w-2 rounded-full" style={{ background: EVENT_COLORS[event.type] }} />
+                                                        <div className="truncate">{format(parseISO(event.startAt), 'HH:mm')} • {event.title}</div>
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        </div>
+                    )}
+
+                    {view === 'list' && (() => {
+                        const now = new Date();
+                        const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+                        const tomorrowStart = addDays(todayStart, 1);
+
+                        const sections: Array<{ label: string; events: AgendaEvent[] }> = [
+                            {
+                                label: 'En cours',
+                                events: sortByStart(
+                                    events.filter((event) => {
+                                        const start = new Date(event.startAt).getTime();
+                                        const end = new Date(event.endAt).getTime();
+                                        return start <= now.getTime() && end >= now.getTime();
+                                    })
+                                ),
+                            },
+                            {
+                                label: 'À venir',
+                                events: sortByStart(
+                                    events.filter((event) => new Date(event.startAt).getTime() >= tomorrowStart.getTime())
+                                ),
+                            },
+                            {
+                                label: 'Passés',
+                                events: sortByStart(
+                                    events.filter((event) => new Date(event.endAt).getTime() < todayStart.getTime())
+                                ),
+                            },
+                        ];
+
+                        return (
+                            <div className="space-y-4">
+                                {sections.map(({ label, events: sectionEvents }) => (
+                                    <div key={label} className="rounded-2xl border bg-white p-4 dark:bg-card-dark">
+                                        <h3 className="title-sm mb-3">{label}</h3>
+                                        {sectionEvents.length === 0 ? (
+                                            <p className="text-sm text-gray-400">Aucun événement.</p>
+                                        ) : (
+                                            sectionEvents.map((event) => (
+                                                <div key={event.id} className="flex items-center justify-between gap-4 border-b py-2 last:border-b-0">
+                                                    <button type="button" onClick={() => openEditModal(event)} className="flex min-w-0 flex-1 items-center gap-3 text-left">
+                                                        <div className="flex h-8 w-8 items-center justify-center rounded-full flex-shrink-0" style={{ background: EVENT_COLORS[event.type] }} />
+                                                        <div className="min-w-0">
+                                                            <div className="font-bold text-gray-900 dark:text-white">{event.title}</div>
+                                                            <div className="text-xs text-gray-500 dark:text-gray-400">
+                                                                {format(parseISO(event.startAt), 'dd/MM/yyyy • HH:mm')} • {event.animalIds.length} animaux
+                                                            </div>
+                                                        </div>
+                                                    </button>
+                                                    <span className={`rounded-full px-2 py-1 text-xs ${event.status === 'upcoming' ? 'bg-blue-50 text-blue-700' : event.status === 'done' ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'}`}>
+                                                        {event.status}
+                                                    </span>
+                                                </div>
+                                            ))
+                                        )}
+                                    </div>
+                                ))}
+                            </div>
+                        );
+                    })()}
+                </>
+            )}
 
             <AddEventModal
                 isOpen={isModalOpen}

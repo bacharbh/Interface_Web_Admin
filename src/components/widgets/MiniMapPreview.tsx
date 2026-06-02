@@ -148,6 +148,13 @@ const MiniMapPreview: React.FC<MiniMapPreviewProps> = ({
   // 30-second interval refresh for animal positions (updates global store)
   useInterval(async () => {
     if (refreshInFlightRef.current) return;
+
+    // Only fetch from backend when we have an active gateway connection
+    // or explicit offline data loaded. Otherwise skip to keep the map
+    // showing zeros/no devices until hardware connects.
+    const storeState = useIoTStore.getState();
+    if (!storeState.isConnected && !storeState.isOfflineData) return;
+
     refreshInFlightRef.current = true;
 
     try {
