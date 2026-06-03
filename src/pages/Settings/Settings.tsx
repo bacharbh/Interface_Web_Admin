@@ -3,7 +3,7 @@ import toast from 'react-hot-toast';
 import {
   Save, Server, Shield, Bell, Key, Sun, Moon, Sliders,
   Play, Pause, RotateCcw, Download, CheckCircle, Cpu,
-  Palette, AlertTriangle, Thermometer, Battery
+  Palette, AlertTriangle, Thermometer, Battery, MapPin
 } from 'lucide-react';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useIoTStore } from '../../hooks/useIoTStore';
@@ -21,8 +21,9 @@ interface AppConfig {
   batteryThreshold: number;
   tempMaxThreshold: number;
   timeoutAlert: number;
-  simAnimalCount: number;
-  simRefreshMs: number;
+  farmLat: string;
+  farmLng: string;
+  farmName: string;
   accentColor: string;
 }
 
@@ -30,8 +31,6 @@ const NUMERIC_FIELDS = new Set<keyof AppConfig>([
   'batteryThreshold',
   'tempMaxThreshold',
   'timeoutAlert',
-  'simAnimalCount',
-  'simRefreshMs',
 ]);
 
 const DEFAULT_CONFIG: AppConfig = {
@@ -42,8 +41,9 @@ const DEFAULT_CONFIG: AppConfig = {
   batteryThreshold: 20,
   tempMaxThreshold: 40,
   timeoutAlert: 15,
-  simAnimalCount: 200,
-  simRefreshMs: 3000,
+  farmLat: '',
+  farmLng: '',
+  farmName: 'Ferme',
   accentColor: 'emerald',
 };
 
@@ -153,6 +153,9 @@ const Settings = () => {
           mqttPort: String(rest.mqttPort ?? ''),
           mqttUser: String(rest.mqttUser ?? ''),
           mqttPass: '',
+          farmLat: String(rest.farmLat ?? DEFAULT_CONFIG.farmLat),
+          farmLng: String(rest.farmLng ?? DEFAULT_CONFIG.farmLng),
+          farmName: String(rest.farmName ?? DEFAULT_CONFIG.farmName),
           accentColor: String(rest.accentColor ?? DEFAULT_CONFIG.accentColor),
         });
       } catch {
@@ -176,7 +179,12 @@ const Settings = () => {
 
     void (async () => {
       try {
-        await api.put('/settings/mqtt', config);
+        await api.put('/settings/mqtt', {
+          mqttHost: config.mqttHost,
+          mqttPort: config.mqttPort,
+          mqttUser: config.mqttUser,
+          mqttPass: config.mqttPass,
+        });
         // Only persist non-secret preferences; broker credentials should not remain readable in localStorage.
         localStorage.setItem(STORAGE_KEY, JSON.stringify(persistedConfig));
 
@@ -184,7 +192,7 @@ const Settings = () => {
         toast.success('Réglages MQTT enregistrés.');
         window.setTimeout(() => setSaved(false), 3000);
       } catch (error) {
-        console.warn('Failed to save MQTT settings to backend, keeping local copy only.', error);
+        void error;
         localStorage.setItem(STORAGE_KEY, JSON.stringify(persistedConfig));
         setSaved(true);
         toast.error('Réglages sauvegardés localement, mais le backend est indisponible.');
@@ -251,28 +259,44 @@ const Settings = () => {
 
         {/* ── CONNECTIVITY ── */}
         {activeTab === 'connectivity' && (
-          <Section icon={<Server className="w-6 h-6" />} title="Serveur IoT (MQTT)" subtitle="Connexion au broker WebSocket" color="blue">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <Field label="Host (WebSocket)" hint="Exemple : wss://broker.hivemq.com">
-                <Input type="text" name="mqttHost" value={config.mqttHost} onChange={handleChange} />
-              </Field>
-              <Field label="Port">
-                <Input type="text" name="mqttPort" value={config.mqttPort} onChange={handleChange} />
-              </Field>
-              <Field label="Nom d'utilisateur">
-                <div className="relative">
-                  <Shield className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                  <Input type="text" name="mqttUser" value={config.mqttUser} onChange={handleChange} placeholder="Optionnel" inputClassName="pl-10" />
-                </div>
-              </Field>
-              <Field label="Mot de passe">
-                <div className="relative">
-                  <Key className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                  <Input type="password" name="mqttPass" value={config.mqttPass} onChange={handleChange} placeholder="Optionnel" inputClassName="pl-10" />
-                </div>
-              </Field>
-            </div>
-          </Section>
+          <div className="space-y-6">
+            <Section icon={<Server className="w-6 h-6" />} title="Serveur IoT (MQTT)" subtitle="Connexion au broker WebSocket" color="blue">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <Field label="Host (WebSocket)" hint="Exemple : wss://broker.hivemq.com">
+                  <Input type="text" name="mqttHost" value={config.mqttHost} onChange={handleChange} />
+                </Field>
+                <Field label="Port">
+                  <Input type="text" name="mqttPort" value={config.mqttPort} onChange={handleChange} />
+                </Field>
+                <Field label="Nom d'utilisateur">
+                  <div className="relative">
+                    <Shield className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                    <Input type="text" name="mqttUser" value={config.mqttUser} onChange={handleChange} placeholder="Optionnel" inputClassName="pl-10" />
+                  </div>
+                </Field>
+                <Field label="Mot de passe">
+                  <div className="relative">
+                    <Key className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                    <Input type="password" name="mqttPass" value={config.mqttPass} onChange={handleChange} placeholder="Optionnel" inputClassName="pl-10" />
+                  </div>
+                </Field>
+              </div>
+            </Section>
+
+            <Section icon={<MapPin className="w-6 h-6" />} title="Ferme" subtitle="Coordonnées utilisées pour centrer la carte" color="green">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <Field label="Latitude">
+                  <Input type="text" name="farmLat" value={config.farmLat} onChange={handleChange} placeholder="Ex: 36.8" />
+                </Field>
+                <Field label="Longitude">
+                  <Input type="text" name="farmLng" value={config.farmLng} onChange={handleChange} placeholder="Ex: 10.2" />
+                </Field>
+                <Field label="Nom de la ferme">
+                  <Input type="text" name="farmName" value={config.farmName} onChange={handleChange} />
+                </Field>
+              </div>
+            </Section>
+          </div>
         )}
 
         {/* ── APPEARANCE ── */}
@@ -340,7 +364,7 @@ const Settings = () => {
                 </Button>
               </div>
               <p className="text-center text-[11px] text-[var(--text-muted)]">
-                Toutes les données sont stockées localement dans votre navigateur. Aucune donnée n'est transmise à des serveurs tiers.
+                Les données exportées proviennent des informations disponibles dans cette session (MQTT/Backend/Cache local).
               </p>
             </div>
           </Section>

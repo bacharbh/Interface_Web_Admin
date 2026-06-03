@@ -11,7 +11,7 @@ vi.mock('../utils/persistence', () => ({ saveData: mocks.saveData, loadData: moc
 vi.mock('../contexts/AuthContext', () => ({ useAuth: () => ({ token: 'token' }) }));
 vi.mock('../services/socket', () => ({ connectSocket: vi.fn(), disconnectSocket: vi.fn(), socket: { on: vi.fn((_event, cb) => { mocks.handler = cb; }), off: vi.fn() } }));
 
-const reset = () => useIoTStore.setState({ alerts: [], devices: {}, history: {}, aiAlerts: [], needsCharging: [], isConnected: false, isSimulation: true, isOfflineData: false });
+const reset = () => useIoTStore.setState({ alerts: [], devices: {}, history: {}, aiAlerts: [], needsCharging: [], isConnected: false, isOfflineData: false });
 beforeEach(() => { reset(); mocks.saveData.mockClear(); mocks.handler = undefined; });
 
 it('persists read state after a later store update', () => {

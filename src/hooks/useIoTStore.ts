@@ -156,8 +156,15 @@ export const useIoTStore = create<IoTState>()(
     setConnected: (status) => set({ isConnected: status, isOfflineData: !status && !navigator.onLine }),
 
     loadOfflineData: async () => {
-      // Don't load cached data to keep pages empty initially
-      console.log('Offline data loading disabled for clean state');
+      const cachedDevices = await loadData('last_known_devices');
+      const cachedAlerts = await loadData('last_known_alerts');
+      if (cachedDevices || cachedAlerts) {
+        set({
+          devices: cachedDevices || {},
+          alerts: cachedAlerts || [],
+          isOfflineData: true
+        });
+      }
     },
 
     setDevices: (devices) => {

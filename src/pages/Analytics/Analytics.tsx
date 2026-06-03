@@ -178,23 +178,7 @@ const Analytics = () => {
         if (parsed.length > 0) return parsed;
         throw new Error('empty');
       } catch (err) {
-        console.warn('[Analytics] /api/telemetry/history failed, using Zustand fallback:', err);
-        // Convert Zustand IoT history → HistoryPoint[]
-        const iotHistory = useIoTStore.getState().history;
-        const flat: HistoryPoint[] = [];
-        Object.entries(iotHistory).forEach(([id, points]) => {
-          points.forEach(p => {
-            flat.push({
-              animalId: id,
-              lat: p.lat ?? 0,
-              lng: p.lng ?? 0,
-              timestamp: (p as any).last_update || new Date().toISOString(),
-              battery: p.battery ?? 0,
-              temp: p.temperature ?? 0
-            });
-          });
-        });
-        return flat;
+        throw err;
       }
     },
     staleTime: 60_000,
@@ -253,7 +237,7 @@ const Analytics = () => {
   const apiErrorBanner = (sheepError || historyError) && (
     <div className="flex items-center gap-2 px-4 py-2 bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/20 rounded-2xl text-amber-700 dark:text-amber-400 text-xs font-medium">
       <AlertCircle className="w-4 h-4 flex-shrink-0" />
-      <span>API indisponible — données du store temps réel utilisées.</span>
+      <span>API indisponible — aucune donnée analytique disponible.</span>
     </div>
   );
 

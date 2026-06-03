@@ -2,7 +2,7 @@ import React, { useMemo, useState, useEffect } from 'react';
 import { MapContainer, TileLayer, Polyline, useMap } from 'react-leaflet';
 import MarkerClusterGroup from 'react-leaflet-cluster';
 import L from 'leaflet';
-import { useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import iconRetinaUrl from 'leaflet/dist/images/marker-icon-2x.png';
 import iconUrl from 'leaflet/dist/images/marker-icon.png';
 import shadowUrl from 'leaflet/dist/images/marker-shadow.png';
@@ -12,7 +12,6 @@ import '@geoman-io/leaflet-geoman-free/dist/leaflet-geoman.css';
 import 'leaflet.markercluster/dist/MarkerCluster.css';
 import 'leaflet.markercluster/dist/MarkerCluster.Default.css';
 import AnimalMarker from './AnimalMarker';
-import GhostMarker from './GhostMarker';
 import GeofenceLayer from './GeofenceLayer';
 import MapControls, { TILE_LAYERS } from './MapControls';
 import UserLocationMarker from '../../components/UserLocationMarker';
@@ -334,29 +333,6 @@ const createCustomClusterIcon = (cluster: ClusterMarker) => {
   });
 };
 
-const hashString = (value: string) => {
-  let hash = 0;
-  for (let index = 0; index < value.length; index += 1) {
-    hash = (hash << 5) - hash + value.charCodeAt(index);
-    hash |= 0;
-  }
-  return Math.abs(hash);
-};
-
-const getStableGhostPosition = (animal: IAnimal, center: [number, number]) => {
-  const seed = `${animal.collar_id}-${animal.lastUpdate ?? ''}-${animal.lat ?? ''}-${animal.lng ?? ''}`;
-  const hash = hashString(seed);
-  const angle = (hash % 360) * (Math.PI / 180);
-  const radius = 0.0002 + ((hash % 17) / 100000);
-  const baseLat = typeof animal.lat === 'number' ? animal.lat : center[0];
-  const baseLng = typeof animal.lng === 'number' ? animal.lng : center[1];
-
-  return {
-    lat: baseLat + Math.sin(angle) * radius,
-    lng: baseLng + Math.cos(angle) * radius,
-  };
-};
-
 const RealTimeMap = React.memo(({
   animalsList,
   clusters = [],
@@ -373,6 +349,7 @@ const RealTimeMap = React.memo(({
   tileLayerOverride,
   imperativeRef,
 }: RealTimeMapProps) => {
+  const navigate = useNavigate();
   const { theme } = useTheme();
   const mapRef = React.useRef<any>(null);
   const [searchParams] = useSearchParams();
@@ -456,33 +433,6 @@ const RealTimeMap = React.memo(({
     if (farmCenter) return farmCenter;
     return null;
   }, [animalPositions, farmCenter]);
-
-  const stableGhostAnimals = useMemo(() => {
-    const anchor = farmCenter ?? initialCenter;
-
-    if (!anchor) {
-      return [];
-    }
-
-    return animalsList
-      .filter((animal) => {
-        const lastSeen = new Date((animal as IAnimal & { last_heartbeat?: string }).last_heartbeat || animal.lastUpdate || 0).getTime();
-        const staleTime = Date.now() - lastSeen;
-        return staleTime > 120000 && staleTime < 600000;
-      })
-      .map((animal) => {
-        const lastSeen = new Date((animal as IAnimal & { last_heartbeat?: string }).last_heartbeat || animal.lastUpdate || 0).getTime();
-        const staleTime = Date.now() - lastSeen;
-        return {
-          animal,
-          staleTime,
-          lastSeen,
-          predictedPos: getStableGhostPosition(animal, anchor),
-        };
-      });
-  }, [animalsList, farmCenter, initialCenter]);
-
-
 
   // Listen for focus toggles to reflow Leaflet size
   useEffect(() => {
@@ -600,19 +550,7 @@ const RealTimeMap = React.memo(({
           <div className="max-w-md text-center">
             <h3 className="mb-2 text-[16px] font-medium text-[var(--text-primary)]">La carte nécessite la position de la ferme</h3>
             <p className="mb-4 text-[13px] text-[var(--text-secondary)]">Aucun animal positionné et aucune coordonnée de ferme n’est configurée.</p>
-            <Button variant="primary" onClick={() => {
-              const lat = prompt('Latitude de la ferme (ex: 36.8)');
-              const lng = prompt('Longitude de la ferme (ex: 10.2)');
-              if (lat && lng) {
-                try {
-                  const cfg = { farmLat: Number(lat), farmLng: Number(lng), farmName: 'Ferme' };
-                  localStorage.setItem('smartShepherdConfig_v2', JSON.stringify(cfg));
-                  window.location.reload();
-                } catch {
-                  // noop
-                }
-              }
-            }}>Configurer la position de la ferme</Button>
+            <Button variant="primary" onClick={() => navigate('/settings')}>Configurer la position de la ferme</Button>
           </div>
         </div>
       </div>
@@ -722,16 +660,6 @@ const RealTimeMap = React.memo(({
             isSelected={selectedAnimalId === animal.id}
             onSelect={onSelectAnimal}
             variant={renderMode === 'simple' ? 'simple' : 'detailed'}
-          />
-        ))}
-
-        {stableGhostAnimals.map(({ animal, staleTime, predictedPos }) => (
-          <GhostMarker
-            key={`ghost-${animal.collar_id}`}
-            animal={animal}
-            predictedPos={predictedPos}
-            confidenceRadius={50 + staleTime / 1000}
-            lastSeenMin={Math.round(staleTime / 60000)}
           />
         ))}
 

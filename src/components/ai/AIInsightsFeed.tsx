@@ -33,28 +33,19 @@ const AIInsightsFeed = ({ onSelectAnimal, backendNote }: { onSelectAnimal?: (id:
   const navigate = useNavigate();
   const aiAlerts = useIoTStore(state => state.aiAlerts);
   const [filter, setFilter] = useState('all');
-  const [scanCount, setScanCount] = useState(1248);
-  const [lastCheck, setLastCheck] = useState(new Date().toLocaleTimeString());
+  const [scanCount, setScanCount] = useState(0);
+  const [lastCheck, setLastCheck] = useState<string | null>(null);
   const [nextEvents, setNextEvents] = useState<any[]>([]);
   const prevAlertsLength = useRef(aiAlerts.length);
 
   // Sound and Counter effect
   useEffect(() => {
-    if (aiAlerts.length > prevAlertsLength.current) {
-      setScanCount(prev => prev + 1);
+    setScanCount(aiAlerts.length);
+    if (aiAlerts.length > 0 && aiAlerts.length !== prevAlertsLength.current) {
       setLastCheck(new Date().toLocaleTimeString());
     }
     prevAlertsLength.current = aiAlerts.length;
   }, [aiAlerts]);
-
-  // Periodic scan count simulation
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setScanCount(prev => prev + 1);
-      setLastCheck(new Date().toLocaleTimeString());
-    }, 15000);
-    return () => clearInterval(interval);
-  }, []);
 
   // Load next events from localStorage (simple integration)
   useEffect(() => {
@@ -106,15 +97,15 @@ const AIInsightsFeed = ({ onSelectAnimal, backendNote }: { onSelectAnimal?: (id:
   const getEmptyStateMessage = () => {
     switch (filter) {
       case 'health':
-        return { title: 'Santé optimale', subtitle: 'Aucune anomalie de santé détectée.' };
+        return { title: 'Aucune donnée IA', subtitle: 'Connectez le service IA pour recevoir des analyses santé.' };
       case 'gps':
-        return { title: 'Localisation sécurisée', subtitle: 'Aucune sortie de zone ou anomalie GPS.' };
+        return { title: 'Aucune donnée IA', subtitle: 'Connectez le service IA pour recevoir des analyses GPS.' };
       case 'battery':
-        return { title: 'Alimentation optimale', subtitle: 'Toutes les batteries ont un niveau suffisant.' };
+        return { title: 'Aucune donnée IA', subtitle: 'Connectez le service IA pour recevoir des analyses batterie.' };
       case 'behavior':
-        return { title: 'Comportement normal', subtitle: 'Aucune anomalie comportementale détectée.' };
+        return { title: 'Aucune donnée IA', subtitle: 'Connectez le service IA pour recevoir des analyses comportement.' };
       default:
-        return { title: 'Troupeau en bonne santé', subtitle: 'Toutes les constantes sont nominales.' };
+        return { title: 'Aucune analyse IA', subtitle: 'En attente de données capteurs et du service IA.' };
     }
   };
 
@@ -128,7 +119,7 @@ const AIInsightsFeed = ({ onSelectAnimal, backendNote }: { onSelectAnimal?: (id:
             <Brain className="text-primary" size={20} /> AI Insights
           </h2>
           <div className="flex items-center gap-2">
-            <span className="label-xs">Scan #{scanCount}</span>
+            <span className="label-xs">Insights: {scanCount}</span>
             <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
           </div>
         </div>

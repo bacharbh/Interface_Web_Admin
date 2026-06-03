@@ -11,7 +11,6 @@ export function useRealtimePositions(zones: any[] = []) {
   const positions = useIoTStore(state => state.devices);
   const alerts = useIoTStore(state => state.alerts);
   const isConnected = useIoTStore(state => state.isConnected);
-  const isSimulation = useIoTStore(state => state.isSimulation);
   const history = useIoTStore(state => state.history);
 
   const { getAnimalGeofenceStatus } = useGeofencing(zones);
@@ -24,8 +23,9 @@ export function useRealtimePositions(zones: any[] = []) {
     const prev = previousPositionsRef.current;
     const next: any = {};
     Object.entries(positions).forEach(([id, animal]) => {
-      const lat = typeof animal.lat === 'number' ? animal.lat : 0;
-      const lng = typeof animal.lng === 'number' ? animal.lng : 0;
+      if (typeof animal.lat !== 'number' || typeof animal.lng !== 'number') return;
+      const lat = animal.lat;
+      const lng = animal.lng;
       next[id] = {
         prev: prev[id]?.current || { lat, lng },
         current: { lat, lng },
@@ -87,7 +87,6 @@ export function useRealtimePositions(zones: any[] = []) {
     alerts,
     kpis,
     isConnected,
-    isSimulation,
     previousPositions: previousPositionsRef.current,
   };
 }

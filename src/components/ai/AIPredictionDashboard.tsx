@@ -341,7 +341,7 @@ const ClinicalModal = ({ animal, onClose }: { animal: PredictionData, onClose: (
                     />
                     <VitalCard
                       label={t('clinical.hydration')}
-                      value="82"
+                      value="N/A"
                       unit="%"
                       range="70-90"
                       status="normal"
@@ -412,17 +412,13 @@ const AnomalyTimeline = React.memo(({ predictions, onSelectAnimal }: any) => {
   }, [filteredEvents]);
 
   const chartData = useMemo(() => {
-    const fullLabels = ['00:00', '03:00', '06:00', '09:00', '12:00', '15:00', '18:00', '21:00', 'Maintenant'];
-    const fullData = [42, 38, 55, 78, 62, 45, 50, 48, 52];
-
-    const sliceIdx = timeRange === '6h' ? -3 : 0;
-
+    // No fake data — only show empty chart or data from real AI service
     return {
-      labels: fullLabels.slice(sliceIdx),
+      labels: [],
       datasets: [
         {
           label: "Niveau de risque du troupeau",
-          data: fullData.slice(sliceIdx),
+          data: [],
           borderColor: '#10B981',
           tension: 0.4,
           fill: true,
@@ -435,7 +431,7 @@ const AnomalyTimeline = React.memo(({ predictions, onSelectAnimal }: any) => {
         }
       ]
     };
-  }, [t, timeRange]);
+  }, []);
 
   const chartOptions = useMemo(() => ({
     responsive: true,
@@ -451,11 +447,7 @@ const AnomalyTimeline = React.memo(({ predictions, onSelectAnimal }: any) => {
         displayColors: false,
         callbacks: {
           title: (items: any) => `Heure: ${items[0].label}`,
-          label: (item: any) => [
-            `Score: ${item.formattedValue}/100`,
-            `Cause: ${item.raw > 75 ? 'Activité inhabituelle détectée' : 'Comportement normal'}`,
-            `Conseil: ${item.raw > 75 ? 'Vérifier l\'enclos sud' : 'Continuer surveillance'}`
-          ]
+          label: (item: any) => `Score: ${item.formattedValue}/100`
         }
       },
       annotation: {
@@ -484,15 +476,6 @@ const AnomalyTimeline = React.memo(({ predictions, onSelectAnimal }: any) => {
               padding: 4
             }
           },
-          // Sample markers for events
-          alert1: {
-            type: 'point' as const,
-            xValue: '09:00',
-            yValue: 78,
-            backgroundColor: '#EF4444',
-            radius: 8,
-            content: '⚠️',
-          }
         }
       }
     },
@@ -630,7 +613,9 @@ const AnomalyTimeline = React.memo(({ predictions, onSelectAnimal }: any) => {
                                 <p className="text-[9px] opacity-70 mb-2">{e.type.replace('_', ' ')}</p>
                                 <div className="flex justify-between items-center pt-2 border-t border-white/10 dark:border-gray-100">
                                   <span className="text-[8px] font-medium">{new Date(e.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
-                                  <span className="text-[8px] font-bold">12 min</span>
+                                  <span className="text-[8px] font-bold">
+                                    {Math.max(0, Math.round((Date.now() - new Date(e.timestamp).getTime()) / 60000))} min
+                                  </span>
                                 </div>
                               </motion.div>
                             )}
@@ -732,7 +717,6 @@ const AIPredictionDashboard: React.FC = () => {
   const confidence = finalSummary.totalAnimals > 0
     ? Math.max(0, Math.min(100, Math.round(100 - finalSummary.averageRiskScore)))
     : null;
-  const backendLimitationNote = 'Connexion backend limitee — valeurs locales calculees en relais.';
 
   const toggleLanguage = () => {
     const newLang = i18n.language === 'fr' ? 'ar' : 'fr';
@@ -761,7 +745,6 @@ const AIPredictionDashboard: React.FC = () => {
       }
 
       setPredictions(preds);
-      console.log(`[AIPredictionDashboard] Chargé ${preds.length} prédictions`);
 
       // Map API response to health summary for KPI cards
       setHealthSummary(predictionsDataFromApi.data || null);
@@ -916,8 +899,6 @@ const AIPredictionDashboard: React.FC = () => {
                     label={t('dashboard.risk_index')}
                     value={finalSummary.averageRiskScore}
                     unit="/ 100"
-                    history={[38, 42, 45, 39, 51, 47, 55, 50, 48, 52, 46, finalSummary.averageRiskScore]}
-                    previousValue={Math.max(0, finalSummary.averageRiskScore - 4)}
                     colorScheme="red"
                     inversePolarity={true}
                     icon={<Gauge size={13} />}
@@ -926,8 +907,6 @@ const AIPredictionDashboard: React.FC = () => {
                     label={t('dashboard.ml_alerts')}
                     value={finalSummary.animalsWithAnomalies}
                     unit={t('dashboard.active')}
-                    history={[5, 8, 6, 9, 7, 11, 8, 6, 10, 7, 9, finalSummary.animalsWithAnomalies]}
-                    previousValue={Math.max(0, finalSummary.animalsWithAnomalies + 2)}
                     colorScheme="orange"
                     inversePolarity={true}
                     icon={<AlertTriangle size={13} />}
@@ -936,8 +915,6 @@ const AIPredictionDashboard: React.FC = () => {
                     label={t('dashboard.system_confidence')}
                     value={confidence ?? 'N/A'}
                     unit="%"
-                    history={confidence != null ? [88, 90, 89, 91, 92, 90, 93, 91, 92, 93, 94, confidence] : undefined}
-                    previousValue={confidence ?? undefined}
                     colorScheme="green"
                     inversePolarity={false}
                     icon={<Shield size={13} />}
@@ -946,8 +923,6 @@ const AIPredictionDashboard: React.FC = () => {
                     label={t('dashboard.ai_population')}
                     value={finalSummary.totalAnimals}
                     unit={t('dashboard.animals')}
-                    history={[180, 185, 188, 190, 192, 195, 198, 197, 200, 199, 202, finalSummary.totalAnimals]}
-                    previousValue={Math.max(0, finalSummary.totalAnimals - 10)}
                     colorScheme="blue"
                     inversePolarity={false}
                     icon={<Radio size={13} />}
@@ -994,7 +969,7 @@ const AIPredictionDashboard: React.FC = () => {
           </div>
         </div>
       </div>
-      <AIInsightsFeed backendNote={backendLimitationNote} />
+      <AIInsightsFeed />
       <AnimatePresence>
         {selectedAnimal && (
           <ClinicalModal

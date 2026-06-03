@@ -9,6 +9,7 @@ interface FarmConfig {
 const FARM_CONFIG_STORAGE_KEY = 'smartShepherdConfig_v2';
 
 const parseNumber = (value: unknown): number | null => {
+    if (value === '' || value === null || value === undefined) return null;
     const numeric = Number(value);
     return Number.isFinite(numeric) ? numeric : null;
 };

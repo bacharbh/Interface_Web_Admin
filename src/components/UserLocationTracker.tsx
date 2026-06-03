@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { useMap } from 'react-leaflet';
+import { Circle, Marker, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import { Navigation, Crosshair } from 'lucide-react';
 
@@ -86,17 +86,19 @@ export const UserLocationTracker: React.FC<UserLocationTrackerProps> = ({
       {/* User position marker */}
       {userPosition && (
         <>
-          <L.CircleMarker
-            center={userPosition}
-            radius={showAccuracy && accuracy ? accuracy : 10}
-            pathOptions={{
-              color: '#3b82f6',
-              fillColor: '#3b82f6',
-              fillOpacity: 0.15,
-              weight: 2
-            }}
-          />
-          <L.Marker
+          {showAccuracy && accuracy != null && (
+            <Circle
+              center={userPosition}
+              radius={accuracy}
+              pathOptions={{
+                color: '#3b82f6',
+                fillColor: '#3b82f6',
+                fillOpacity: 0.15,
+                weight: 2
+              }}
+            />
+          )}
+          <Marker
             position={userPosition}
             icon={L.divIcon({
               className: 'user-location-marker',

@@ -55,7 +55,6 @@ const AnomalyRegistry: React.FC = () => {
     const aiRequestInFlightRef = useRef(false);
     const lastAnomalySignatureRef = useRef<string>('');
     const lastPersistedAnomalySignatureRef = useRef<string>('');
-    const refreshTimerRef = useRef<NodeJS.Timeout | null>(null);
 
     const { data: persistedAnomalies = [] } = useQuery<PersistedAnomaly[]>({
         queryKey: ['anomalies'],
@@ -171,7 +170,6 @@ const AnomalyRegistry: React.FC = () => {
 
             if (signature === lastAIRequestSignatureRef.current) return;
 
-            console.debug('[AnomalyRegistry] animalsList.length =', animalsList.length);
             aiRequestInFlightRef.current = true;
             setIsLoading(true);
             try {
@@ -189,9 +187,7 @@ const AnomalyRegistry: React.FC = () => {
                     }))
                 };
 
-                console.debug('[AnomalyRegistry] POST /api/ai/analyze payload size:', payload.animals.length);
                 const response = await api.post('/ai/analyze', payload, { timeout: 12000 });
-                console.debug('[AnomalyRegistry] AI analyze response', response?.data);
 
                 if (response?.data) {
                     const data = response.data;
@@ -229,20 +225,6 @@ const AnomalyRegistry: React.FC = () => {
 
         return () => clearTimeout(aiTimer);
     }, [animalsSignature]);
-
-    // Auto-refresh anomaly data every 5 seconds for real-time updates
-    useEffect(() => {
-        refreshTimerRef.current = setInterval(() => {
-            // Force a refresh by updating timestamp
-            setLastDataUpdate(new Date());
-        }, 5000);
-
-        return () => {
-            if (refreshTimerRef.current) {
-                clearInterval(refreshTimerRef.current);
-            }
-        };
-    }, []);
 
     const getRiskLevelColor = (level?: string) => {
         switch (level) {

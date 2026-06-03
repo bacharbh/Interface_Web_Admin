@@ -2,7 +2,6 @@ import React from 'react';
 
 interface LiveBadgeProps {
   isConnected: boolean;
-  isSimulation?: boolean;
   isOfflineData?: boolean;
   label?: string;
   className?: string;
@@ -14,7 +13,6 @@ interface LiveBadgeProps {
  */
 const LiveBadge: React.FC<LiveBadgeProps> = ({
   isConnected,
-  isSimulation = false,
   isOfflineData = false,
   label,
   className = ""
@@ -22,7 +20,7 @@ const LiveBadge: React.FC<LiveBadgeProps> = ({
   const displayLabel = label || (isConnected ? 'EN DIRECT' : isOfflineData ? 'HORS-LIGNE (CACHE)' : 'OFFLINE');
   const color = isConnected ? '#00A96E' : isOfflineData ? '#F59E0B' : '#EF4444';
 
-  const shouldPulse = false;
+  const shouldPulse = isConnected;
 
   return (
     <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/60 dark:bg-[#071422]/60 ${className}`} style={{ border: '1px solid rgba(15,23,42,0.04)' }}>

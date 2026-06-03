@@ -142,7 +142,7 @@ export default function Dashboard() {
 
   const atRiskAnimalList = useMemo(() => {
     return animalsList.map((animal) => ({
-      id: animal.collar_id ?? animal.id ?? animal.sheepId ?? String(Math.random()),
+      id: animal.collar_id ?? animal.id ?? animal.sheepId,
       name: animal.name,
       breed: animal.breed,
       battery: animal.battery,
@@ -150,7 +150,7 @@ export default function Dashboard() {
       status: animal.status,
       geofence_exit: animal.status === 'OUT_OF_ZONE',
       inactivity_hours: animal.activity_level != null && animal.activity_level < 0.1 ? 3 : 0,
-    }));
+    })).filter(animal => animal.id != null);
   }, [animalsList]);
 
   const mapFocusTargetId = useMemo(() => {
@@ -193,7 +193,7 @@ export default function Dashboard() {
   const lastUpdateRef = useRef<number>(Date.now());
   const renderCountRef = useRef<number>(0);
 
-  const [isLoaded, setIsLoaded] = useState(false);
+  const [isLoaded] = useState(true);
   const [historicData, setHistoricData] = useState<ChartData>({
     labels: [],
     animals: [],
@@ -320,21 +320,10 @@ export default function Dashboard() {
     }
   };
 
-  // Initialize chart data efficiently
+  // Initialize chart data - keep empty until real data arrives
   useEffect(() => {
-    const now = new Date();
-    const newLabels = Array(MAX_CHART_POINTS).fill(0).map((_, i) => {
-      const d = new Date(now.getTime() - (MAX_CHART_POINTS - 1 - i) * CHART_UPDATE_INTERVAL);
-      return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-    });
-
-    const initialData: ChartData = {
-      labels: newLabels,
-      animals: Array(MAX_CHART_POINTS).fill(animalsList.length),
-      alerts: Array(MAX_CHART_POINTS).fill(unreadCount)
-    };
-    setHistoricData(initialData);
-  }, []); // Only run once on mount
+    setHistoricData({ labels: [], animals: [], alerts: [] });
+  }, []);
 
   // Optimized chart update interval
   useEffect(() => {
@@ -371,25 +360,7 @@ export default function Dashboard() {
     return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
   }, []);
 
-  // Simulate initial loading with performance tracking
-  useEffect(() => {
-    const startTime = performance.now();
-    const timer = setTimeout(() => {
-      const loadTime = performance.now() - startTime;
-      if (import.meta.env.DEV && import.meta.env.MODE === 'development') {
-        console.log(`Dashboard loaded in ${loadTime.toFixed(2)}ms`);
-      }
-      setIsLoaded(true);
-      renderCountRef.current = 0;
-    }, 400);
-    return () => clearTimeout(timer);
-  }, []);
-
-  // Track render performance (increment ref directly on render)
   renderCountRef.current += 1;
-  if (import.meta.env.DEV && import.meta.env.MODE === 'development' && renderCountRef.current % 100 === 0) {
-    console.warn(`Dashboard rendered ${renderCountRef.current} times - check for performance issues`);
-  }
 
   // Memoized chart data to prevent unnecessary re-renders
   const chartData = useMemo(() => ({
@@ -753,7 +724,7 @@ export default function Dashboard() {
             Animaux à risque
           </h3>
           <button
-            onClick={openMap}
+            onClick={() => openMap()}
             className="label-xs text-primary hover:underline cursor-pointer"
           >
             Voir carte →
