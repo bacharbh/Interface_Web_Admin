@@ -28098,3 +28098,45 @@
   service: 'smart-shepherd-api',
   timestamp: '2026-06-05 06:18:49'
 }
+{
+  message: 'Initialisation des modèles IA de santé...',
+  level: 'info',
+  service: 'smart-shepherd-api',
+  timestamp: '2026-06-05 06:19:07'
+}
+{
+  message: 'Création des modèles IA...',
+  level: 'info',
+  service: 'smart-shepherd-api',
+  timestamp: '2026-06-05 06:19:07'
+}
+{
+  message: "Début de l'entraînement des modèles...",
+  level: 'info',
+  service: 'smart-shepherd-api',
+  timestamp: '2026-06-05 06:19:07'
+}
+{
+  message: "Données insuffisantes pour l'entraînement",
+  level: 'warn',
+  service: 'smart-shepherd-api',
+  timestamp: '2026-06-05 06:19:08'
+}
+{
+  message: 'Modèles IA initialisés avec succès',
+  level: 'info',
+  service: 'smart-shepherd-api',
+  timestamp: '2026-06-05 06:19:08'
+}
+{
+  message: 'Erreur récupération météo actuelle: Request failed with status code 404',
+  level: 'error',
+  service: 'smart-shepherd-api',
+  timestamp: '2026-06-05 06:23:51'
+}
+{
+  message: 'Erreur récupération météo actuelle: Request failed with status code 404',
+  level: 'error',
+  service: 'smart-shepherd-api',
+  timestamp: '2026-06-05 06:23:51'
+}

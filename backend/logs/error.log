@@ -27978,3 +27978,15 @@
   service: 'smart-shepherd-api',
   timestamp: '2026-06-05 06:16:36'
 }
+{
+  message: 'Erreur récupération météo actuelle: Request failed with status code 404',
+  level: 'error',
+  service: 'smart-shepherd-api',
+  timestamp: '2026-06-05 06:23:51'
+}
+{
+  message: 'Erreur récupération météo actuelle: Request failed with status code 404',
+  level: 'error',
+  service: 'smart-shepherd-api',
+  timestamp: '2026-06-05 06:23:51'
+}
