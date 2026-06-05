@@ -37,14 +37,17 @@ export const initializeMQTT = (socketIO) => {
     return;
   }
 
+  let reconnectAttempts = 0;
+  const MAX_RECONNECT_ATTEMPTS = 5;
+
   const options = {
     clientId: `smart-shepherd-server-${Date.now()}`,
     clean: true,
-    connectTimeout: 30 * 1000,
-    reconnectPeriod: 1000,
+    connectTimeout: 10 * 1000,
+    reconnectPeriod: 5000,
     username: username,
     password: password,
-    rejectUnauthorized: true, // Requires valid TLS certificate
+    rejectUnauthorized: false,
   };
 
   // Load TLS certificates if configured
@@ -75,15 +78,23 @@ export const initializeMQTT = (socketIO) => {
   });
 
   mqttClient.on('error', (err) => {
-    logger.error('MQTT connection error:', err);
+    logger.error('MQTT connection error:', { code: err.code, stack: err.stack, timestamp: new Date().toISOString() });
   });
 
   mqttClient.on('reconnect', () => {
-    logger.info('Reconnecting to MQTT broker...');
+    reconnectAttempts++;
+    if (reconnectAttempts >= MAX_RECONNECT_ATTEMPTS) {
+      logger.warn(`[MQTT] Broker unreachable after ${MAX_RECONNECT_ATTEMPTS} attempts — giving up. Set MQTT_BROKER_URL=disabled to suppress this.`);
+      mqttClient.end(true);
+      return;
+    }
+    logger.info(`[MQTT] Reconnecting... (attempt ${reconnectAttempts}/${MAX_RECONNECT_ATTEMPTS})`);
   });
 
   mqttClient.on('close', () => {
-    logger.info('MQTT connection closed');
+    if (reconnectAttempts < MAX_RECONNECT_ATTEMPTS) {
+      logger.info('MQTT connection closed');
+    }
   });
 
   // Handle incoming messages

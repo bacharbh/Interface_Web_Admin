@@ -241,6 +241,16 @@ app.get('/api/health', async (req, res) => {
 
 // Start server
 const PORT = process.env.PORT || 5000;
+
+server.on('error', (err) => {
+  if (err.code === 'EADDRINUSE') {
+    console.error(`[Server] Port ${PORT} is already in use. Kill the existing process or set a different PORT in .env`);
+  } else {
+    console.error('[Server] Fatal error:', err.message);
+  }
+  process.exit(1);
+});
+
 server.listen(PORT, async () => {
   logger.info(`Server running on port ${PORT}`);
 
