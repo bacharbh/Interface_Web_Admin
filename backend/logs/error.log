@@ -27942,3 +27942,39 @@
   service: 'smart-shepherd-api',
   timestamp: '2026-06-05 02:09:28'
 }
+{
+  message: 'Erreur récupération météo actuelle: Request failed with status code 404',
+  level: 'error',
+  service: 'smart-shepherd-api',
+  timestamp: '2026-06-05 05:51:04'
+}
+{
+  message: 'Erreur récupération météo actuelle: Request failed with status code 404',
+  level: 'error',
+  service: 'smart-shepherd-api',
+  timestamp: '2026-06-05 05:51:04'
+}
+{
+  message: 'Erreur récupération météo actuelle: Request failed with status code 404',
+  level: 'error',
+  service: 'smart-shepherd-api',
+  timestamp: '2026-06-05 05:52:50'
+}
+{
+  message: 'Erreur récupération météo actuelle: Request failed with status code 404',
+  level: 'error',
+  service: 'smart-shepherd-api',
+  timestamp: '2026-06-05 05:52:50'
+}
+{
+  message: 'Erreur récupération météo actuelle: Request failed with status code 404',
+  level: 'error',
+  service: 'smart-shepherd-api',
+  timestamp: '2026-06-05 06:16:36'
+}
+{
+  message: 'Erreur récupération météo actuelle: Request failed with status code 404',
+  level: 'error',
+  service: 'smart-shepherd-api',
+  timestamp: '2026-06-05 06:16:36'
+}

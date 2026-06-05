@@ -165,86 +165,36 @@ class JWTService {
   /**
    * Ajoute un token à la blacklist Redis
    */
-  async blacklistToken(tokenId, expiryTime) {
-    const redis = require('../config/redis');
-    const key = `blacklist:${tokenId}`;
-    const ttl = expiryTime - Math.floor(Date.now() / 1000);
-    
-    if (ttl > 0) {
-      await redis.setex(key, ttl, '1');
-    } else {
-      await redis.set(key, '1');
-    }
+  async blacklistToken(_tokenId, _expiryTime) {
+    // Redis not available — token blacklisting disabled
   }
 
   /**
    * Vérifie si un token est blacklisté
    */
-  async isTokenBlacklisted(tokenId) {
-    if (!tokenId) return false;
-    
-    try {
-      const redis = require('../config/redis');
-      const key = `blacklist:${tokenId}`;
-      const result = await redis.get(key);
-      return result === '1';
-    } catch (error) {
-      // Si Redis est indisponible, on considère que le token n'est pas blacklisté
-      // pour éviter de bloquer l'application
-      return false;
-    }
+  async isTokenBlacklisted(_tokenId) {
+    return false; // Redis not available — no blacklist
   }
 
   /**
    * Révoque tous les tokens d'un utilisateur
    */
-  async revokeUserTokens(userId) {
-    const redis = require('../config/redis');
-    const pattern = `user_tokens:${userId}:*`;
-    const keys = await redis.keys(pattern);
-    
-    if (keys.length > 0) {
-      await redis.del(...keys);
-    }
+  async revokeUserTokens(_userId) {
+    // Redis not available — token revocation disabled
   }
 
   /**
    * Stocke les tokens actifs d'un utilisateur
    */
-  async storeUserTokens(userId, tokenId, tokenType) {
-    const redis = require('../config/redis');
-    const key = `user_tokens:${userId}:${tokenId}`;
-    const value = JSON.stringify({
-      type: tokenType,
-      createdAt: new Date().toISOString()
-    });
-    
-    // Stocker pour la durée de validité du token
-    const ttl = tokenType === 'access' ? 900 : 2592000; // 15min ou 30d
-    await redis.setex(key, ttl, value);
+  async storeUserTokens(_userId, _tokenId, _tokenType) {
+    // Redis not available — token storage disabled
   }
 
   /**
    * Obtient les tokens actifs d'un utilisateur
    */
-  async getUserTokens(userId) {
-    const redis = require('../config/redis');
-    const pattern = `user_tokens:${userId}:*`;
-    const keys = await redis.keys(pattern);
-    
-    const tokens = [];
-    for (const key of keys) {
-      const value = await redis.get(key);
-      if (value) {
-        const tokenId = key.split(':').pop();
-        tokens.push({
-          tokenId,
-          ...JSON.parse(value)
-        });
-      }
-    }
-    
-    return tokens;
+  async getUserTokens(_userId) {
+    return []; // Redis not available — no stored tokens
   }
 
   /**

@@ -7,16 +7,20 @@
 let tf = null;
 let TF_AVAILABLE = true;
 try {
-  const mod = await import('@tensorflow/tfjs-node').catch(() => null);
+  // Use pure-JS tfjs (compatible with all Node versions including Node 25+)
+  const mod = await import('@tensorflow/tfjs').catch(() => null);
   if (!mod) {
     TF_AVAILABLE = false;
-    console.warn('[AI] @tensorflow/tfjs-node not installed — AI features disabled');
+    console.warn('[AI] @tensorflow/tfjs not installed — AI features disabled');
   } else {
     tf = mod.default || mod;
+    await tf.setBackend('cpu');
+    await tf.ready();
+    console.log('[AI] TensorFlow.js loaded (CPU backend, version', tf.version_core || tf.version?.tfjs, ')');
   }
 } catch (err) {
   TF_AVAILABLE = false;
-  console.warn('[AI] Error loading @tensorflow/tfjs-node — AI features disabled', err.message);
+  console.warn('[AI] Error loading TensorFlow.js — AI features disabled:', err.message);
 }
 
 import axios from 'axios';

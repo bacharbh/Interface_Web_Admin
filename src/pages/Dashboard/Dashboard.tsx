@@ -73,11 +73,6 @@ export default function Dashboard() {
   const alerts = useIoTStore(state => state.alerts);
 
   useEffect(() => {
-    // Keep dashboard zeroed and inactive until a real hardware/MQTT
-    // connection is established. Do not populate devices from the
-    // API when the gateway is offline — this prevents simulated/default
-    // values from appearing in the UI.
-    if (!isConnected) return;
     if (Object.keys(positions).length > 0) return;
 
     let cancelled = false;
@@ -97,7 +92,7 @@ export default function Dashboard() {
       })
       .catch(() => { });
     return () => { cancelled = true; };
-  }, [isConnected]);
+  }, []);
 
   const [zones, setZones] = useState<IGeofenceZone[]>([]);
 

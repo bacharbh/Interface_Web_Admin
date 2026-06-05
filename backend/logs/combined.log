@@ -27942,3 +27942,159 @@
   service: 'smart-shepherd-api',
   timestamp: '2026-06-05 02:09:28'
 }
+{
+  message: 'Erreur récupération météo actuelle: Request failed with status code 404',
+  level: 'error',
+  service: 'smart-shepherd-api',
+  timestamp: '2026-06-05 05:51:04'
+}
+{
+  message: 'Erreur récupération météo actuelle: Request failed with status code 404',
+  level: 'error',
+  service: 'smart-shepherd-api',
+  timestamp: '2026-06-05 05:51:04'
+}
+{
+  message: 'Erreur récupération météo actuelle: Request failed with status code 404',
+  level: 'error',
+  service: 'smart-shepherd-api',
+  timestamp: '2026-06-05 05:52:50'
+}
+{
+  message: 'Erreur récupération météo actuelle: Request failed with status code 404',
+  level: 'error',
+  service: 'smart-shepherd-api',
+  timestamp: '2026-06-05 05:52:50'
+}
+{
+  message: 'Initialisation des modèles IA de santé...',
+  level: 'info',
+  service: 'smart-shepherd-api',
+  timestamp: '2026-06-05 06:03:19'
+}
+{
+  message: 'Création des modèles IA...',
+  level: 'info',
+  service: 'smart-shepherd-api',
+  timestamp: '2026-06-05 06:03:19'
+}
+{
+  message: "Début de l'entraînement des modèles...",
+  level: 'info',
+  service: 'smart-shepherd-api',
+  timestamp: '2026-06-05 06:03:19'
+}
+{
+  message: "Données insuffisantes pour l'entraînement",
+  level: 'warn',
+  service: 'smart-shepherd-api',
+  timestamp: '2026-06-05 06:03:19'
+}
+{
+  message: 'Modèles IA initialisés avec succès',
+  level: 'info',
+  service: 'smart-shepherd-api',
+  timestamp: '2026-06-05 06:03:19'
+}
+{
+  message: 'Initialisation des modèles IA de santé...',
+  level: 'info',
+  service: 'smart-shepherd-api',
+  timestamp: '2026-06-05 06:05:16'
+}
+{
+  message: 'Création des modèles IA...',
+  level: 'info',
+  service: 'smart-shepherd-api',
+  timestamp: '2026-06-05 06:05:16'
+}
+{
+  message: "Début de l'entraînement des modèles...",
+  level: 'info',
+  service: 'smart-shepherd-api',
+  timestamp: '2026-06-05 06:05:16'
+}
+{
+  message: "Données insuffisantes pour l'entraînement",
+  level: 'warn',
+  service: 'smart-shepherd-api',
+  timestamp: '2026-06-05 06:05:17'
+}
+{
+  message: 'Modèles IA initialisés avec succès',
+  level: 'info',
+  service: 'smart-shepherd-api',
+  timestamp: '2026-06-05 06:05:17'
+}
+{
+  message: 'Erreur récupération météo actuelle: Request failed with status code 404',
+  level: 'error',
+  service: 'smart-shepherd-api',
+  timestamp: '2026-06-05 06:16:36'
+}
+{
+  message: 'Erreur récupération météo actuelle: Request failed with status code 404',
+  level: 'error',
+  service: 'smart-shepherd-api',
+  timestamp: '2026-06-05 06:16:36'
+}
+{
+  message: 'Initialisation des modèles IA de santé...',
+  level: 'info',
+  service: 'smart-shepherd-api',
+  timestamp: '2026-06-05 06:17:49'
+}
+{
+  message: 'Création des modèles IA...',
+  level: 'info',
+  service: 'smart-shepherd-api',
+  timestamp: '2026-06-05 06:17:49'
+}
+{
+  message: "Début de l'entraînement des modèles...",
+  level: 'info',
+  service: 'smart-shepherd-api',
+  timestamp: '2026-06-05 06:17:49'
+}
+{
+  message: "Données insuffisantes pour l'entraînement",
+  level: 'warn',
+  service: 'smart-shepherd-api',
+  timestamp: '2026-06-05 06:17:50'
+}
+{
+  message: 'Modèles IA initialisés avec succès',
+  level: 'info',
+  service: 'smart-shepherd-api',
+  timestamp: '2026-06-05 06:17:50'
+}
+{
+  message: 'Initialisation des modèles IA de santé...',
+  level: 'info',
+  service: 'smart-shepherd-api',
+  timestamp: '2026-06-05 06:18:49'
+}
+{
+  message: 'Création des modèles IA...',
+  level: 'info',
+  service: 'smart-shepherd-api',
+  timestamp: '2026-06-05 06:18:49'
+}
+{
+  message: "Début de l'entraînement des modèles...",
+  level: 'info',
+  service: 'smart-shepherd-api',
+  timestamp: '2026-06-05 06:18:49'
+}
+{
+  message: "Données insuffisantes pour l'entraînement",
+  level: 'warn',
+  service: 'smart-shepherd-api',
+  timestamp: '2026-06-05 06:18:49'
+}
+{
+  message: 'Modèles IA initialisés avec succès',
+  level: 'info',
+  service: 'smart-shepherd-api',
+  timestamp: '2026-06-05 06:18:49'
+}

@@ -5,7 +5,7 @@
 
 import express from 'express';
 import reportGenerator from '../services/reportGenerator.js';
-import { authenticate, requireRole } from '../middleware/authMiddleware.js';
+import { authenticate, requireRole } from '../middleware/auth.js';
 import { body, query, validationResult } from 'express-validator';
 
 const router = express.Router();

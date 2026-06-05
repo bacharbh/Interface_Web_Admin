@@ -5,7 +5,7 @@
 
 import express from 'express';
 import aiService from '../services/aiHealthPrediction.js';
-import { authenticate, authorize } from '../middleware/authMiddleware.js';
+import { authenticate, authorize } from '../middleware/auth.js';
 // import { catchAsync } from '../middleware/errorHandler.js';
 import AppError from '../utils/AppError.js';
 

@@ -5,7 +5,7 @@
 
 import express from 'express';
 import weatherService from '../services/weatherService.js';
-import { authenticate, requireRole } from '../middleware/authMiddleware.js';
+import { authenticate, requireRole } from '../middleware/auth.js';
 
 const router = express.Router();
 

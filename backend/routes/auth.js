@@ -63,7 +63,7 @@ const USERS = [
     id: 'admin-001',
     username: 'admin',
     email: 'admin@smart-shepherd.local',
-    password: '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', // admin123
+    password: '$2a$10$6j6p5l8u3ZkJENHXvo/0d.syOjK1dbWZmt./dWzGDeTA1faRdUKuu', // admin123
     role: 'admin',
   }
 ];
