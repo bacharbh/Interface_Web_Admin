@@ -63,7 +63,7 @@ function buildFallbackAnalysis(animals, extra = {}) {
             },
             fallback: true,
             model_mode: 'local',
-            isSimulated: true,
+            fallback: true,
             timestamp: new Date().toISOString(),
             ...extra,
         };

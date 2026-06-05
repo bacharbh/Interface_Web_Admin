@@ -4,8 +4,7 @@
  */
 
 import PDFDocument from 'pdfkit';
-import TelemetryData from '../models/TelemetryData.js';
-import Sheep from '../models/Sheep.js';
+import { getAllAnimals, getAllHistory } from './firebaseService.js';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 

@@ -3,10 +3,7 @@ import authService from '../services/authService';
 import logger from '../utils/logger';
 import {
   clearStoredToken,
-  enableDevMockUser,
-  disableDevMockUser,
   getStoredToken,
-  isDevMockUserActive,
   setStoredToken,
 } from '../utils/authStorage';
 
@@ -74,7 +71,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
     // Clear every token location so the session ends on tab close and on logout.
     clearStoredToken();
-    disableDevMockUser();
     authService.logout();
     setUser(null);
     setToken(null);
@@ -108,13 +104,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   useEffect(() => {
     const verifySession = async () => {
-      // DEV-only mock user: this branch is tree-shaken from production builds.
-      if (!token && isDevMockUserActive()) {
-        setUser({ id: 'dev', name: 'Dev User', role: USER_ROLES.ADMIN });
-        setLoading(false);
-        return;
-      }
-
       if (token) {
         const payload = decodeJWT(token);
         if (!payload || (payload.exp * 1000) <= Date.now()) {
@@ -165,14 +154,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setupSessionTimer(newToken);
       return { success: true };
     } catch (error) {
-      if (process.env.NODE_ENV !== 'production' && credentials.email === 'admin' && credentials.password === 'admin123') {
-        enableDevMockUser();
-        setUser({ id: 'dev', name: 'Dev User', role: USER_ROLES.ADMIN });
-        setToken(null);
-        setExpiresAt(null);
-        return { success: true };
-      }
-
       logger.warn('Login failed', error);
       throw error;
     }

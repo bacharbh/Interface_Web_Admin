@@ -138,22 +138,14 @@ router.get('/export/health-data',
       }
 
       const { startDate, endDate, sheepId } = req.query;
-      const TelemetryData = (await import('../models/TelemetryData.js')).default;
+      const { getAllHistory } = await import('../services/firebaseService.js');
 
-      const query = {
-        timestamp: {
-          $gte: new Date(startDate),
-          $lte: new Date(endDate)
-        }
-      };
-
-      if (sheepId) {
-        query.sheepId = sheepId;
-      }
-
-      const healthData = await TelemetryData.find(query)
-        .sort({ timestamp: 1 })
-        .lean();
+      const healthData = await getAllHistory({
+        limit: 5000,
+        collarId: sheepId || undefined,
+        from: startDate,
+        to: endDate,
+      });
 
       // Transformer les données pour l'export Excel
       const exportData = healthData.map(d => ({
@@ -206,37 +198,29 @@ router.get('/export/analytics-data',
       }
 
       const { startDate, endDate } = req.query;
-      const TelemetryData = (await import('../models/TelemetryData.js')).default;
+      const { getAllHistory } = await import('../services/firebaseService.js');
+      const raw = await getAllHistory({ limit: 5000, from: startDate, to: endDate });
 
-      const analyticsData = await TelemetryData.aggregate([
-        {
-          $match: {
-            timestamp: {
-              $gte: new Date(startDate),
-              $lte: new Date(endDate)
-            }
-          }
-        },
-        {
-          $group: {
-            _id: {
-              sheepId: '$sheepId',
-              date: { $dateToString: { format: '%Y-%m-%d', date: '$timestamp' } }
-            },
-            avgHeartRate: { $avg: '$heartRate' },
-            avgTemperature: { $avg: '$temperature' },
-            avgBattery: { $avg: '$battery' },
-            totalSteps: { $sum: '$steps' },
-            avgSpeed: { $avg: '$speed' },
-            activities: { $push: '$activity' },
-            positions: { $push: '$location' },
-            count: { $sum: 1 }
-          }
-        },
-        {
-          $sort: { '_id.date': 1 }
+      // Regrouper par animal et par jour (équivalent du aggregate MongoDB)
+      const grouped = {};
+      for (const entry of raw) {
+        const date = (entry.rx_time || '').slice(0, 10);
+        const key = `${entry.collar_id}__${date}`;
+        if (!grouped[key]) {
+          grouped[key] = { sheepId: entry.collar_id, date, temps: [], movements: [], count: 0 };
         }
-      ]);
+        if (entry.sensors?.temperature != null) grouped[key].temps.push(entry.sensors.temperature);
+        if (entry.sensors?.movement_g != null) grouped[key].movements.push(entry.sensors.movement_g);
+        grouped[key].count++;
+      }
+
+      const avg = arr => arr.length ? arr.reduce((s, v) => s + v, 0) / arr.length : null;
+      const analyticsData = Object.values(grouped).map(g => ({
+        _id: { sheepId: g.sheepId, date: g.date },
+        avgTemperature: avg(g.temps),
+        avgMovement: avg(g.movements),
+        count: g.count,
+      })).sort((a, b) => a._id.date.localeCompare(b._id.date));
 
       res.json({
         success: true,
@@ -272,92 +256,37 @@ router.get('/summary',
       }
 
       const { startDate, endDate } = req.query;
-      const TelemetryData = (await import('../models/TelemetryData.js')).default;
-      const Sheep = (await import('../models/Sheep.js')).default;
+      const { getAllAnimals, getAllHistory } = await import('../services/firebaseService.js');
 
-      const start = new Date(startDate);
-      const end = new Date(endDate);
-
-      // Statistiques générales
-      const totalSheep = await Sheep.countDocuments({ isActive: true });
-      const totalRecords = await TelemetryData.countDocuments({
-        timestamp: { $gte: start, $lte: end }
-      });
-
-      // Statistiques de santé
-      const healthStats = await TelemetryData.aggregate([
-        {
-          $match: {
-            timestamp: { $gte: start, $lte: end }
-          }
-        },
-        {
-          $group: {
-            _id: null,
-            avgHeartRate: { $avg: '$heartRate' },
-            avgTemperature: { $avg: '$temperature' },
-            avgBattery: { $avg: '$battery' },
-            minHeartRate: { $min: '$heartRate' },
-            maxHeartRate: { $max: '$heartRate' },
-            minTemperature: { $min: '$temperature' },
-            maxTemperature: { $max: '$temperature' }
-          }
-        }
+      const [animals, records] = await Promise.all([
+        getAllAnimals(),
+        getAllHistory({ limit: 5000, from: startDate, to: endDate }),
       ]);
 
-      // Distribution des activités
-      const activityDistribution = await TelemetryData.aggregate([
-        {
-          $match: {
-            timestamp: { $gte: start, $lte: end }
-          }
-        },
-        {
-          $group: {
-            _id: '$activity',
-            count: { $sum: 1 }
-          }
-        },
-        {
-          $sort: { count: -1 }
-        }
-      ]);
+      const temps = records.map(r => r.sensors?.temperature).filter(v => v != null);
+      const movements = records.map(r => r.sensors?.movement_g).filter(v => v != null);
+      const avg = arr => arr.length ? arr.reduce((s, v) => s + v, 0) / arr.length : null;
 
-      // Alertes
+      const healthStats = {
+        avgTemperature: avg(temps),
+        minTemperature: temps.length ? Math.min(...temps) : null,
+        maxTemperature: temps.length ? Math.max(...temps) : null,
+        avgMovement: avg(movements),
+      };
+
       const alerts = {
-        highHeartRate: await TelemetryData.countDocuments({
-          timestamp: { $gte: start, $lte: end },
-          heartRate: { $gt: 120 }
-        }),
-        lowHeartRate: await TelemetryData.countDocuments({
-          timestamp: { $gte: start, $lte: end },
-          heartRate: { $lt: 60 }
-        }),
-        highTemperature: await TelemetryData.countDocuments({
-          timestamp: { $gte: start, $lte: end },
-          temperature: { $gt: 40.5 }
-        }),
-        lowTemperature: await TelemetryData.countDocuments({
-          timestamp: { $gte: start, $lte: end },
-          temperature: { $lt: 38.0 }
-        }),
-        lowBattery: await TelemetryData.countDocuments({
-          timestamp: { $gte: start, $lte: end },
-          battery: { $lt: 20 }
-        })
+        highTemperature: temps.filter(t => t > 40.5).length,
+        lowTemperature: temps.filter(t => t < 38.0).length,
       };
 
       res.json({
         success: true,
         data: {
           period: { startDate, endDate },
-          summary: {
-            totalSheep,
-            totalRecords
-          },
-          health: healthStats[0] || {},
-          activityDistribution,
-          alerts
+          summary: { totalSheep: animals.length, totalRecords: records.length },
+          health: healthStats,
+          activityDistribution: [],
+          alerts,
         }
       });
     } catch (error) {

@@ -204,15 +204,12 @@ router.get('/correlation',
       const weatherData = await weatherService.getCurrentWeather(parseFloat(lat), parseFloat(lon));
 
       // Récupérer les données de télémétrie pour la corrélation
-      const TelemetryData = (await import('../models/TelemetryData.js')).default;
-      const query = {
-        timestamp: {
-          $gte: new Date(startDate || Date.now() - 24 * 60 * 60 * 1000),
-          $lte: new Date(endDate || Date.now())
-        }
-      };
-
-      const telemetryData = await TelemetryData.find(query).lean();
+      const { getAllHistory } = await import('../services/firebaseService.js');
+      const telemetryData = await getAllHistory({
+        limit: 1000,
+        from: startDate || new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
+        to: endDate || new Date().toISOString(),
+      });
 
       const correlations = weatherService.correlateWeatherWithBehavior(weatherData, telemetryData);
 

@@ -1,64 +1,49 @@
 import express from 'express';
-import Sheep from '../models/Sheep.js';
+import { getAllHistory } from '../services/firebaseService.js';
 import authMiddleware from '../middleware/auth.js';
 
 const router = express.Router();
 
-// Get animal history data (used by Analytics page)
+// GET /api/history — historique de tous les animaux depuis Firebase
 router.get('/', authMiddleware, async (req, res) => {
-    try {
-        const { from, to, sheepId, deviceId } = req.query;
+  try {
+    const { from, to, sheepId, deviceId, limit = 1000 } = req.query;
+    const collarId = sheepId || deviceId;
 
-        let filter = { isActive: true };
+    const entries = await getAllHistory({ limit, collarId, from, to });
 
-        if (sheepId) {
-            filter.sheepId = sheepId;
-        }
+    const formatted = entries.map(entry => ({
+      id: entry.key,
+      sheepId: entry.collar_id,
+      deviceId: entry.collar_id,
+      collar_id: entry.collar_id,
+      timestamp: entry.rx_time,
+      rx_time: entry.rx_time,
+      imu: entry.imu || null,
+      lora: entry.lora || null,
+      sensors: entry.sensors || null,
+      ts: entry.ts || null,
+      healthStatus: computeHealthStatus(entry.sensors),
+      metadata: {
+        temperature: entry.sensors?.temperature ?? null,
+        movement_g: entry.sensors?.movement_g ?? null,
+      }
+    }));
 
-        if (deviceId) {
-            filter.deviceId = deviceId;
-        }
-
-        // Parse date filters
-        let dateFilter = {};
-        if (from) {
-            dateFilter.$gte = new Date(from);
-        }
-        if (to) {
-            dateFilter.$lte = new Date(to);
-        }
-
-        if (Object.keys(dateFilter).length > 0) {
-            filter.lastSeen = dateFilter;
-        }
-
-        const history = await Sheep.find(filter)
-            .sort({ lastSeen: -1 })
-            .limit(1000)
-            .select('sheepId deviceId location lastSeen healthStatus breed age weight temperature battery');
-
-        // Transform to match expected format
-        const formattedHistory = history.map(doc => ({
-            id: doc._id,
-            sheepId: doc.sheepId,
-            deviceId: doc.deviceId,
-            location: doc.location,
-            timestamp: doc.lastSeen,
-            healthStatus: doc.healthStatus,
-            metadata: {
-                breed: doc.breed,
-                age: doc.age,
-                weight: doc.weight,
-                temperature: doc.temperature,
-                battery: doc.battery
-            }
-        }));
-
-        res.json(formattedHistory);
-    } catch (error) {
-        console.error('Error fetching history:', error);
-        res.status(500).json({ error: 'Error fetching history data' });
-    }
+    res.json(formatted);
+  } catch (error) {
+    console.error('Error fetching history:', error.message);
+    res.status(500).json({ error: 'Error fetching history data' });
+  }
 });
+
+function computeHealthStatus(sensors) {
+  if (!sensors) return 'healthy';
+  const temp = sensors.temperature;
+  if (temp == null) return 'healthy';
+  if (temp > 40 || temp < 37) return 'sick';
+  if (temp > 39.5 || temp < 38.0) return 'under_observation';
+  return 'healthy';
+}
 
 export default router;

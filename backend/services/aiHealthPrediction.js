@@ -20,8 +20,7 @@ try {
 }
 
 import axios from 'axios';
-import TelemetryData from '../models/TelemetryData.js';
-import Sheep from '../models/Sheep.js';
+import { getAllAnimals, getAllHistory } from './firebaseService.js';
 import { logger } from '../utils/errorLogger.js';
 
 class AIHealthPredictionService {
@@ -116,10 +115,8 @@ class AIHealthPredictionService {
   async getTrainingData() {
     const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
 
-    const telemetryData = await TelemetryData.find({
-      timestamp: { $gte: thirtyDaysAgo }
-    }).sort({ timestamp: 1 });
-
+    const from = thirtyDaysAgo.toISOString();
+    const telemetryData = await getAllHistory({ limit: 5000, from });
     return telemetryData;
   }
 
@@ -128,12 +125,11 @@ class AIHealthPredictionService {
    */
   async predictPosition(sheepId) {
     try {
-      const sheep = await Sheep.findById(sheepId);
+      const { getAnimalByCollarId, getAnimalHistory } = await import('./firebaseService.js');
+      const sheep = await getAnimalByCollarId(sheepId);
       if (!sheep) return null;
 
-      const recentTelemetry = await TelemetryData.find({ sheepId })
-        .sort({ timestamp: -1 })
-        .limit(10);
+      const recentTelemetry = await getAnimalHistory(sheepId, { limit: 10 });
 
       if (recentTelemetry.length < 2) return null;
 
@@ -437,7 +433,7 @@ class AIHealthPredictionService {
    * Obtenir les prédictions pour tous les animaux
    */
   async getAllPredictions() {
-    const sheep = await Sheep.find({ isActive: true });
+    const sheep = await getAllAnimals();
     const predictions = [];
 
     for (const animal of sheep) {
@@ -583,10 +579,8 @@ class AIHealthPredictionService {
 
     const timeAgo = new Date(Date.now() - (timeMap[timeWindow] || timeMap['24h']));
 
-    return await TelemetryData.find({
-      sheepId,
-      timestamp: { $gte: timeAgo }
-    }).sort({ timestamp: 1 });
+    const { getAnimalHistory } = await import('./firebaseService.js');
+    return await getAnimalHistory(sheepId, { limit: 1000, from: timeAgo.toISOString() });
   }
 
   /**

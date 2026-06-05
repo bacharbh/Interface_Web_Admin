@@ -5,9 +5,8 @@ import rateLimit from 'express-rate-limit';
 import dotenv from 'dotenv';
 import { createServer } from 'http';
 import { Server } from 'socket.io';
-import mongoose from 'mongoose';
 import winston from 'winston';
-import Sheep from './models/Sheep.js';
+import { getAllAnimals } from './services/firebaseService.js';
 
 // Import cache system
 import { initRedis, cacheMiddleware, clearCacheMiddleware } from './middleware/cache.js';
@@ -136,16 +135,9 @@ app.use('/api/', limiter);
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 
-// Database connection with enhanced error handling
-mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/smart-shepherd', {
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
-})
-  .then(() => logger.info('Connected to MongoDB'))
-  .catch(err => {
-    logger.error('MongoDB connection error:', err);
-    logger.warn('Continuing without MongoDB. Development auth fallbacks remain available, but data-backed routes may be limited.');
-  });
+// Firebase Realtime Database — vérification au démarrage
+const FIREBASE_URL = process.env.FIREBASE_DATABASE_URL || 'https://smartshepherd-4413d-default-rtdb.firebaseio.com';
+logger.info(`[Firebase] Using RTDB: ${FIREBASE_URL}`);
 
 // Make services available to routes
 app.set('io', io);
@@ -157,36 +149,13 @@ const wsErrorHandler = { getStatus: () => ({ connectedClients: 0 }) };
 // API routes with error monitoring & CACHING
 app.use('/api/auth', authRoutes);
 
-const serializeSheep = (sheep) => {
-  const plain = typeof sheep?.toObject === 'function' ? sheep.toObject() : sheep;
-  const coordinates = Array.isArray(plain?.location?.coordinates) ? plain.location.coordinates : [];
-  const lat = typeof plain?.lat === 'number' ? plain.lat : coordinates[1];
-  const lng = typeof plain?.lng === 'number' ? plain.lng : coordinates[0];
-
-  return {
-    ...plain,
-    collar_id: plain.collar_id || plain.collarId || plain.sheepId,
-    name: plain.name || plain.sheepId,
-    breed: plain.breed || plain.race || 'Other',
-    health: plain.health || plain.status || (plain.healthStatus === 'healthy' ? 'good' : plain.healthStatus === 'under_observation' ? 'warning' : 'critical'),
-    status: plain.status || plain.healthStatus || 'healthy',
-    battery: typeof plain.battery === 'number' ? plain.battery : 100,
-    temperature: typeof plain.temperature === 'number' ? plain.temperature : 38,
-    lat,
-    lng,
-    lastUpdate: plain.lastUpdate || plain.lastSeen || plain.updatedAt || plain.createdAt || new Date().toISOString(),
-    active: typeof plain.active === 'boolean' ? plain.active : plain.isActive,
-  };
-};
 
 app.get('/api/animals', async (req, res) => {
   try {
-    const filter = { isActive: true };
-    if (req.query.breed) filter.breed = req.query.breed;
-    if (req.query.gender) filter.gender = req.query.gender;
-
-    const animals = await Sheep.find(filter).sort({ lastSeen: -1 });
-    return res.json(animals.map(serializeSheep));
+    let animals = await getAllAnimals();
+    if (req.query.breed) animals = animals.filter(a => a.breed === req.query.breed);
+    if (req.query.gender) animals = animals.filter(a => a.gender === req.query.gender);
+    return res.json(animals);
   } catch (error) {
     return res.status(500).json({ error: 'Error fetching animals data' });
   }
@@ -244,7 +213,7 @@ app.get('/api/health', async (req, res) => {
       timestamp: new Date().toISOString(),
       uptime: process.uptime(),
       memory: process.memoryUsage(),
-      database: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected',
+      database: `firebase:${FIREBASE_URL}`,
       mqtt: mqttErrorHandler.getStatus(),
       websocket: wsErrorHandler.getStatus(),
       version: process.env.npm_package_version || '1.0.0'

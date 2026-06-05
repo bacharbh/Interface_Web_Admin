@@ -1,6 +1,5 @@
 import express from 'express';
 import Joi from 'joi';
-import Sheep from '../models/Sheep.js';
 import authMiddleware, { authorize } from '../middleware/auth.js';
 
 const router = express.Router();

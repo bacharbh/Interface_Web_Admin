@@ -1,5 +1,4 @@
 import cron from 'node-cron';
-import mongoose from 'mongoose';
 // import copilotService from './copilotService.js'; // COPILOT REMOVED
 // import { sendWhatsApp } from './twilioService.js';
 // import { sendEmail } from './sendgridService.js';

@@ -1,51 +1,44 @@
 import express from 'express';
-import AnomalyEvent from '../models/AnomalyEvent.js';
 import authMiddleware from '../middleware/auth.js';
 
 const router = express.Router();
 
-router.get('/', authMiddleware, async (_req, res) => {
-    try {
-        const anomalies = await AnomalyEvent.find()
-            .sort({ detectedAt: -1 })
-            .limit(100)
-            .lean();
+// Stockage en mémoire (remplace AnomalyEvent MongoDB)
+const anomalies = [];
 
-        res.json({ success: true, data: anomalies });
-    } catch (error) {
-        res.status(500).json({ success: false, error: 'Impossible de charger les anomalies' });
-    }
+router.get('/', authMiddleware, async (_req, res) => {
+  res.json({ success: true, data: anomalies.slice(-100).reverse() });
 });
 
 router.post('/', authMiddleware, async (req, res) => {
-    try {
-        const anomaly = await AnomalyEvent.create({
-            ...req.body,
-            animalId: req.body.animalId || req.body.collar_id || req.body.id || 'unknown',
-            farmId: req.body.farmId || req.user?.farmId || req.user?.id || 'default',
-            score: typeof req.body.score === 'number' ? req.body.score : 1,
-            detectedAt: new Date(),
-            resolved: false,
-        });
-
-        res.status(201).json({ success: true, data: anomaly });
-    } catch (error) {
-        res.status(500).json({ success: false, error: 'Impossible de créer l\'anomalie' });
-    }
+  try {
+    const anomaly = {
+      _id: `anomaly-${Date.now()}`,
+      animalId: req.body.animalId || req.body.collar_id || 'unknown',
+      farmId: req.body.farmId || 'default',
+      score: typeof req.body.score === 'number' ? req.body.score : 1,
+      features: req.body.features || {},
+      detectedAt: new Date().toISOString(),
+      resolved: false,
+      ...req.body,
+    };
+    anomalies.push(anomaly);
+    res.status(201).json({ success: true, data: anomaly });
+  } catch {
+    res.status(500).json({ success: false, error: "Impossible de créer l'anomalie" });
+  }
 });
 
 router.patch('/:id/resolve', authMiddleware, async (req, res) => {
-    try {
-        const anomaly = await AnomalyEvent.findByIdAndUpdate(
-            req.params.id,
-            { resolved: true, resolvedAt: new Date() },
-            { new: true }
-        );
-
-        res.json({ success: true, data: anomaly });
-    } catch (error) {
-        res.status(500).json({ success: false, error: 'Impossible de résoudre l\'anomalie' });
-    }
+  try {
+    const anomaly = anomalies.find(a => a._id === req.params.id);
+    if (!anomaly) return res.status(404).json({ success: false, error: 'Anomalie introuvable' });
+    anomaly.resolved = true;
+    anomaly.resolvedAt = new Date().toISOString();
+    res.json({ success: true, data: anomaly });
+  } catch {
+    res.status(500).json({ success: false, error: "Impossible de résoudre l'anomalie" });
+  }
 });
 
 export default router;

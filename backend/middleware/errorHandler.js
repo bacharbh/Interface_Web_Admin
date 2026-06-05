@@ -5,7 +5,6 @@
 
 import AppError from '../utils/AppError.js';
 import { logger } from '../utils/errorLogger.js';
-import mongoose from 'mongoose';
 
 /**
  * Gestionnaire d'erreurs principal pour Express

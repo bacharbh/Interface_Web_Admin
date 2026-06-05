@@ -1,287 +1,151 @@
 import express from 'express';
-import Joi from 'joi';
-import Sheep from '../models/Sheep.js';
-import TelemetryData from '../models/TelemetryData.js';
+import { getAllAnimals, getAnimalByCollarId, getAnimalHistory, getAllHistory } from '../services/firebaseService.js';
 import authMiddleware from '../middleware/auth.js';
-
-const router = express.Router();
 import { redisClient, isRedisConnected } from '../middleware/cache.js';
 
-// Local fallback if Redis is unavailable
+const router = express.Router();
+
 const localLastAlertState = new Map();
 
-/**
- * Function to check if alert state has changed (prevents spam)
- * Uses Redis for persistence across server restarts
- */
-async function hasAlertStateChanged(sheepId, alertType, isActive) {
-  const key = `alert_state:${sheepId}:${alertType}`;
-
+async function hasAlertStateChanged(collarId, alertType, isActive) {
+  const key = `alert_state:${collarId}:${alertType}`;
   try {
     let lastState;
-
     if (isRedisConnected) {
       const cached = await redisClient.get(key);
       lastState = cached === null ? null : cached === 'true';
     } else {
       lastState = localLastAlertState.get(key);
     }
-
-    // Only consider state as changed if activity differs
-    if (lastState === isActive) {
-      return false;
-    }
-
-    // Update state
+    if (lastState === isActive) return false;
     if (isRedisConnected) {
-      // Set with 24h expiration to avoid leaking memory for inactive devices
       await redisClient.set(key, isActive.toString(), { EX: 86400 });
     } else {
       localLastAlertState.set(key, isActive);
     }
-
     return true;
-  } catch (err) {
-    console.error('Error checking alert state in Redis:', err);
-    return true; // Default to true to ensure alert is sent if error occurs
+  } catch {
+    return true;
   }
 }
 
-
-// Validation schema for telemetry data
-const telemetrySchema = Joi.object({
-  deviceId: Joi.string().required(),
-  sheepId: Joi.string().optional(),
-  timestamp: Joi.date().default(Date.now),
-  data: Joi.object({
-    heartRate: Joi.number().min(0).max(300).optional(),
-    temperature: Joi.number().min(-10).max(50).optional(),
-    activity: Joi.number().min(0).max(100).optional(),
-    batteryLevel: Joi.number().min(0).max(100).optional(),
-    signalStrength: Joi.number().min(-120).max(0).optional(),
-    location: Joi.object({
-      latitude: Joi.number().min(-90).max(90).required(),
-      longitude: Joi.number().min(-180).max(180).required(),
-      accuracy: Joi.number().min(0).optional()
-    }).optional()
-  }).required()
-});
-
-// Store telemetry data (typically called by IoT devices)
+// POST /api/telemetry — reçoit des données IoT et émet des alertes
 router.post('/', async (req, res) => {
   try {
-    const { error } = telemetrySchema.validate(req.body);
-    if (error) {
-      return res.status(400).json({ error: error.details[0].message });
-    }
-
     const { deviceId, sheepId, timestamp, data } = req.body;
-
-    // Find sheep by device ID or sheep ID
-    let sheep;
-    if (sheepId) {
-      sheep = await Sheep.findOne({ sheepId, isActive: true });
-    } else {
-      sheep = await Sheep.findOne({ deviceId, isActive: true });
+    if (!deviceId || !data) {
+      return res.status(400).json({ error: 'deviceId and data are required' });
     }
 
-    if (!sheep) {
-      return res.status(404).json({ error: 'Sheep not found for this device' });
-    }
-
-    // Update sheep location if provided
-    if (data.location) {
-      sheep.location = {
-        type: 'Point',
-        coordinates: [data.location.longitude, data.location.latitude]
-      };
-      sheep.lastSeen = new Date();
-      await sheep.save();
-    }
-
-    // Store telemetry data (in a real implementation, this would go to a telemetry collection)
-    const telemetryData = {
-      deviceId,
-      sheepId: sheep.sheepId,
-      timestamp: timestamp || new Date(),
-      data,
-      processed: false
-    };
-
-    // Emit real-time telemetry data
+    const collarId = sheepId || deviceId;
     const io = req.app.get('io');
-    io.emit('telemetry:realtime', {
-      sheepId: sheep.sheepId,
-      deviceId,
-      timestamp: telemetryData.timestamp,
-      data
-    });
 
-    // Check for alerts
+    io.emit('telemetry:realtime', { sheepId: collarId, deviceId, timestamp: timestamp || new Date(), data });
+
     const alerts = [];
-    const resolvedSheepId = sheep.sheepId || sheep._id;
-
-    // Heart rate check - only alert if state changed
-    const hrAbnormal = data.heartRate && (data.heartRate < 60 || data.heartRate > 120);
-    if (hrAbnormal && await hasAlertStateChanged(resolvedSheepId, 'heart_rate', true)) {
-      alerts.push({
-        type: 'heart_rate',
-        severity: data.heartRate < 60 ? 'low' : 'high',
-        value: data.heartRate,
-        sheepId: resolvedSheepId,
-        timestamp: new Date()
-      });
-    } else if (!hrAbnormal) {
-      await hasAlertStateChanged(resolvedSheepId, 'heart_rate', false);
-    }
-
-    // Temperature check - only alert if state changed
-    const tempAbnormal = data.temperature && (data.temperature < 38.5 || data.temperature > 40.5);
-    if (tempAbnormal && await hasAlertStateChanged(resolvedSheepId, 'temperature', true)) {
-      alerts.push({
-        type: 'temperature',
-        severity: data.temperature < 38.5 ? 'low' : 'high',
-        value: data.temperature,
-        sheepId: resolvedSheepId,
-        timestamp: new Date()
-      });
+    const tempAbnormal = data.temperature != null && (data.temperature < 38.5 || data.temperature > 40.5);
+    if (tempAbnormal && await hasAlertStateChanged(collarId, 'temperature', true)) {
+      alerts.push({ type: 'temperature', severity: data.temperature < 38.5 ? 'low' : 'high', value: data.temperature, sheepId: collarId, timestamp: new Date() });
     } else if (!tempAbnormal) {
-      await hasAlertStateChanged(resolvedSheepId, 'temperature', false);
+      await hasAlertStateChanged(collarId, 'temperature', false);
     }
 
-    // Battery check - only alert if state changed
-    const batteryLow = data.batteryLevel && data.batteryLevel < 20;
-    if (batteryLow && await hasAlertStateChanged(resolvedSheepId, 'battery', true)) {
-      alerts.push({
-        type: 'battery',
-        severity: 'low',
-        value: data.batteryLevel,
-        deviceId,
-        timestamp: new Date()
-      });
+    const batteryLow = data.batteryLevel != null && data.batteryLevel < 20;
+    if (batteryLow && await hasAlertStateChanged(collarId, 'battery', true)) {
+      alerts.push({ type: 'battery', severity: 'low', value: data.batteryLevel, deviceId, timestamp: new Date() });
     } else if (!batteryLow) {
-      await hasAlertStateChanged(resolvedSheepId, 'battery', false);
+      await hasAlertStateChanged(collarId, 'battery', false);
     }
 
-    // Only emit alerts if any new state changes
-    if (alerts.length > 0) {
-      console.log(`🔔 Emitting ${alerts.length} new alert(s) for ${resolvedSheepId}`);
-      io.emit('alerts:new', alerts);
-    }
+    if (alerts.length > 0) io.emit('alerts:new', alerts);
 
-    res.status(201).json({
-      message: 'Telemetry data received',
-      data: telemetryData,
-      alerts: alerts.length
-    });
+    res.status(201).json({ message: 'Telemetry data received', alerts: alerts.length });
   } catch (error) {
+    console.error('Error processing telemetry:', error.message);
     res.status(500).json({ error: 'Error processing telemetry data' });
   }
 });
 
-// Get latest telemetry for all sheep
+// GET /api/telemetry/latest — dernière entrée par animal
 router.get('/latest', authMiddleware, async (req, res) => {
   try {
-    const sheep = await Sheep.find({ isActive: true })
-      .select('sheepId breed age weight gender healthStatus location lastSeen deviceId')
-      .sort({ lastSeen: -1 });
-
-    // In a real implementation, you would fetch latest telemetry from a telemetry collection
-    // For now, we'll return the sheep data with their last known locations
-    const telemetryData = sheep.map(s => ({
-      sheepId: s.sheepId,
-      deviceId: s.deviceId,
-      lastSeen: s.lastSeen,
-      location: s.location,
-      healthStatus: s.healthStatus
-      // Latest telemetry would be added here from telemetry collection
+    const animals = await getAllAnimals();
+    const telemetryData = animals.map(a => ({
+      sheepId: a.sheepId,
+      deviceId: a.collar_id,
+      lastSeen: a.lastSeen,
+      temperature: a.temperature,
+      movement_g: a.movement_g,
+      lora: a.lora,
+      healthStatus: a.healthStatus,
     }));
-
     res.json({ telemetry: telemetryData });
   } catch (error) {
+    console.error('Error fetching latest telemetry:', error.message);
     res.status(500).json({ error: 'Error fetching telemetry data' });
   }
 });
 
-// Get telemetry history for analytics/dashboard pages
+// GET /api/telemetry/history — historique global ou filtré
 router.get('/history', authMiddleware, async (req, res) => {
   try {
     const { from, to, limit = 200, deviceId, sheepId } = req.query;
-    const query = {};
-
-    if (deviceId) query.deviceId = deviceId;
-    if (sheepId) query.sheepId = sheepId;
-
-    if (from || to) {
-      query.timestamp = {};
-      if (from) query.timestamp.$gte = new Date(from);
-      if (to) query.timestamp.$lte = new Date(to);
-    }
-
-    const data = await TelemetryData.find(query)
-      .sort({ timestamp: -1 })
-      .limit(Number(limit))
-      .lean();
-
+    const collarId = sheepId || deviceId;
+    const data = await getAllHistory({ limit, collarId, from, to });
     res.json(data);
   } catch (error) {
+    console.error('Error fetching telemetry history:', error.message);
     res.status(500).json({ error: 'Erreur telemetry history' });
   }
 });
 
-// Get telemetry history for specific sheep
+// GET /api/telemetry/stats — statistiques globales
+router.get('/stats', authMiddleware, async (req, res) => {
+  try {
+    const animals = await getAllAnimals();
+    const total = animals.length;
+    const healthy = animals.filter(a => a.healthStatus === 'healthy').length;
+    const sick = animals.filter(a => a.healthStatus === 'sick').length;
+    const observation = animals.filter(a => a.healthStatus === 'under_observation').length;
+
+    res.json({
+      stats: {
+        totalSheep: total,
+        healthStatus: { healthy, sick, injured: 0, other: observation },
+        lastUpdated: new Date(),
+      }
+    });
+  } catch (error) {
+    console.error('Error fetching telemetry stats:', error.message);
+    res.status(500).json({ error: 'Error fetching telemetry statistics' });
+  }
+});
+
+// GET /api/telemetry/:collarId/history — historique d'un animal
 router.get('/:sheepId/history', authMiddleware, async (req, res) => {
   try {
     const { sheepId } = req.params;
     const { startDate, endDate, limit = 100 } = req.query;
 
-    const sheep = await Sheep.findOne({ sheepId, isActive: true });
-    if (!sheep) {
+    const animal = await getAnimalByCollarId(sheepId);
+    if (!animal) {
       return res.status(404).json({ error: 'Sheep not found' });
     }
 
-    const history = {
+    const entries = await getAnimalHistory(sheepId, { limit, from: startDate, to: endDate });
+
+    res.json({
       sheepId,
-      deviceId: sheep.deviceId,
-      data: [],
+      deviceId: sheepId,
+      data: entries,
       summary: {
-        totalRecords: 0,
-        dateRange: {
-          start: startDate,
-          end: endDate
-        }
+        totalRecords: entries.length,
+        dateRange: { start: startDate, end: endDate }
       }
-    };
-
-    res.json(history);
+    });
   } catch (error) {
+    console.error('Error fetching sheep history:', error.message);
     res.status(500).json({ error: 'Error fetching telemetry history' });
-  }
-});
-
-// Get telemetry statistics
-router.get('/stats', authMiddleware, async (req, res) => {
-  try {
-    const totalSheep = await Sheep.countDocuments({ isActive: true });
-    const healthySheep = await Sheep.countDocuments({ isActive: true, healthStatus: 'healthy' });
-    const sickSheep = await Sheep.countDocuments({ isActive: true, healthStatus: 'sick' });
-    const injuredSheep = await Sheep.countDocuments({ isActive: true, healthStatus: 'injured' });
-
-    const stats = {
-      totalSheep,
-      healthStatus: {
-        healthy: healthySheep,
-        sick: sickSheep,
-        injured: injuredSheep,
-        other: totalSheep - healthySheep - sickSheep - injuredSheep
-      },
-      // Additional telemetry stats would be calculated here
-      lastUpdated: new Date()
-    };
-
-    res.json({ stats });
-  } catch (error) {
-    res.status(500).json({ error: 'Error fetching telemetry statistics' });
   }
 });
 

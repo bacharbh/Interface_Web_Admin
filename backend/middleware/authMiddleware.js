@@ -4,9 +4,16 @@
  */
 
 import jwtService from '../utils/jwtService.js';
-import User from '../models/User.js';
 import AppError from '../utils/AppError.js';
 import { catchAsync } from './errorHandler.js';
+
+// Stub User — en production remplacer par une vraie base
+const USERS = [
+  { id: 'admin-001', username: 'admin', email: 'admin@smart-shepherd.local', role: 'admin', isActive: true }
+];
+const User = {
+  findById: (id) => Promise.resolve(USERS.find(u => u.id === id) || null),
+};
 
 /**
  * Middleware d'authentification principal

@@ -6,8 +6,6 @@ import { CloudOff, Download } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import logger from '../../utils/logger';
 import { devLog } from '../../utils/devLogger';
-import { isDevMockUserActive } from '../../utils/authStorage';
-import DevBanner from '../../components/DevBanner';
 import { useMqtt } from '../../contexts/MqttContext';
 import { useIoTStore } from '../../hooks/useIoTStore';
 import { PERSISTENCE_MODE } from '../../services/animalsService';
@@ -168,7 +166,6 @@ const AppLayout: React.FC = () => {
       {/* Toast Notifications */}
       <ToastProvider />
 
-      {import.meta.env.DEV && isDevMockUserActive() && <DevBanner />}
 
       {/* Global Search Overlay (portal) */}
       <GlobalSearch open={searchOpen} onClose={() => setSearchOpen(false)} />
