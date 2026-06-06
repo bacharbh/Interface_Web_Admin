@@ -48,25 +48,51 @@ const LABELS: Record<HealthLabel, string> = {
 
 const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value));
 
-const scoreBattery = (battery?: number) => clamp(Number.isFinite(battery ?? NaN) ? (battery as number) : 0, 0, 100);
+// Fix 1: donnée absente → 50 (neutre) au lieu de 0 (faux Critique)
+const scoreBattery = (battery?: number) => {
+    if (!Number.isFinite(battery ?? NaN)) return 50;
+    return clamp(battery as number, 0, 100);
+};
 
+// Fix 1: température absente → 50 neutre (undefined traitée comme 0°C donnait score 0)
 const scoreTemperature = (temperature?: number) => {
-    const temp = Number.isFinite(temperature ?? NaN) ? (temperature as number) : 0;
-    const deviation = Math.abs(temp - 39);
+    if (!Number.isFinite(temperature ?? NaN)) return 50;
+    const deviation = Math.abs((temperature as number) - 39);
     return clamp(100 - deviation * 25, 0, 100);
 };
 
+// Fix 2 & 3: courbe en cloche — le repos est normal (~65), le sprint peut indiquer du stress (~60)
+// Niveaux d'activité : 0=idle, 1=repos, 2=pâturage, 3=marche, 4=course
+// Vitesse optimale : 1–4 km/h (pâturage/marche) ; >6 km/h = possible stress
 const scoreActivity = (speed?: number, activityLevel?: number) => {
-    const normalizedSpeed = clamp((Number.isFinite(speed ?? NaN) ? (speed as number) : 0) / 8, 0, 1);
-    const normalizedActivity = clamp((Number.isFinite(activityLevel ?? NaN) ? (activityLevel as number) : 0) / 4, 0, 1);
+    const hasSpeed = Number.isFinite(speed ?? NaN);
+    const hasActivity = Number.isFinite(activityLevel ?? NaN);
 
-    // Activity is a blended signal: both low movement and low activity level should reduce the score.
-    return clamp((normalizedActivity * 60) + (normalizedSpeed * 40), 0, 100);
+    if (!hasSpeed && !hasActivity) return 50;
+
+    const spd = hasSpeed ? (speed as number) : 0;
+    const act = hasActivity ? (activityLevel as number) : 0;
+
+    // act : 0→65, 1→82, 2→100, 3→80, 4→60
+    const actScore = act <= 2
+        ? clamp(65 + (act / 2) * 35, 65, 100)
+        : clamp(100 - ((act - 2) / 2) * 40, 60, 100);
+
+    // spd : 0→65, 4→100, 6→80, 8→60
+    const spdScore = spd <= 4
+        ? clamp(65 + (spd / 4) * 35, 65, 100)
+        : clamp(100 - ((spd - 4) / 4) * 40, 60, 100);
+
+    if (!hasActivity) return spdScore;
+    if (!hasSpeed) return actScore;
+
+    return clamp((actScore * 0.6) + (spdScore * 0.4), 0, 100);
 };
 
+// Fix 1: RSSI absent → 50 neutre au lieu de -100 dBm (score 0)
 const scoreRssi = (rssi?: number) => {
-    const value = Number.isFinite(rssi ?? NaN) ? (rssi as number) : -100;
-    return clamp(((value + 100) / 60) * 100, 0, 100);
+    if (!Number.isFinite(rssi ?? NaN)) return 50;
+    return clamp(((rssi as number + 100) / 60) * 100, 0, 100);
 };
 
 const scoreAlerts = (alerts: HealthAlertLike[] | undefined, collarId?: string, windowMinutes = 24 * 60) => {

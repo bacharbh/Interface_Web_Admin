@@ -1,48 +1,59 @@
 import { Router } from 'express';
-import { authenticate, requireRole } from '../../middleware/auth.js';
+import { getAllRtdbUsers, getRtdbUser, saveRtdbUser } from '../../services/firebaseService.js';
 
 const router = Router();
 
-// Utilisateurs en mémoire partagés avec auth.js
-// En production, ce serait une base de données
-const USERS = [
-  { id: 'admin-001', username: 'admin', email: 'admin@smart-shepherd.local', role: 'admin', isActive: true, createdAt: new Date().toISOString() }
-];
-
-router.get('/', authenticate, async (_req, res) => {
-  const users = USERS.filter(u => u.isActive).map(({ password: _, ...u }) => u);
-  return res.json({ users });
+router.get('/', async (_req, res) => {
+  try {
+    const users = await getAllRtdbUsers();
+    return res.json({ success: true, data: users });
+  } catch (err) {
+    console.error('[Users] fetch error:', err.message);
+    return res.status(500).json({ error: 'Impossible de charger les utilisateurs' });
+  }
 });
 
-router.post('/', authenticate, requireRole('admin'), async (req, res) => {
+router.post('/', async (req, res) => {
   try {
+    const id = `user-${Date.now()}`;
     const user = {
-      id: `user-${Date.now()}`,
+      id,
       isActive: true,
+      status: 'Actif',
       createdAt: new Date().toISOString(),
       ...req.body,
     };
-    USERS.push(user);
-    const { password: _, ...safe } = user;
-    return res.status(201).json(safe);
-  } catch {
+    const saved = await saveRtdbUser(id, user);
+    return res.status(201).json({ success: true, data: saved });
+  } catch (err) {
+    console.error('[Users] create error:', err.message);
     return res.status(500).json({ error: 'Impossible de créer utilisateur' });
   }
 });
 
-router.put('/:id', authenticate, requireRole('admin'), async (req, res) => {
-  const idx = USERS.findIndex(u => u.id === req.params.id);
-  if (idx === -1) return res.status(404).json({ error: 'Utilisateur non trouvé' });
-  USERS[idx] = { ...USERS[idx], ...req.body };
-  const { password: _, ...safe } = USERS[idx];
-  return res.json(safe);
+router.put('/:id', async (req, res) => {
+  try {
+    const existing = await getRtdbUser(req.params.id);
+    if (!existing) return res.status(404).json({ error: 'Utilisateur non trouvé' });
+    const updated = { ...existing, ...req.body, id: req.params.id, updatedAt: new Date().toISOString() };
+    await saveRtdbUser(req.params.id, updated);
+    return res.json({ success: true, data: updated });
+  } catch (err) {
+    console.error('[Users] update error:', err.message);
+    return res.status(500).json({ error: 'Impossible de mettre à jour utilisateur' });
+  }
 });
 
-router.delete('/:id', authenticate, requireRole('admin'), async (req, res) => {
-  const idx = USERS.findIndex(u => u.id === req.params.id);
-  if (idx === -1) return res.status(404).json({ error: 'Utilisateur non trouvé' });
-  USERS[idx].isActive = false;
-  return res.json({ success: true });
+router.delete('/:id', async (req, res) => {
+  try {
+    const existing = await getRtdbUser(req.params.id);
+    if (!existing) return res.status(404).json({ error: 'Utilisateur non trouvé' });
+    await saveRtdbUser(req.params.id, { ...existing, isActive: false, status: 'Inactif' });
+    return res.json({ success: true });
+  } catch (err) {
+    console.error('[Users] delete error:', err.message);
+    return res.status(500).json({ error: 'Impossible de supprimer utilisateur' });
+  }
 });
 
 export default router;

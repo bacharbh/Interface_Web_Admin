@@ -19,8 +19,8 @@ interface TopBarProps {
 }
 
 function StatusPill({ isConnected, isOfflineData }: Pick<TopBarProps, 'isConnected' | 'isOfflineData'>) {
-    const label = isConnected ? 'En direct' : isOfflineData ? 'Hors ligne' : 'Connexion faible';
-    const tone = isConnected ? 'bg-[var(--success-bg)] text-[var(--success)]' : isOfflineData ? 'bg-[var(--warning-bg)] text-[var(--warning)]' : 'bg-[var(--danger-bg)] text-[var(--danger)]';
+    const label = isConnected ? 'En direct' : isOfflineData ? 'Hors ligne' : 'Mode API';
+    const tone = isConnected ? 'bg-[var(--success-bg)] text-[var(--success)]' : isOfflineData ? 'bg-[var(--warning-bg)] text-[var(--warning)]' : 'bg-blue-50 text-blue-600 dark:bg-blue-500/10 dark:text-blue-400';
 
     return (
         <div className={`inline-flex items-center gap-2 rounded-[999px] border border-[var(--card-border)] px-3 py-1.5 text-[11px] font-medium ${tone}`}>

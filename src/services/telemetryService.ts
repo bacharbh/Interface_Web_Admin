@@ -13,8 +13,21 @@ const telemetryService = {
   },
 
   getAlerts: async (): Promise<any[]> => {
-    const response = await api.get('/notifications');
-    return response.data; // Expecting Array<Alert>
+    const response = await api.get('/alerts', { params: { limit: 50 } });
+    const raw: any[] = response.data?.alerts ?? [];
+    return raw.map((a: any) => ({
+      id: a._id || a.id || `${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+      type: (a.type || 'HEALTH_WARNING').toUpperCase(),
+      collar_id: a.sheepId || a.collar_id || 'N/A',
+      animal_name: a.sheepId || a.animal_name || 'Inconnu',
+      severity: (['CRITICAL', 'WARNING', 'INFO'].includes((a.severity || '').toUpperCase())
+        ? (a.severity as string).toUpperCase()
+        : 'WARNING') as 'CRITICAL' | 'WARNING' | 'INFO',
+      timestamp: a.createdAt || a.timestamp || new Date().toISOString(),
+      read: Boolean(a.read),
+      message: a.message,
+      source: 'socket' as const,
+    }));
   },
 
   getAnimalHistory: async (collar_id: string): Promise<any[]> => {

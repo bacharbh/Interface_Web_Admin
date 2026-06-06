@@ -522,10 +522,7 @@ const RealTimeMap = React.memo(({
     map.pm.disableGlobalRemovalMode?.();
   };
 
-  const visibleAnimals = useMemo(() => {
-    console.log('[Map] rendering', processedAnimals.length, 'markers');
-    return processedAnimals;
-  }, [processedAnimals]);
+  const visibleAnimals = useMemo(() => processedAnimals, [processedAnimals]);
 
   useEffect(() => {
     if (!focusId || !mapRef.current) return;
@@ -545,13 +542,21 @@ const RealTimeMap = React.memo(({
 
   if (!initialCenter) {
     return (
-      <div className="relative h-full min-h-[520px] overflow-hidden rounded-[10px] border border-[var(--card-border)] bg-white dark:bg-[var(--card-bg)]">
-        <div className="absolute inset-0 z-40 flex items-center justify-center bg-white/80 p-6 dark:bg-black/60">
-          <div className="max-w-md text-center">
-            <h3 className="mb-2 text-[16px] font-medium text-[var(--text-primary)]">La carte nécessite la position de la ferme</h3>
-            <p className="mb-4 text-[13px] text-[var(--text-secondary)]">Aucun animal positionné et aucune coordonnée de ferme n’est configurée.</p>
-            <Button variant="primary" onClick={() => navigate('/settings')}>Configurer la position de la ferme</Button>
+      <div className="relative h-full min-h-[520px] overflow-hidden rounded-[10px] border border-[var(--card-border)] bg-white dark:bg-[var(--card-bg)] flex items-center justify-center">
+        <div className="max-w-md text-center px-6 py-10 space-y-4">
+          <div className="w-16 h-16 mx-auto rounded-2xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center">
+            <svg className="w-8 h-8 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
+            </svg>
           </div>
+          <div>
+            <h3 className="text-base font-semibold text-[var(--text-primary)]">Carte GPS non disponible</h3>
+            <p className="mt-2 text-sm text-[var(--text-secondary)]">
+              Les colliers IoT ne transmettent pas de coordonnées GPS.<br />
+              Configurez la position de la ferme pour afficher un centre de carte.
+            </p>
+          </div>
+          <Button variant="primary" onClick={() => navigate("/settings")}>Configurer la position de la ferme</Button>
         </div>
       </div>
     );

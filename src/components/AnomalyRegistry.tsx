@@ -8,11 +8,11 @@ import api from '../services/api';
 interface AnomalyRecord {
     collar_id: string;
     name: string;
-    bpm: number;
-    temperature: number;
-    activity: number;
+    bpm: number | null;
+    temperature: number | null;
+    activity: number | null;
     health: string;
-    battery: number;
+    battery: number | null;
     timestamp: string;
     isAtRisk: boolean;
 }
@@ -42,6 +42,26 @@ interface PersistedAnomaly {
     };
 }
 
+const normalizeHealth = (health: string): string => {
+    if (!health) return 'Unknown';
+    const lower = health.toLowerCase();
+    if (lower === 'critical') return 'Critical';
+    if (lower === 'warning') return 'Warning';
+    if (lower === 'good') return 'Good';
+    if (lower === 'resolved') return 'Résolu';
+    return health;
+};
+
+const activityLabel = (activity: number | null): string => {
+    if (activity === null) return '—';
+    if (activity === 0) return 'Inactif';
+    if (activity === 1) return 'Repos';
+    if (activity === 2) return 'Pâture';
+    if (activity === 3) return 'Marche';
+    if (activity >= 4) return 'Course';
+    return String(activity);
+};
+
 const AnomalyRegistry: React.FC = () => {
     const { animalsList } = useRealtimePositions([]);
     const [anomalyRecords, setAnomalyRecords] = useState<AnomalyRecord[]>([]);
@@ -49,14 +69,14 @@ const AnomalyRegistry: React.FC = () => {
     const [isLoading, setIsLoading] = useState(false);
     const [lastDataUpdate, setLastDataUpdate] = useState<Date | null>(null);
     const [lastAIUpdate, setLastAIUpdate] = useState<Date | null>(null);
-    const anomaliesRef = useRef<Map<string, number>>(new Map()); // Track anomaly history
+    const anomaliesRef = useRef<Map<string, number>>(new Map());
     const lastAIRequestAtRef = useRef<number>(0);
     const lastAIRequestSignatureRef = useRef<string>('');
     const aiRequestInFlightRef = useRef(false);
     const lastAnomalySignatureRef = useRef<string>('');
     const lastPersistedAnomalySignatureRef = useRef<string>('');
 
-    const { data: persistedAnomalies = [] } = useQuery<PersistedAnomaly[]>({
+    const { data: persistedAnomalies = [], refetch: refetchPersisted } = useQuery<PersistedAnomaly[]>({
         queryKey: ['anomalies'],
         queryFn: () => api.get('/anomalies').then((response) => response.data?.data ?? []),
         refetchInterval: 30000,
@@ -87,39 +107,36 @@ const AnomalyRegistry: React.FC = () => {
                     })
                 )
             );
-
             lastPersistedAnomalySignatureRef.current = signature;
         } catch (error: any) {
             console.error('Anomaly persistence error:', error?.response?.data || error?.message || error);
         }
     };
 
-    // Reactive anomaly tracking - updates immediately when store changes
     useEffect(() => {
         if (animalsList.length === 0) return;
 
-        // Filter and map animals with health issues or critical battery
-        const problematicAnimals = animalsList.filter(animal =>
-            animal.health === 'Critical' ||
-            animal.health === 'Warning' ||
-            (animal.battery ?? 100) < 20 ||
-            (animal.temperature ?? 38) > 40 ||
-            (animal.temperature ?? 38) < 37
-        );
+        const problematicAnimals = animalsList.filter(animal => {
+            const h = (animal.health as string)?.toLowerCase();
+            return h === 'critical' || h === 'warning' ||
+                (animal.battery ?? 100) < 20 ||
+                (animal.temperature ?? 38) > 40 ||
+                (animal.temperature ?? 38) < 37;
+        });
 
         const newRecords: AnomalyRecord[] = problematicAnimals.map((animal, index) => {
             const collarId = animal.collar_id || animal.id || `collar_${index}`;
-            const battery = animal.battery ?? 0;
-            const temperature = animal.temperature ?? 0;
-            const heartRate = animal.heartRate ?? 0;
-            const activity = animal.activity ?? 0;
+            const battery = animal.battery ?? null;
+            const temperature = animal.temperature ?? null;
+            const heartRate = animal.heartRate != null ? animal.heartRate : null;
+            const activity = (animal as any).activity_level ?? (animal as any).activity ?? null;
+            const health = normalizeHealth(animal.health || 'Unknown');
 
-            // Track anomaly score
             const anomalyScore =
-                (animal.health === 'Critical' ? 30 : animal.health === 'Warning' ? 15 : 0) +
-                (battery < 20 ? 20 : battery < 50 ? 10 : 0) +
-                (temperature > 39 || temperature < 37 ? 15 : 0) +
-                (heartRate > 120 || heartRate < 40 ? 25 : 0);
+                (health === 'Critical' ? 30 : health === 'Warning' ? 15 : 0) +
+                ((battery !== null && battery < 20) ? 20 : (battery !== null && battery < 50) ? 10 : 0) +
+                ((temperature !== null && (temperature > 39 || temperature < 37)) ? 15 : 0) +
+                ((heartRate !== null && (heartRate > 120 || heartRate < 40)) ? 25 : 0);
 
             anomaliesRef.current.set(collarId, anomalyScore);
 
@@ -127,12 +144,12 @@ const AnomalyRegistry: React.FC = () => {
                 collar_id: collarId,
                 name: animal.name || `Animal #${collarId.slice(-4)}`,
                 bpm: heartRate,
-                temperature: temperature,
-                activity: activity,
-                health: animal.health || 'Unknown',
-                battery: battery,
+                temperature,
+                activity,
+                health,
+                battery,
                 timestamp: new Date().toLocaleTimeString('fr-FR'),
-                isAtRisk: animal.health === 'Critical' || Boolean(aiAnalysis?.riskAnimalIds?.includes(collarId)),
+                isAtRisk: health === 'Critical' || Boolean(aiAnalysis?.riskAnimalIds?.includes(collarId)),
             };
         });
 
@@ -140,7 +157,6 @@ const AnomalyRegistry: React.FC = () => {
             .map(record => `${record.collar_id}:${record.health}:${record.battery}:${record.temperature}:${record.bpm}:${record.activity}:${record.isAtRisk ? 1 : 0}`)
             .join('|');
 
-        // Avoid writing state if nothing meaningful changed; this prevents render loops.
         if (signature !== lastAnomalySignatureRef.current) {
             lastAnomalySignatureRef.current = signature;
             setAnomalyRecords(newRecords);
@@ -152,11 +168,9 @@ const AnomalyRegistry: React.FC = () => {
         }
     }, [animalsSignature, aiRiskSignature]);
 
-    // Call AI analysis asynchronously (doesn't block simulation updates)
     useEffect(() => {
         if (animalsList.length === 0) return;
 
-        // Debounce AI calls - only call every 5-10 seconds
         const aiTimer = setTimeout(async () => {
             if (aiRequestInFlightRef.current) return;
 
@@ -191,15 +205,12 @@ const AnomalyRegistry: React.FC = () => {
 
                 if (response?.data) {
                     const data = response.data;
-                    if (data.success && data.data) {
-                        setAiAnalysis(data.data);
-                        setLastAIUpdate(new Date());
-                    } else if (data.fallback && data.data) {
-                        // local AI fallback returned structured data
-                        setAiAnalysis(data.data);
+                    const analysisData = (data.success || data.fallback) && data.data ? data.data : null;
+                    if (analysisData) {
+                        setAiAnalysis(analysisData);
                         setLastAIUpdate(new Date());
                     } else {
-                        console.warn('[AnomalyRegistry] AI analyze returned no usable data', data);
+                        setLastAIUpdate(new Date());
                     }
                 }
             } catch (error: any) {
@@ -221,10 +232,18 @@ const AnomalyRegistry: React.FC = () => {
                 aiRequestInFlightRef.current = false;
                 setIsLoading(false);
             }
-        }, 500); // Small debounce to avoid blocking
+        }, 500);
 
         return () => clearTimeout(aiTimer);
     }, [animalsSignature]);
+
+    const handleRefresh = () => {
+        lastAnomalySignatureRef.current = '';
+        lastAIRequestAtRef.current = 0;
+        lastAIRequestSignatureRef.current = '';
+        lastPersistedAnomalySignatureRef.current = '';
+        void refetchPersisted();
+    };
 
     const getRiskLevelColor = (level?: string) => {
         switch (level) {
@@ -239,25 +258,53 @@ const AnomalyRegistry: React.FC = () => {
     const getHealthColor = (health: string) => {
         switch (health) {
             case 'Good': return 'text-green-600 dark:text-green-400';
-            case 'Warning': return 'text-orange-600 dark:text-orange-400';
+            case 'Warning': return 'text-orange-500 dark:text-orange-400';
             case 'Critical': return 'text-red-600 dark:text-red-400';
-            default: return 'text-gray-600 dark:text-gray-400';
+            case 'Résolu': return 'text-blue-600 dark:text-blue-400';
+            default: return 'text-gray-500 dark:text-gray-400';
         }
     };
 
-    const persistedAnomalyRecords: AnomalyRecord[] = persistedAnomalies.map((anomaly, index) => ({
-        collar_id: anomaly.animalId || anomaly.collar_id || anomaly._id || `persisted_${index}`,
-        name: anomaly.name || anomaly.animalId || anomaly.collar_id || `Anomalie ${index + 1}`,
-        bpm: anomaly.features?.heartRate ?? 0,
-        temperature: anomaly.features?.temperature ?? 0,
-        activity: anomaly.features?.movementRate ?? 0,
-        health: anomaly.resolved ? 'Resolved' : 'Warning',
-        battery: 0,
-        timestamp: anomaly.detectedAt || anomaly.timestamp || new Date().toISOString(),
-        isAtRisk: !anomaly.resolved,
-    }));
+    const getHealthBadge = (health: string) => {
+        switch (health) {
+            case 'Good': return 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400';
+            case 'Warning': return 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400';
+            case 'Critical': return 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400';
+            case 'Résolu': return 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400';
+            default: return 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400';
+        }
+    };
 
-    const allAnomalyRecords = [...persistedAnomalyRecords, ...anomalyRecords];
+    // Persisted anomalies: one entry per animal (most recent), battery unknown
+    const persistedByCollar = new Map<string, AnomalyRecord>();
+    for (const anomaly of persistedAnomalies) {
+        const collarId = anomaly.animalId || anomaly.collar_id || anomaly._id || '';
+        if (!collarId) continue;
+        const record: AnomalyRecord = {
+            collar_id: collarId,
+            name: anomaly.name || anomaly.animalId || anomaly.collar_id || 'Inconnu',
+            bpm: anomaly.features?.heartRate ?? null,
+            temperature: anomaly.features?.temperature ?? null,
+            activity: anomaly.features?.movementRate ?? null,
+            health: normalizeHealth(anomaly.resolved ? 'resolved' : 'warning'),
+            battery: null,
+            timestamp: anomaly.detectedAt || anomaly.timestamp || new Date().toISOString(),
+            isAtRisk: !anomaly.resolved,
+        };
+        // Keep the most recent entry per collar
+        const existing = persistedByCollar.get(collarId);
+        if (!existing || new Date(record.timestamp) > new Date(existing.timestamp)) {
+            persistedByCollar.set(collarId, record);
+        }
+    }
+
+    // Real-time anomalies override persisted entries for the same collar_id
+    const deduped = new Map<string, AnomalyRecord>(persistedByCollar);
+    for (const record of anomalyRecords) {
+        deduped.set(record.collar_id, record);
+    }
+    const allAnomalyRecords = Array.from(deduped.values());
+
     const totalAnimals = animalsList.length;
     const anomaliesCount = allAnomalyRecords.length;
     const atRiskCount = aiAnalysis?.riskAnimalIds?.length ?? 0;
@@ -275,36 +322,36 @@ const AnomalyRegistry: React.FC = () => {
                         Suivi automatique des anomalies détectées avec analyse IA en temps réel
                     </p>
                 </div>
-                <div className="flex gap-2">
-                    <Button variant="primary" onClick={() => setAnomalyRecords([])} className="inline-flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700">
-                        <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
-                        {isLoading ? 'Analyse...' : 'Actualiser'}
-                    </Button>
-                </div>
+                <Button
+                    variant="primary"
+                    onClick={handleRefresh}
+                    className="inline-flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700"
+                >
+                    <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
+                    {isLoading ? 'Analyse...' : 'Actualiser'}
+                </Button>
             </div>
 
             {/* Status indicators */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div className="bg-white dark:bg-gray-800 rounded-xl p-5 border border-gray-200 dark:border-gray-700 shadow-sm">
                     <div className="flex items-center justify-between mb-2">
-                        <span className="text-sm font-medium text-gray-600 dark:text-gray-400">
-                            Dernière mise à jour
-                        </span>
+                        <span className="text-sm font-medium text-gray-600 dark:text-gray-400">Dernière mise à jour</span>
                         <Clock className="w-5 h-5 text-gray-400" />
                     </div>
                     <p className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
                         {lastDataUpdate?.toLocaleTimeString('fr-FR') || 'En attente...'}
                     </p>
                     <div className="text-sm text-gray-600 dark:text-gray-400">
-                        Total animaux: <strong className="text-gray-900 dark:text-white">{totalAnimals}</strong> | Anomalies: <strong className="text-gray-900 dark:text-white">{anomaliesCount}</strong>
+                        Animaux: <strong className="text-gray-900 dark:text-white">{totalAnimals}</strong>
+                        {' · '}
+                        Anomalies: <strong className="text-gray-900 dark:text-white">{anomaliesCount}</strong>
                     </div>
                 </div>
 
                 <div className="bg-white dark:bg-gray-800 rounded-xl p-5 border border-gray-200 dark:border-gray-700 shadow-sm">
                     <div className="flex items-center justify-between mb-2">
-                        <span className="text-sm font-medium text-gray-600 dark:text-gray-400">
-                            Dernière analyse IA
-                        </span>
+                        <span className="text-sm font-medium text-gray-600 dark:text-gray-400">Dernière analyse IA</span>
                         <TrendingUp className="w-5 h-5 text-gray-400" />
                     </div>
                     <p className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
@@ -315,7 +362,7 @@ const AnomalyRegistry: React.FC = () => {
                     </div>
                 </div>
 
-                <div className={`rounded-xl p-5 border border-gray-200 dark:border-gray-700 shadow-sm ${aiAnalysis ? getRiskLevelColor(aiAnalysis.riskLevel) : 'bg-gray-100 dark:bg-gray-800'}`}>
+                <div className={`rounded-xl p-5 border shadow-sm ${aiAnalysis ? getRiskLevelColor(aiAnalysis.riskLevel) : 'bg-gray-100 dark:bg-gray-800 border-gray-300 dark:border-gray-700'}`}>
                     <div className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
                         Niveau de risque global
                     </div>
@@ -335,7 +382,7 @@ const AnomalyRegistry: React.FC = () => {
                     <p className="text-gray-700 dark:text-gray-300 mb-3">{aiAnalysis.summary}</p>
                     {aiAnalysis.suggestions.length > 0 && (
                         <div>
-                            <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-2">Recommandations:</h3>
+                            <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-2">Recommandations :</h3>
                             <ul className="list-disc list-inside space-y-1">
                                 {aiAnalysis.suggestions.map((suggestion, idx) => (
                                     <li key={idx} className="text-sm text-gray-700 dark:text-gray-300">
@@ -349,80 +396,90 @@ const AnomalyRegistry: React.FC = () => {
             )}
 
             {/* Anomaly Records Table */}
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
-                <table className="w-full">
-                    <thead className="bg-gray-50 dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700">
-                        <tr>
-                            <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900 dark:text-white">Animal</th>
-                            <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900 dark:text-white">Santé</th>
-                            <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900 dark:text-white">Batterie</th>
-                            <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900 dark:text-white">Température</th>
-                            <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900 dark:text-white">Fréquence cardiaque</th>
-                            <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900 dark:text-white">Activité</th>
-                            <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900 dark:text-white">Heure</th>
-                        </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-                        {allAnomalyRecords.map((record) => (
-                            <tr
-                                key={record.collar_id}
-                                className={`transition-colors ${record.isAtRisk
-                                    ? 'bg-red-50 dark:bg-red-900/20 hover:bg-red-100 dark:hover:bg-red-900/30 border-l-4 border-red-500'
-                                    : 'hover:bg-gray-50 dark:hover:bg-gray-700/50'
-                                    }`}
-                            >
-                                <td className="px-6 py-4">
-                                    <div>
-                                        <p className="font-medium text-gray-900 dark:text-white">{record.name}</p>
-                                        <p className="text-sm text-gray-600 dark:text-gray-400">{record.collar_id}</p>
-                                    </div>
-                                </td>
-                                <td className="px-6 py-4">
-                                    <span className={`font-medium ${getHealthColor(record.health)}`}>
-                                        {record.health}
-                                    </span>
-                                </td>
-                                <td className="px-6 py-4">
-                                    <div className="flex items-center gap-2">
-                                        <div className="w-16 bg-gray-200 dark:bg-gray-700 rounded-full h-2">
-                                            <div
-                                                className={`h-2 rounded-full ${record.battery > 50
-                                                    ? 'bg-green-500'
-                                                    : record.battery > 20
-                                                        ? 'bg-yellow-500'
-                                                        : 'bg-red-500'
-                                                    }`}
-                                                style={{ width: `${record.battery}%` }}
-                                            />
-                                        </div>
-                                        <span className="text-sm font-medium text-gray-900 dark:text-white w-8">
-                                            {record.battery}%
-                                        </span>
-                                    </div>
-                                </td>
-                                <td className="px-6 py-4 text-sm text-gray-900 dark:text-white">
-                                    {(record.temperature ?? 0).toFixed(1)}°C
-                                </td>
-                                <td className="px-6 py-4 text-sm text-gray-900 dark:text-white">
-                                    {record.bpm} bpm
-                                </td>
-                                <td className="px-6 py-4 text-sm text-gray-900 dark:text-white">
-                                    {record.activity}%
-                                </td>
-                                <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">
-                                    {record.timestamp}
-                                </td>
+            {allAnomalyRecords.length > 0 ? (
+                <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+                    <table className="w-full">
+                        <thead className="bg-gray-50 dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700">
+                            <tr>
+                                <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Animal</th>
+                                <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Santé</th>
+                                <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Batterie</th>
+                                <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Température</th>
+                                <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Fréq. cardiaque</th>
+                                <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Activité</th>
+                                <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Heure</th>
                             </tr>
-                        ))}
-                    </tbody>
-                </table>
-            </div>
-
-            {allAnomalyRecords.length === 0 && (
-                <div className="text-center py-12">
-                    <p className="text-gray-600 dark:text-gray-400">
-                        En attente des données...
-                    </p>
+                        </thead>
+                        <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+                            {allAnomalyRecords.map((record, idx) => (
+                                <tr
+                                    key={`${record.collar_id}-${idx}`}
+                                    className={`transition-colors ${record.isAtRisk
+                                        ? 'bg-red-50 dark:bg-red-900/20 hover:bg-red-100 dark:hover:bg-red-900/30 border-l-4 border-red-500'
+                                        : 'hover:bg-gray-50 dark:hover:bg-gray-700/50'
+                                        }`}
+                                >
+                                    <td className="px-6 py-4">
+                                        <div>
+                                            <p className="font-medium text-gray-900 dark:text-white">{record.name}</p>
+                                            <p className="text-xs text-gray-500 dark:text-gray-400">{record.collar_id}</p>
+                                        </div>
+                                    </td>
+                                    <td className="px-6 py-4">
+                                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getHealthBadge(record.health)}`}>
+                                            {record.health}
+                                        </span>
+                                    </td>
+                                    <td className="px-6 py-4">
+                                        {record.battery !== null ? (
+                                            <div className="flex items-center gap-2">
+                                                <div className="w-16 bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+                                                    <div
+                                                        className={`h-2 rounded-full ${record.battery > 50
+                                                            ? 'bg-green-500'
+                                                            : record.battery > 20
+                                                                ? 'bg-yellow-500'
+                                                                : 'bg-red-500'
+                                                            }`}
+                                                        style={{ width: `${record.battery}%` }}
+                                                    />
+                                                </div>
+                                                <span className="text-sm font-medium text-gray-900 dark:text-white">
+                                                    {record.battery}%
+                                                </span>
+                                            </div>
+                                        ) : (
+                                            <span className="text-sm text-gray-400 dark:text-gray-500">—</span>
+                                        )}
+                                    </td>
+                                    <td className="px-6 py-4 text-sm text-gray-900 dark:text-white">
+                                        {record.temperature !== null
+                                            ? `${record.temperature.toFixed(1)} °C`
+                                            : <span className="text-gray-400">—</span>
+                                        }
+                                    </td>
+                                    <td className="px-6 py-4 text-sm text-gray-900 dark:text-white">
+                                        {record.bpm !== null && record.bpm > 0
+                                            ? `${record.bpm} bpm`
+                                            : <span className="text-gray-400">—</span>
+                                        }
+                                    </td>
+                                    <td className="px-6 py-4 text-sm text-gray-900 dark:text-white">
+                                        {activityLabel(record.activity)}
+                                    </td>
+                                    <td className="px-6 py-4 text-sm text-gray-500 dark:text-gray-400">
+                                        {record.timestamp}
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
+            ) : (
+                <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 text-center py-12">
+                    <AlertTriangle className="w-10 h-10 text-gray-300 dark:text-gray-600 mx-auto mb-3" />
+                    <p className="text-gray-500 dark:text-gray-400 font-medium">Aucune anomalie détectée</p>
+                    <p className="text-sm text-gray-400 dark:text-gray-500 mt-1">Les anomalies apparaîtront ici en temps réel</p>
                 </div>
             )}
         </div>

@@ -149,6 +149,23 @@ const AppLayout: React.FC = () => {
     }
   }, [user, initData]);
 
+  // Refresh alerts every 30 seconds to stay current
+  useEffect(() => {
+    if (!user) return;
+    const refreshAlerts = async () => {
+      try {
+        const alertsData = await telemetryService.getAlerts();
+        if (Array.isArray(alertsData) && alertsData.length > 0) {
+          setAlerts(alertsData);
+        }
+      } catch {
+        // silent — alerts refreshed best-effort
+      }
+    };
+    const interval = setInterval(refreshAlerts, 30000);
+    return () => clearInterval(interval);
+  }, [user, setAlerts]);
+
   useEffect(() => {
     setIsSidebarOpen(false);
   }, [pathname]);

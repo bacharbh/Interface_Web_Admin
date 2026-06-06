@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useLocation } from 'react-router-dom';
-import { Bell, CheckCircle, Filter, CheckCheck } from 'lucide-react';
+import { Bell, CheckCircle, CheckCheck, AlertTriangle, Heart, WifiOff, LayoutList } from 'lucide-react';
 import { useIoTStore, Alert } from '../../hooks/useIoTStore';
 import { useAuth } from '../../contexts/AuthContext';
 import { connectSocket, socket } from '../../services/socket';
@@ -109,20 +109,45 @@ export default function Alerts() {
             </button>
           )}
 
-          <div className="flex items-center gap-2 rounded-[10px] border border-[var(--card-border)] bg-white px-3 py-2 dark:bg-[var(--card-bg)]">
-            <Filter className="h-4 w-4 text-[var(--text-muted)]" />
-            <select
-              value={filterType}
-              onChange={(e) => setFilterType(e.target.value)}
-              className="cursor-pointer bg-transparent pr-3 text-[12px] font-medium text-[var(--text-primary)] outline-none"
-            >
-              <option value="ALL">Toutes les alertes</option>
-              <option value="CRITICAL">Alertes critiques</option>
-              <option value="OUT_OF_ZONE">Sorties de zone</option>
-              <option value="LOW_BATTERY">Batterie faible</option>
-              <option value="HEALTH_WARNING">Santé</option>
-              <option value="COLLAR_OFFLINE">Collier hors ligne</option>
-            </select>
+          <div className="flex items-center gap-1.5 rounded-[12px] border border-[var(--card-border)] bg-[var(--bg-secondary,#f7f8f6)] p-1 dark:bg-[var(--card-bg)]">
+            {([
+              { value: 'ALL',            label: 'Toutes',    icon: LayoutList,     dot: null },
+              { value: 'CRITICAL',       label: 'Critiques', icon: AlertTriangle,  dot: 'bg-red-500' },
+              { value: 'HEALTH_WARNING', label: 'Santé',     icon: Heart,          dot: 'bg-orange-400' },
+              { value: 'COLLAR_OFFLINE', label: 'Hors ligne',icon: WifiOff,        dot: 'bg-gray-400' },
+            ] as const).map(({ value, label, icon: Icon, dot }) => {
+              const count = value === 'ALL'
+                ? alerts.length
+                : alerts.filter(a => value === 'CRITICAL' ? a.severity === 'CRITICAL' : a.type === value).length;
+              const active = filterType === value;
+              return (
+                <button
+                  key={value}
+                  onClick={() => setFilterType(value)}
+                  className={`
+                    relative inline-flex items-center gap-1.5 rounded-[9px] px-3 py-1.5 text-[11.5px] font-medium transition-all
+                    ${active
+                      ? 'bg-white text-[var(--text-primary)] shadow-sm ring-1 ring-black/[0.06] dark:bg-[#2a2a2a] dark:ring-white/10'
+                      : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'}
+                  `}
+                >
+                  {dot && <span className={`h-1.5 w-1.5 rounded-full ${dot} ${active ? 'opacity-100' : 'opacity-50'}`} />}
+                  {!dot && <Icon className={`h-3.5 w-3.5 ${active ? 'text-[var(--brand-primary)]' : ''}`} />}
+                  {label}
+                  {count > 0 && (
+                    <span className={`
+                      ml-0.5 rounded-full px-1.5 py-0 text-[10px] font-semibold leading-4
+                      ${active
+                        ? value === 'CRITICAL' ? 'bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400'
+                          : 'bg-[var(--brand-primary)]/10 text-[var(--brand-primary)]'
+                        : 'bg-[var(--card-border)] text-[var(--text-muted)]'}
+                    `}>
+                      {count}
+                    </span>
+                  )}
+                </button>
+              );
+            })}
           </div>
         </div>
       </header>

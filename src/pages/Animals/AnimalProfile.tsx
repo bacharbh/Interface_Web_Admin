@@ -6,7 +6,7 @@ import {
     ArrowLeft,
     AlertCircle,
     Archive,
-    Battery,
+    Activity,
     Calendar,
     CheckCircle2,
     ChevronLeft,
@@ -15,15 +15,15 @@ import {
     Download,
     Edit2,
     FileText,
-    Heart,
     Loader2,
     MapPin,
     MoreVertical,
     Plus,
+    Signal,
     Thermometer,
     Trash2,
     Upload,
-    Wind,
+    Wifi,
     Zap,
 } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
@@ -32,7 +32,6 @@ import { useIoTStore } from '../../hooks/useIoTStore';
 import animalsService from '../../services/animalsService';
 import { downloadPDFReport } from '../../services/excelExport';
 import VitalBox from './components/VitalBox';
-import MiniGPSMap from './components/MiniGPSMap';
 import {
     allowedDocumentExtensions,
     allowedDocumentMimeTypes,
@@ -49,6 +48,86 @@ import {
     uploadAnimalDocument,
     AnimalDocumentRecord,
 } from '../../services/animalProfileService';
+import api from '../../services/api';
+import {
+    Chart as ChartJS, CategoryScale, LinearScale, PointElement,
+    LineElement, Tooltip, Legend, Filler,
+} from 'chart.js';
+import { Line } from 'react-chartjs-2';
+
+ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Tooltip, Legend, Filler);
+
+// ── Mini temperature chart for the vitals tab ──────────────────────────────
+
+const TemperatureHistoryChart: React.FC<{ animalId: string }> = ({ animalId }) => {
+    const { data: history = [], isLoading } = useQuery({
+        queryKey: ['animal-temp-history', animalId],
+        queryFn: async () => {
+            const res = await api.get('/history', { params: { sheepId: animalId, limit: 50 } });
+            return Array.isArray(res.data) ? res.data : [];
+        },
+        enabled: Boolean(animalId),
+        staleTime: 60_000,
+    });
+
+    const chartData = useMemo(() => {
+        const points = history
+            .map((e: any) => ({
+                ts: e.timestamp || e.rx_time || e.lora?.rx_time,
+                temp: e.sensors?.temperature ?? e.metadata?.temperature ?? e.temperature,
+            }))
+            .filter((p: any) => p.ts && typeof p.temp === 'number')
+            .sort((a: any, b: any) => new Date(a.ts).getTime() - new Date(b.ts).getTime())
+            .slice(-30);
+
+        return {
+            labels: points.map((p: any) =>
+                new Date(p.ts).toLocaleString('fr-FR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })
+            ),
+            datasets: [{
+                label: 'Température',
+                data: points.map((p: any) => p.temp),
+                borderColor: '#1D9E75',
+                backgroundColor: 'rgba(29,158,117,0.08)',
+                borderWidth: 2,
+                pointRadius: 2,
+                tension: 0.4,
+                fill: true,
+            }],
+        };
+    }, [history]);
+
+    const hasData = chartData.labels.length > 0;
+
+    return (
+        <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl border border-gray-100 dark:border-gray-700">
+            <div className="flex items-center justify-between mb-6">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Évolution température</h3>
+                {isLoading && <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />}
+            </div>
+            {hasData ? (
+                <div className="h-56">
+                    <Line
+                        data={chartData}
+                        options={{
+                            responsive: true, maintainAspectRatio: false,
+                            plugins: { legend: { display: false }, tooltip: { callbacks: { label: (c) => ` ${c.parsed.y?.toFixed(1)}°C` } } },
+                            scales: {
+                                x: { grid: { display: false }, ticks: { maxTicksLimit: 6, font: { size: 10 } } },
+                                y: { min: 37, max: 42, ticks: { stepSize: 1, font: { size: 10 }, callback: (v) => `${v}°C` } },
+                            },
+                        }}
+                    />
+                </div>
+            ) : (
+                <div className="h-56 bg-gray-50 dark:bg-gray-900/50 rounded-xl flex flex-col items-center justify-center border border-dashed border-gray-200 dark:border-gray-700 gap-2">
+                    <Thermometer className="w-8 h-8 text-gray-300 dark:text-gray-600" />
+                    <p className="text-sm text-gray-400 dark:text-gray-500">Aucun historique disponible</p>
+                </div>
+            )}
+        </div>
+    );
+};
 
 type ProfileTab = 'vitals' | 'history' | 'documents' | 'notes';
 type NotesSaveState = 'idle' | 'saving' | 'saved' | 'error';
@@ -90,17 +169,17 @@ const DOCUMENT_BADGES: Record<string, { label: string; className: string }> = {
 };
 
 const TAB_META: Record<ProfileTab, { label: string; icon: React.ReactNode }> = {
-    vitals: { label: 'Vitaux', icon: <Heart className="w-4 h-4" /> },
+    vitals: { label: 'Vitaux', icon: <Activity className="w-4 h-4" /> },
     history: { label: 'Historique', icon: <Calendar className="w-4 h-4" /> },
     documents: { label: 'Documents', icon: <FileText className="w-4 h-4" /> },
     notes: { label: 'Notes', icon: <Edit2 className="w-4 h-4" /> },
 };
 
 const VITALS = [
-    { label: 'BPM', key: 'heartRate' as const, unit: 'BPM', min: 70, max: 120, icon: <Heart className="w-5 h-5" /> },
-    { label: 'Température', key: 'temperature' as const, unit: '°C', min: 38.5, max: 39.5, icon: <Thermometer className="w-5 h-5" /> },
-    { label: 'Activité', key: 'activity' as const, unit: '%', min: 50, max: 100, icon: <Wind className="w-5 h-5" /> },
-    { label: 'Batterie', key: 'battery' as const, unit: '%', min: 20, max: 100, icon: <Battery className="w-5 h-5" /> },
+    { label: 'Température', getValue: (a: any) => a?.temperature, unit: '°C', min: 38.5, max: 39.5, icon: <Thermometer className="w-5 h-5" /> },
+    { label: 'Mouvement', getValue: (a: any) => a?.movement_g, unit: ' g', min: 0.1, max: 3, icon: <Activity className="w-5 h-5" /> },
+    { label: 'Signal LoRa', getValue: (a: any) => a?.lora?.rssi, unit: ' dBm', min: -85, max: -50, icon: <Signal className="w-5 h-5" /> },
+    { label: 'SNR LoRa', getValue: (a: any) => a?.lora?.snr, unit: ' dB', min: 0, max: 15, icon: <Wifi className="w-5 h-5" /> },
 ];
 
 const PROFILE_ERROR_MESSAGE = 'Une erreur est survenue dans cet onglet.';
@@ -595,7 +674,7 @@ const AnimalProfile: React.FC = () => {
                     <VitalBox
                         key={vital.label}
                         label={vital.label}
-                        value={(animal as any)?.[vital.key] ?? vital.min + 10}
+                        value={vital.getValue(animal)}
                         unit={vital.unit}
                         range={{ min: vital.min, max: vital.max }}
                         icon={vital.icon}
@@ -603,18 +682,7 @@ const AnimalProfile: React.FC = () => {
                 ))}
             </div>
 
-            <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl border border-gray-100 dark:border-gray-700">
-                <div className="flex items-center justify-between mb-6">
-                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Évolution 7 jours</h3>
-                    <div className="flex gap-2">
-                        <Button variant="secondary" size="sm" className="text-primary">7j</Button>
-                        <Button variant="ghost" size="sm" className="text-gray-600 dark:text-gray-400">30j</Button>
-                    </div>
-                </div>
-                <div className="h-64 bg-gray-50 dark:bg-gray-900/50 rounded-xl flex items-center justify-center border border-dashed border-gray-200 dark:border-gray-700">
-                    <p className="text-gray-500 dark:text-gray-400 text-sm">Graphique Chart.js - Température & BPM</p>
-                </div>
-            </div>
+            <TemperatureHistoryChart animalId={animalId} />
         </motion.div>
     );
 
@@ -1094,8 +1162,14 @@ const AnimalProfile: React.FC = () => {
 
             <div className="bg-white dark:bg-gray-800 border-t border-gray-100 dark:border-gray-700">
                 <div className="max-w-7xl mx-auto px-6 py-6">
-                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Position GPS - 24h</h3>
-                    <MiniGPSMap animalId={(animal.sheepId || animal.collar_id) as string} />
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Position GPS</h3>
+                    <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/30 py-10 gap-3">
+                        <MapPin className="w-8 h-8 text-slate-300 dark:text-slate-600" />
+                        <p className="text-sm font-semibold text-slate-400 dark:text-slate-500">GPS non disponible</p>
+                        <p className="text-xs text-slate-400 dark:text-slate-600 text-center max-w-[200px]">
+                            Ce collier ne transmet pas de coordonnées GPS
+                        </p>
+                    </div>
                 </div>
             </div>
         </div>

@@ -63,7 +63,6 @@ function buildFallbackAnalysis(animals, extra = {}) {
             },
             fallback: true,
             model_mode: 'local',
-            fallback: true,
             timestamp: new Date().toISOString(),
             ...extra,
         };
@@ -95,33 +94,47 @@ router.post('/analyze', async (req, res) => {
             return res.status(400).json({ error: 'animals array required' });
         }
 
+        // Normalize activity from 0-4 level scale to 0-100 percentage
+        // The frontend sends activity_level (0=idle, 1=rest, 2=graze, 3=walk, 4=run)
+        // LocalAIService and the Anthropic prompt both expect 0-100%
+        const normalizedAnimals = animals.map(a => ({
+            ...a,
+            activity: (Number.isInteger(a.activity) && a.activity >= 0 && a.activity <= 4)
+                ? a.activity * 25
+                : (a.activity ?? 0),
+        }));
+
         // Validate Anthropic API key
         const apiKey = process.env.ANTHROPIC_API_KEY;
         if (!apiKey) {
-            // Use local AI analysis as fallback. Log once to avoid spamming logs.
             if (!global.__anthropicFallbackLogged) {
                 console.log('ℹ️ Anthropic API key not configured. Using local AI analysis.');
                 global.__anthropicFallbackLogged = true;
             }
-            return res.json(buildFallbackAnalysis(animals));
+            return res.json(buildFallbackAnalysis(normalizedAnimals));
         }
 
         // Prevent spam: Skip analysis if data unchanged in last 30 seconds
-        const cacheKey = `ai_analysis_${JSON.stringify(animals.map(a => ({ id: a.collar_id, t: a.temperature, b: a.bpm }))).substring(0, 100)}`;
+        const cacheKey = `ai_analysis_${JSON.stringify(normalizedAnimals.map(a => ({ id: a.collar_id, t: a.temperature, b: a.bpm }))).substring(0, 100)}`;
         const lastAnalysisTime = global.aiAnalysisCache || {};
         const now = Date.now();
 
         if (lastAnalysisTime[cacheKey] && (now - lastAnalysisTime[cacheKey]) < 30000) {
             console.log('⏭️  Skipping duplicate analysis (cache hit, <30s)');
-            return res.json(buildFallbackAnalysis(animals, { cached: true, model_mode: 'local-cache' }));
+            return res.json(buildFallbackAnalysis(normalizedAnimals, { cached: true, model_mode: 'local-cache' }));
         }
 
         lastAnalysisTime[cacheKey] = now;
         global.aiAnalysisCache = lastAnalysisTime;
 
         // Build animal summary for prompt
-        const animalSummary = animals
-            .map(a => `${a.name}#${a.collar_id}: BPM=${a.bpm || '—'}, Temp=${a.temperature || '—'}°C, Activité=${a.activity || '—'}%, Santé=${a.health || 'Unknown'}`)
+        const animalSummary = normalizedAnimals
+            .map(a => {
+                const temp = (a.temperature && a.temperature > 10) ? `${a.temperature}°C` : '—';
+                const bpm = (a.bpm && a.bpm > 0) ? `${a.bpm} bpm` : '—';
+                const activity = a.activity != null ? `${a.activity}%` : '—';
+                return `${a.name}#${a.collar_id}: BPM=${bpm}, Temp=${temp}, Activité=${activity}, Santé=${a.health || 'Unknown'}`;
+            })
             .join(' | ');
 
         // Construct Anthropic API request with JSON-only prompt
@@ -214,7 +227,13 @@ Réponds maintenant le JSON uniquement.`;
         });
     } catch (error) {
         console.error('AI Analysis error:', error.response?.data || error.message);
-        return res.status(200).json(buildFallbackAnalysis(req.body?.animals || []));
+        const fallbackAnimals = (req.body?.animals || []).map(a => ({
+            ...a,
+            activity: (Number.isInteger(a.activity) && a.activity >= 0 && a.activity <= 4)
+                ? a.activity * 25
+                : (a.activity ?? 0),
+        }));
+        return res.status(200).json(buildFallbackAnalysis(fallbackAnimals));
     }
 });
 

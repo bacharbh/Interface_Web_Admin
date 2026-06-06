@@ -12,11 +12,10 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import toast from 'react-hot-toast';
 import {
-    CheckCircle2, ChevronRight, History, Loader2,
-    Stethoscope, BrainCircuit, Trophy, AlertTriangle, Filter
+    CheckCircle2, Loader2,
+    Stethoscope, Trophy, AlertTriangle
 } from 'lucide-react';
 import { useMutation, useQuery } from '@tanstack/react-query';
-import { useNavigate } from 'react-router-dom';
 import labellingService, { type LabellingOutcome } from '../../services/labellingService';
 import { useIoTStore } from '../../hooks/useIoTStore';
 import api from '../../services/api';
@@ -55,7 +54,6 @@ interface FlaggedAnimal {
 }
 
 export default function LabellingPage() {
-    const navigate = useNavigate();
     const alerts = useIoTStore(state => state.alerts);
     const positions = useIoTStore(state => state.devices);
 
@@ -129,7 +127,7 @@ export default function LabellingPage() {
     }, [initialCount]);
 
     // ── Real telemetry chart for selected animal ──────────────────────────────
-    const { data: telemetryData } = useQuery({
+    useQuery({
         queryKey: ['telemetry', selectedAnimal?.id, '48h'],
         queryFn: async () => {
             const res = await api.get(`/telemetry/${selectedAnimal!.id}/history`, {
@@ -260,8 +258,10 @@ export default function LabellingPage() {
         }
     }, [visibleFlagged, selectedAnimal, submittedIds]);
 
-    const totalFlagged = (labelledCount + visibleFlagged.length) || 1;
-    const pct = Math.round((labelledCount / totalFlagged) * 100);
+    // Total = already labelled this month + still pending
+    // If nothing at all, show 0/0 not 0/1
+    const totalFlagged = labelledCount + visibleFlagged.length;
+    const pct = totalFlagged > 0 ? Math.round((labelledCount / totalFlagged) * 100) : 0;
 
     return (
         <div className="flex flex-col gap-5 animate-fade-in max-w-7xl mx-auto">
@@ -281,7 +281,8 @@ export default function LabellingPage() {
                         <Stethoscope className="text-primary w-5 h-5" /> Ground-Truth Labelling
                     </h1>
                     <p className="text-sm text-gray-500 mt-0.5">
-                        Labelisé : <span className="text-primary font-bold">{labelledCount}</span> / {totalFlagged} animaux ce mois
+                        Labelisé : <span className="text-primary font-bold">{labelledCount}</span>
+                        {totalFlagged > 0 ? ` / ${totalFlagged} animaux ce mois` : ' — aucun animal à labelliser'}
                     </p>
                 </div>
                 <div className="flex items-center gap-3">

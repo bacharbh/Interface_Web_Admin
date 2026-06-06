@@ -84,7 +84,7 @@ export default defineConfig({
     rollupOptions: {
       output: {
         manualChunks: {
-          'vendor-map': ['leaflet', 'react-leaflet', 'react-leaflet-draw'],
+          'vendor-map': ['leaflet', 'react-leaflet'],
           'vendor-charts': ['recharts', 'chart.js', 'react-chartjs-2', 'chartjs-plugin-annotation'],
           'vendor-react': ['react', 'react-dom', 'react-router-dom', 'framer-motion', '@tanstack/react-query'],
           'vendor-data': ['axios'],

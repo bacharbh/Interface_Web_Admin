@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
-import { Cpu, Battery, Wifi, Activity, Search, RefreshCw, Layers, Radio, AlertTriangle, CheckCircle } from 'lucide-react';
+import { Cpu, Wifi, Activity, Search, Radio, AlertTriangle, CheckCircle, Signal } from 'lucide-react';
 import Button from '../../components/ui/Button';
 import { useIoTStore } from '../../hooks/useIoTStore';
 import { IAnimal } from '../../types';
@@ -9,11 +9,16 @@ import api from '../../services/api';
 
 type HardwareStatus = 'DEPLOYED' | 'LOW_BATT' | 'OFFLINE' | 'UNASSIGNED';
 
+const STALE_THRESHOLD_MS = 15 * 60 * 1000; // 15 min
+
 const getStatusFromDevice = (animal: IAnimal | undefined): HardwareStatus => {
   if (!animal) return 'UNASSIGNED';
-  const battery = animal.battery ?? 0;
-  if (battery < 10) return 'OFFLINE';
-  if (battery < 20) return 'LOW_BATT';
+  const lastUpdate = (animal as any).lastUpdate || (animal as any).lastSeen || (animal as any).updatedAt;
+  if (!lastUpdate) return 'OFFLINE';
+  const age = Date.now() - new Date(lastUpdate).getTime();
+  if (age > STALE_THRESHOLD_MS) return 'OFFLINE';
+  const rssi = (animal as any).rssi ?? (animal as any).lora?.rssi;
+  if (typeof rssi === 'number' && rssi < -85) return 'LOW_BATT';
   return 'DEPLOYED';
 };
 
@@ -24,6 +29,15 @@ const getStatusStyle = (status: HardwareStatus) => {
     case 'OFFLINE': return 'bg-red-100 dark:bg-red-500/20 text-red-700 dark:text-red-400 border border-red-200 dark:border-red-500/30';
     case 'UNASSIGNED': return 'bg-gray-100 dark:bg-gray-700/50 text-gray-500 dark:text-gray-400 border border-gray-200 dark:border-gray-700';
     default: return 'bg-gray-100 text-gray-700';
+  }
+};
+
+const getStatusLabel = (status: HardwareStatus) => {
+  switch (status) {
+    case 'DEPLOYED': return 'Déployé';
+    case 'LOW_BATT': return 'Signal faible';
+    case 'OFFLINE': return 'Hors ligne';
+    case 'UNASSIGNED': return 'Non assigné';
   }
 };
 
@@ -53,12 +67,12 @@ interface HardwareItem {
   id: string;
   animalName: string;
   breed?: string;
-  battery: number;
+  temperature?: number;
   signal?: number;
   firmware: string;
   status: HardwareStatus;
-  lat: number;
-  lng: number;
+  lat?: number;
+  lng?: number;
   lastUpdate?: string;
 }
 
@@ -81,14 +95,13 @@ const Hardware = () => {
     staleTime: 30_000,
   });
 
-  // Derive hardware list from live device store
   const hardwareList = useMemo<HardwareItem[]>(() => {
     return Object.values(devicesMap).map(animal => ({
       id: animal.collar_id,
-      animalName: animal.name,
+      animalName: animal.name ?? animal.collar_id,
       breed: animal.breed,
-      battery: animal.battery,
-      signal: animal.rssi,
+      temperature: (animal as any).temperature,
+      signal: (animal as any).rssi ?? (animal as any).lora?.rssi,
       firmware: (animal as any).firmware || (animal as any).firmwareVersion || 'N/A',
       status: getStatusFromDevice(animal),
       lat: animal.lat,
@@ -100,10 +113,10 @@ const Hardware = () => {
   const fallbackHardware = useMemo<HardwareItem[]>(() => {
     return (apiSheep as IAnimal[]).map(animal => ({
       id: animal.collar_id,
-      animalName: animal.name,
+      animalName: animal.name ?? animal.collar_id,
       breed: animal.breed,
-      battery: animal.battery ?? 0,
-      signal: animal.rssi,
+      temperature: (animal as any).temperature,
+      signal: (animal as any).rssi ?? (animal as any).lora?.rssi,
       firmware: (animal as any).firmware || (animal as any).firmwareVersion || 'N/A',
       status: getStatusFromDevice(animal),
       lat: animal.lat,
@@ -117,7 +130,7 @@ const Hardware = () => {
   const kpis = useMemo(() => ({
     total: displayHardware.length,
     deployed: displayHardware.filter(d => d.status === 'DEPLOYED').length,
-    lowBatt: displayHardware.filter(d => d.status === 'LOW_BATT').length,
+    weakSignal: displayHardware.filter(d => d.status === 'LOW_BATT').length,
     offline: displayHardware.filter(d => d.status === 'OFFLINE').length,
   }), [displayHardware]);
 
@@ -125,7 +138,6 @@ const Hardware = () => {
 
   return (
     <div className="max-w-7xl mx-auto space-y-5 pb-16 px-4 animate-fade-in">
-      {/* Header */}
       <div className="flex items-start justify-between gap-4">
         <div>
           <h2 className="text-2xl font-semibold text-gray-900 dark:text-white">Flotte matérielle</h2>
@@ -139,12 +151,11 @@ const Hardware = () => {
         </div>
       </div>
 
-      {/* KPI Cards */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         {[
           { icon: <Cpu className="w-8 h-8 text-gray-300" />, label: 'Total appareils', value: kpis.total, color: 'text-gray-900 dark:text-white' },
           { icon: <CheckCircle className="w-8 h-8 text-gray-200" />, label: 'Déployés', value: kpis.deployed, color: 'text-green-600 dark:text-green-400' },
-          { icon: <Battery className="w-8 h-8 text-gray-200" />, label: 'Alerte batterie', value: kpis.lowBatt, color: 'text-amber-600 dark:text-amber-400' },
+          { icon: <Signal className="w-8 h-8 text-gray-200" />, label: 'Signal faible', value: kpis.weakSignal, color: 'text-amber-600 dark:text-amber-400' },
           { icon: <AlertTriangle className="w-8 h-8 text-gray-200" />, label: 'Hors ligne', value: kpis.offline, color: 'text-red-600 dark:text-red-400' },
         ].map(({ icon, label, value, color }) => (
           <div key={label} className="bg-white dark:bg-gray-800 p-4 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm flex items-center justify-between">
@@ -157,7 +168,6 @@ const Hardware = () => {
         ))}
       </div>
 
-      {/* Filters & Table */}
       <div className="bg-white dark:bg-gray-800 rounded-3xl border border-gray-100 dark:border-gray-700 shadow-sm overflow-hidden">
         <div className="p-4 border-b border-gray-100 dark:border-gray-700 flex flex-col sm:flex-row gap-4 justify-between items-center">
           <div className="relative w-full sm:w-96">
@@ -180,7 +190,7 @@ const Hardware = () => {
                   : 'text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200'
                   }`}
               >
-                {f === 'ALL' ? 'Tous' : f.replace('_', ' ').toLowerCase()}
+                {f === 'ALL' ? 'Tous' : getStatusLabel(f as HardwareStatus)}
               </button>
             ))}
           </div>
@@ -200,7 +210,7 @@ const Hardware = () => {
             <table className="w-full text-left text-sm whitespace-nowrap">
               <thead className="bg-slate-50/50 dark:bg-slate-800/50 text-slate-500 dark:text-slate-400">
                 <tr>
-                  {['Collier', 'Animal', 'Statut', 'Batterie', 'Signal', 'Position', 'Firmware', 'Action'].map(h => (
+                  {['Collier', 'Animal', 'Statut', 'Température', 'Signal', 'Dernière MAJ', 'Firmware', 'Action'].map(h => (
                     <th key={h} className="px-6 py-4 label-xs font-black">{h}</th>
                   ))}
                 </tr>
@@ -234,39 +244,28 @@ const Hardware = () => {
                       </td>
                       <td className="px-6 py-3.5">
                         <span className={`inline-flex px-2 py-1 rounded-md label-xs font-black ${getStatusStyle(device.status)}`}>
-                          {device.status.replace('_', ' ').toLowerCase()}
+                          {getStatusLabel(device.status)}
                         </span>
                       </td>
                       <td className="px-6 py-3.5">
-                        {(() => {
-                          const battery = device.battery ?? 0;
-                          return (
-                            <div className="flex items-center gap-2">
-                              <Battery className={`w-4 h-4 ${battery < 20 ? 'text-red-500' : 'text-green-500'}`} />
-                              <div>
-                                <span className="font-bold dark:text-white text-sm">{battery}%</span>
-                                <div className="w-20 bg-slate-200 dark:bg-slate-700 rounded-full h-1 mt-1 overflow-hidden">
-                                  <div
-                                    className={`h-1 rounded-full transition-all ${battery < 20 ? 'bg-red-500' : 'bg-green-500'}`}
-                                    style={{ width: `${battery}%` }}
-                                  />
-                                </div>
-                              </div>
-                            </div>
-                          );
-                        })()}
+                        <div className="flex items-center gap-2">
+                          <Activity className={`w-4 h-4 ${typeof device.temperature === 'number' && device.temperature > 39.5 ? 'text-red-500' : 'text-emerald-500'}`} />
+                          <span className="font-bold dark:text-white text-sm">
+                            {typeof device.temperature === 'number' ? `${device.temperature.toFixed(1)} °C` : '—'}
+                          </span>
+                        </div>
                       </td>
                       <td className="px-6 py-3.5">
                         <div className={`flex items-center gap-2 ${sig.color}`}>
                           <SignalBars bars={sig.bars} />
                           <span className="text-xs font-bold dark:text-slate-300">
-                            {sig.text} <span className="text-slate-400 font-mono ml-1">({typeof device.signal === 'number' ? `${device.signal} dBm` : 'Non disponible'})</span>
+                            {sig.text} <span className="text-slate-400 font-mono ml-1">({typeof device.signal === 'number' ? `${device.signal} dBm` : 'N/A'})</span>
                           </span>
                         </div>
                       </td>
                       <td className="px-6 py-3.5">
-                        <span className="text-[10px] font-mono text-slate-500">
-                          {device.lat?.toFixed(4)}, {device.lng?.toFixed(4)}
+                        <span className="text-xs text-slate-500">
+                          {device.lastUpdate ? new Date(device.lastUpdate).toLocaleString('fr-FR', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit' }) : '—'}
                         </span>
                       </td>
                       <td className="px-6 py-3.5">

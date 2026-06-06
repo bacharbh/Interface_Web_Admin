@@ -4,8 +4,9 @@ import { useIoTStore, type Alert as IoTAlert } from '../../hooks/useIoTStore';
 import { useMapWorker } from '../../hooks/useMapWorker';
 import { useNavigate } from 'react-router-dom';
 import {
-  Activity, Bell, MapPin, ShieldAlert, Cpu, Battery,
-  TrendingUp, Thermometer, Gauge, Save, RotateCcw, GripVertical
+  Activity, Bell, MapPin, ShieldAlert, Cpu, Signal,
+  TrendingUp, Thermometer, Gauge, RotateCcw, GripVertical,
+  Building2, Users, CreditCard
 } from 'lucide-react';
 import { AlertTriangle } from 'lucide-react';
 import { SkeletonCard, SkeletonChart } from '../../components/ui/Skeleton';
@@ -18,13 +19,13 @@ import {
 import annotationPlugin from 'chartjs-plugin-annotation';
 import { Line } from 'react-chartjs-2';
 import WeatherWidget from '../../components/widgets/WeatherWidget';
-import MiniMapPreview from '../../components/widgets/MiniMapPreview';
 import AtRiskAnimals from '../../components/widgets/AtRiskAnimals';
 import geofenceService from '../../services/geofenceService';
 import api from '../../services/api';
-import { IKpis, type IGeofenceZone } from '../../types';
+import { type IGeofenceZone } from '../../types';
 import Button from '../../components/ui/Button';
 import { DataBadge, type DataSource } from '../../components/ui/DataBadge';
+import { scoreAnimalHealth, getHealthLabelText, HEALTH_LABEL_BORDERS, HEALTH_LABEL_COLORS, type HealthLabel } from '../../ai/healthScoring';
 
 // DND Kit Imports
 import {
@@ -52,16 +53,86 @@ ChartJS.register(
 );
 
 // --- Performance Optimizations ---
-const DEFAULT_LAYOUT = ['total', 'active', 'alerts', 'outOfZone'];
+const DEFAULT_LAYOUT = ['total', 'active', 'alerts', 'outOfZone', 'farms', 'members', 'users'];
 const LAYOUT_KEY = 'ss_dashboard_layout_v1';
 const CHART_UPDATE_INTERVAL = 5000; // 5 seconds
 const MAX_CHART_POINTS = 20; // Limit chart points for performance
-const BATTERY_LOW_THRESHOLD = 20;
 
 interface ChartData {
   labels: string[];
   animals: number[];
   alerts: number[];
+}
+
+// --- Health Score Distribution Widget ---
+
+const HEALTH_ORDER: HealthLabel[] = ['excellent', 'bon', 'surveillance', 'critique'];
+
+const HEALTH_BG: Record<HealthLabel, string> = {
+  excellent: 'bg-emerald-500',
+  bon: 'bg-green-500',
+  surveillance: 'bg-amber-500',
+  critique: 'bg-red-500',
+};
+
+interface HealthScoreWidgetProps {
+  distribution: Record<HealthLabel, { count: number; worst: number | null }>;
+  total: number;
+  onNavigate: () => void;
+}
+
+function HealthScoreWidget({ distribution, total, onNavigate }: HealthScoreWidgetProps) {
+  return (
+    <div className="bg-white dark:bg-card-dark rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm p-5 mb-4">
+      <div className="flex items-center justify-between mb-4">
+        <h3 className="title-sm text-gray-900 dark:text-white flex items-center gap-2">
+          <Activity className="w-4 h-4 text-primary" /> Distribution Score IA Santé
+        </h3>
+        <button onClick={onNavigate} className="label-xs text-primary hover:underline">
+          Voir animaux →
+        </button>
+      </div>
+
+      {total === 0 ? (
+        <p className="label-xs text-gray-400 text-center py-4">Aucun animal connecté</p>
+      ) : (
+        <>
+          <div className="flex h-3 rounded-full overflow-hidden mb-4 gap-px">
+            {HEALTH_ORDER.map(label => {
+              const pct = (distribution[label].count / total) * 100;
+              return pct > 0 ? (
+                <div
+                  key={label}
+                  className={`${HEALTH_BG[label]} transition-all`}
+                  style={{ width: `${pct}%` }}
+                  title={`${getHealthLabelText(label)}: ${distribution[label].count}`}
+                />
+              ) : null;
+            })}
+          </div>
+
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            {HEALTH_ORDER.map(label => {
+              const { count, worst } = distribution[label];
+              return (
+                <div key={label} className={`rounded-xl border px-3 py-2.5 ${HEALTH_LABEL_BORDERS[label]}`}>
+                  <p className={`text-[11px] uppercase tracking-wide font-semibold ${HEALTH_LABEL_COLORS[label]}`}>
+                    {getHealthLabelText(label)}
+                  </p>
+                  <p className="text-[22px] font-bold text-gray-900 dark:text-white tabular-nums leading-tight mt-0.5">
+                    {count}
+                  </p>
+                  <p className="label-xs text-gray-400 mt-0.5">
+                    {count > 0 && worst !== null ? `Score min: ${worst}/100` : 'Aucun'}
+                  </p>
+                </div>
+              );
+            })}
+          </div>
+        </>
+      )}
+    </div>
+  );
 }
 
 export default function Dashboard() {
@@ -73,7 +144,10 @@ export default function Dashboard() {
   const alerts = useIoTStore(state => state.alerts);
 
   useEffect(() => {
-    if (Object.keys(positions).length > 0) return;
+    if (Object.keys(positions).length > 0) {
+      setIsLoaded(true);
+      return;
+    }
 
     let cancelled = false;
     api.get('/sheep', { params: { limit: 300 } })
@@ -82,15 +156,17 @@ export default function Dashboard() {
         const list: any[] = Array.isArray(res.data) ? res.data
           : Array.isArray(res.data?.sheep) ? res.data.sheep
             : Array.isArray(res.data?.data) ? res.data.data : [];
-        if (list.length === 0) return;
-        const map: Record<string, any> = {};
-        list.forEach((a: any) => {
-          const key = a.collarId || a.collar_id || a.sheepId || a._id;
-          if (key) map[key] = { ...a, collar_id: key };
-        });
-        setDevices(map);
+        if (list.length > 0) {
+          const map: Record<string, any> = {};
+          list.forEach((a: any) => {
+            const key = a.collarId || a.collar_id || a.sheepId || a._id;
+            if (key) map[key] = { ...a, collar_id: key };
+          });
+          setDevices(map);
+        }
+        setIsLoaded(true);
       })
-      .catch(() => { });
+      .catch(() => { setIsLoaded(true); });
     return () => { cancelled = true; };
   }, []);
 
@@ -118,23 +194,6 @@ export default function Dashboard() {
   const markAlertAsRead = useIoTStore(state => state.markAlertAsRead);
   const isOfflineData = useIoTStore(state => state.isOfflineData);
 
-  const mapPreviewAnimals = useMemo(() => {
-    return animalsList.map(a => {
-      let status: 'normal' | 'warning' | 'alert' = 'normal';
-      if (a.status === 'CRITICAL' || a.status === 'OUT_OF_ZONE') {
-        status = 'alert';
-      } else if (a.status === 'LOW_BATTERY') {
-        status = 'warning';
-      }
-      return {
-        id: a.collar_id || a.id,
-        lat: a.lat,
-        lng: a.lng,
-        status
-      };
-    });
-  }, [animalsList]);
-
   const atRiskAnimalList = useMemo(() => {
     return animalsList.map((animal) => ({
       id: animal.collar_id ?? animal.id ?? animal.sheepId,
@@ -149,8 +208,8 @@ export default function Dashboard() {
   }, [animalsList]);
 
   const mapFocusTargetId = useMemo(() => {
-    return mapPreviewAnimals[0]?.id ?? atRiskAnimalList[0]?.id ?? null;
-  }, [atRiskAnimalList, mapPreviewAnimals]);
+    return atRiskAnimalList[0]?.id ?? null;
+  }, [atRiskAnimalList]);
 
   const openMap = useCallback((focusId?: string | number) => {
     const targetId = focusId ?? mapFocusTargetId;
@@ -178,17 +237,27 @@ export default function Dashboard() {
 
   const outOfZoneCount = kpis.outOfZone;
 
-  const primaryGeofence = useMemo(() => {
-    if (zones.length === 0) return [];
-    return zones[0].coords || [];
-  }, [zones]);
-
   // Performance refs
   const chartUpdateRef = useRef<NodeJS.Timeout | null>(null);
   const lastUpdateRef = useRef<number>(Date.now());
   const renderCountRef = useRef<number>(0);
 
-  const [isLoaded] = useState(true);
+  const [isLoaded, setIsLoaded] = useState(false);
+  const [firestoreStats, setFirestoreStats] = useState({ farms: 0, memberships: 0, users: 0 });
+
+  useEffect(() => {
+    api.get('/stats')
+      .then(res => {
+        const d = res.data;
+        setFirestoreStats({
+          farms: d?.farms?.count ?? 0,
+          memberships: d?.memberships?.count ?? 0,
+          users: d?.users?.count ?? 0,
+        });
+      })
+      .catch(() => {});
+  }, []);
+
   const [historicData, setHistoricData] = useState<ChartData>({
     labels: [],
     animals: [],
@@ -218,11 +287,6 @@ export default function Dashboard() {
     [alerts]
   );
 
-  const lowBatteryDevices = useMemo(() =>
-    Object.values(positions).filter(d => (d.battery ?? 0) <= BATTERY_LOW_THRESHOLD),
-    [positions]
-  );
-
   const unreadCount = useMemo(() =>
     alerts.filter(a => !a.read).length,
     [alerts]
@@ -243,16 +307,41 @@ export default function Dashboard() {
     return (sum / validTemps.length).toFixed(1) + '°C';
   }, [positions]);
 
-  const avgBatteryValue = useMemo(() => {
+  const avgRssi = useMemo(() => {
     const devices = Object.values(positions);
-    const validBatteries = devices
-      .map(d => d.battery)
-      .filter((b): b is number => typeof b === 'number' && !isNaN(b));
-
-    if (validBatteries.length === 0) return 'N/A';
-    const sum = validBatteries.reduce((acc, b) => acc + b, 0);
-    return (sum / validBatteries.length).toFixed(0) + '%';
+    const valid = devices
+      .map(d => (d as any).lora?.rssi)
+      .filter((r): r is number => typeof r === 'number' && !isNaN(r));
+    if (valid.length === 0) return 'N/A';
+    return (valid.reduce((a, r) => a + r, 0) / valid.length).toFixed(0) + ' dBm';
   }, [positions]);
+
+  const avgMovement = useMemo(() => {
+    const devices = Object.values(positions);
+    const valid = devices
+      .map(d => (d as any).movement_g)
+      .filter((m): m is number => typeof m === 'number' && !isNaN(m));
+    if (valid.length === 0) return 'N/A';
+    return (valid.reduce((a, m) => a + m, 0) / valid.length).toFixed(2) + ' g';
+  }, [positions]);
+
+  const healthDistribution = useMemo(() => {
+    const dist: Record<HealthLabel, { count: number; worst: number | null }> = {
+      excellent: { count: 0, worst: null },
+      bon: { count: 0, worst: null },
+      surveillance: { count: 0, worst: null },
+      critique: { count: 0, worst: null },
+    };
+    const animals = Object.values(positions);
+    for (const animal of animals) {
+      const result = scoreAnimalHealth(animal as any, alerts);
+      dist[result.label].count++;
+      if (dist[result.label].worst === null || result.score < (dist[result.label].worst as number)) {
+        dist[result.label].worst = result.score;
+      }
+    }
+    return { dist, total: animals.length };
+  }, [positions, alerts]);
 
   // Optimized chart update function
   const updateChartData = useCallback(() => {
@@ -597,6 +686,36 @@ export default function Dashboard() {
                       isAlert={outOfZoneCount > 0}
                     />
                   )}
+                  {id === 'farms' && (
+                    <KpiCard
+                      title="Exploitations"
+                      value={firestoreStats.farms}
+                      icon={<Building2 />}
+                      color="green"
+                      source="live"
+                      trend="Fermes enregistrées"
+                    />
+                  )}
+                  {id === 'members' && (
+                    <KpiCard
+                      title="Membres"
+                      value={firestoreStats.memberships}
+                      icon={<CreditCard />}
+                      color="blue"
+                      source="live"
+                      trend="Abonnements actifs"
+                    />
+                  )}
+                  {id === 'users' && (
+                    <KpiCard
+                      title="Utilisateurs"
+                      value={firestoreStats.users}
+                      icon={<Users />}
+                      color="amber"
+                      source="live"
+                      trend="Comptes plateforme"
+                    />
+                  )}
                 </SortableKpiItem>
               ))}
             </div>
@@ -607,11 +726,10 @@ export default function Dashboard() {
       {/* Secondary Metrics */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5 mb-4">
         <MiniKpi
-          icon={<Battery className="text-amber-500" />}
-          label="Niveau batterie"
-          value={avgBatteryValue}
-          sub={`${lowBatteryDevices.length} critiques (<${BATTERY_LOW_THRESHOLD}%)`}
-          isAlert={lowBatteryDevices.length > 0}
+          icon={<Signal className="text-amber-500" />}
+          label="Signal LoRa moyen"
+          value={avgRssi}
+          sub="Intensité du signal (RSSI)"
           accentColor="#EF9F27"
           source="live"
         />
@@ -625,15 +743,16 @@ export default function Dashboard() {
         />
         <MiniKpi
           icon={<Gauge className="text-blue-500" />}
-          label="Charge ingestion"
-          value={historicData?.animals?.length > 0
-            ? `${((historicData.animals[historicData.animals.length - 1] || 0) / 2).toFixed(0)}%`
-            : (kpis && typeof (kpis as any).ingestionRate === 'number' ? `${Math.round((kpis as any).ingestionRate)}%` : 'N/A — capteur non connecté')}
-          sub="Flux de télémétrie"
-          accentColor="#1D9E75"
-          source="derived"
+          label="Mouvement moyen"
+          value={avgMovement}
+          sub="Accélération (g-force)"
+          accentColor="#3b82f6"
+          source="live"
         />
       </div>
+
+      {/* Health Score Distribution */}
+      <HealthScoreWidget distribution={healthDistribution.dist} total={healthDistribution.total} onNavigate={() => navigate('/animals')} />
 
       {/* Quick Overview */}
       <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_300px] gap-3.5 mb-4 items-start">
@@ -643,16 +762,21 @@ export default function Dashboard() {
 
           <div className="relative z-10 px-4 pt-4 pb-2">
             <h3 className="title-sm text-gray-900 dark:text-white flex items-center gap-2">
-              <MapPin className="w-4 h-4 text-primary" /> Aperçu géographique en direct
+              <MapPin className="w-4 h-4 text-primary" /> Aperçu géographique
             </h3>
           </div>
 
           <div className="relative z-10 px-3 pb-3">
-            <MiniMapPreview
-              animals={mapPreviewAnimals}
-              geofence={primaryGeofence}
-              onExpand={openMap}
-            />
+            <div
+              className="w-full flex flex-col items-center justify-center rounded-2xl border border-dashed border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/30"
+              style={{ height: '248px' }}
+            >
+              <MapPin className="w-8 h-8 text-slate-300 dark:text-slate-600 mb-3" />
+              <p className="text-sm font-semibold text-slate-400 dark:text-slate-500">GPS non disponible</p>
+              <p className="text-xs text-slate-400 dark:text-slate-600 mt-1 text-center max-w-[200px]">
+                Les colliers ne transmettent pas de coordonnées GPS
+              </p>
+            </div>
           </div>
         </section>
 
@@ -894,3 +1018,4 @@ function EmptyAlerts() {
     </div>
   );
 }
+
