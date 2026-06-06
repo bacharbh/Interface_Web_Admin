@@ -66,15 +66,8 @@ function getDisplayName(animal: Animal): string {
 function computeRiskScore(animal: Animal): number {
   let score = 0;
 
-  const battery = animal.battery ?? 100;
-  if (battery < 15) score += 40;
-
   const temp = animal.temp ?? animal.temperature ?? 38.5;
   if (temp > 39.5) score += 35;
-
-  const outOfZone =
-    animal.geofence_exit === true || animal.status === 'OUT_OF_ZONE';
-  if (outOfZone) score += 50;
 
   const inactivityH =
     animal.inactivity_hours ??
@@ -95,19 +88,6 @@ type AlertInfo = {
 
 /** Returns the *highest-priority* alert for display in the badge. */
 function getPrimaryAlert(animal: Animal): AlertInfo | null {
-  const outOfZone =
-    animal.geofence_exit === true || animal.status === 'OUT_OF_ZONE';
-  if (outOfZone) {
-    return {
-      emoji: '🔴',
-      text: 'Hors zone',
-      pillCls:
-        'bg-red-50 text-red-700 border-red-200 dark:bg-red-500/10 dark:text-red-400 dark:border-red-500/20',
-      dotCls: 'bg-red-500',
-      priority: 0,
-    };
-  }
-
   const temp = animal.temp ?? animal.temperature ?? 38.5;
   if (temp > 39.5) {
     return {
@@ -116,19 +96,7 @@ function getPrimaryAlert(animal: Animal): AlertInfo | null {
       pillCls:
         'bg-orange-50 text-orange-700 border-orange-200 dark:bg-orange-500/10 dark:text-orange-400 dark:border-orange-500/20',
       dotCls: 'bg-orange-500',
-      priority: 1,
-    };
-  }
-
-  const battery = animal.battery ?? 100;
-  if (battery < 15) {
-    return {
-      emoji: '🟡',
-      text: 'Batterie faible',
-      pillCls:
-        'bg-yellow-50 text-yellow-700 border-yellow-200 dark:bg-yellow-500/10 dark:text-yellow-400 dark:border-yellow-500/20',
-      dotCls: 'bg-yellow-500',
-      priority: 2,
+      priority: 0,
     };
   }
 
@@ -143,7 +111,7 @@ function getPrimaryAlert(animal: Animal): AlertInfo | null {
       pillCls:
         'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-500/10 dark:text-blue-400 dark:border-blue-500/20',
       dotCls: 'bg-blue-500',
-      priority: 3,
+      priority: 1,
     };
   }
 
@@ -311,7 +279,7 @@ export const AtRiskAnimals: React.FC<AtRiskAnimalsProps> = ({
         <ul className="divide-y divide-gray-50 dark:divide-gray-800">
           <AnimatePresence initial={false}>
             {sortedAtRisk.map((animal, index) => {
-              const MAX_SCORE = 150;
+              const MAX_SCORE = 60;
               const pct = Math.min(100, Math.round((animal._riskScore / MAX_SCORE) * 100));
               const barCls = riskBarCls(animal._riskScore);
               const emoji = getSpeciesEmoji(animal);

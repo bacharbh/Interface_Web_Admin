@@ -6,7 +6,7 @@ import dotenv from 'dotenv';
 import { createServer } from 'http';
 import { Server } from 'socket.io';
 import winston from 'winston';
-import { getAllAnimals } from './services/firebaseService.js';
+import { getAllAnimals, getFirestoreStats } from './services/firebaseService.js';
 
 // Import cache system
 import { initRedis, cacheMiddleware, clearCacheMiddleware } from './middleware/cache.js';
@@ -150,6 +150,15 @@ const wsErrorHandler = { getStatus: () => ({ connectedClients: 0 }) };
 app.use('/api/auth', authRoutes);
 
 
+app.get('/api/stats', async (req, res) => {
+  try {
+    const stats = await getFirestoreStats();
+    return res.json(stats);
+  } catch (error) {
+    return res.status(500).json({ error: 'Error fetching Firestore stats' });
+  }
+});
+
 app.get('/api/animals', async (req, res) => {
   try {
     let animals = await getAllAnimals();
@@ -233,11 +242,19 @@ app.get('/api/health', async (req, res) => {
 // Apply error monitoring middleware before routes - temporarily disabled
 // app.use(errorLoggerMiddleware);
 
-// 404 handler with custom error - temporarily disabled
-// app.use('*', notFound);
+// Global error handler — catches errors passed via next(err)
+app.use((err, req, res, _next) => {
+  const status = err.statusCode || err.status || 500;
+  res.status(status).json({ success: false, error: err.message || 'Internal server error' });
+});
 
-// Global error handler (must be last) - temporarily disabled
-// app.use(errorHandler);
+// Prevent unhandled promise rejections from crashing the process
+process.on('unhandledRejection', (reason) => {
+  console.error('[Server] Unhandled rejection:', reason?.message || reason);
+});
+process.on('uncaughtException', (err) => {
+  console.error('[Server] Uncaught exception:', err.message);
+});
 
 // Start server
 const PORT = process.env.PORT || 5000;

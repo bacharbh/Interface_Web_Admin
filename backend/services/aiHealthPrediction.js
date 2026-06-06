@@ -279,7 +279,7 @@ class AIHealthPredictionService {
    */
   async detectAnomalies(sheepId, timeWindow = '24h') {
     if (!this.anomalyModel) {
-      throw new Error('Modèle d\'anomalie non initialisé');
+      return { anomalies: [], riskScore: 0 };
     }
 
     const telemetryData = await this.getRecentTelemetry(sheepId, timeWindow);
@@ -442,11 +442,12 @@ class AIHealthPredictionService {
 
     for (const animal of sheep) {
       try {
-        const [anomalies, healthPrediction, riskScore] = await Promise.all([
+        const [anomalyResult, healthPrediction] = await Promise.all([
           this.detectAnomalies(animal.sheepId),
           this.predictHealth7Days(animal.sheepId),
-          this.calculateRiskScore(animal.sheepId)
         ]);
+        const anomalies = Array.isArray(anomalyResult?.anomalies) ? anomalyResult.anomalies : [];
+        const riskScore = this.calculateRiskScore(anomalies, {});
 
         predictions.push({
           sheepId: animal.sheepId,

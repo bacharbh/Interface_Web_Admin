@@ -118,8 +118,6 @@ export default function Alerts() {
             >
               <option value="ALL">Toutes les alertes</option>
               <option value="CRITICAL">Alertes critiques</option>
-              <option value="OUT_OF_ZONE">Sorties de zone</option>
-              <option value="LOW_BATTERY">Batterie faible</option>
               <option value="HEALTH_WARNING">Santé</option>
               <option value="COLLAR_OFFLINE">Collier hors ligne</option>
             </select>

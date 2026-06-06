@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { format, subDays, startOfDay, endOfDay } from 'date-fns';
 import { Download, RefreshCw, BarChart3, Map as MapIcon, AlertCircle } from 'lucide-react';
@@ -9,30 +9,21 @@ import KPIStats from './components/KPIStats';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useAuth } from '../../contexts/AuthContext';
 import {
-  predictBatteryDepletion,
   downloadCSVReport
 } from './utils/analyticsHelpers';
 import { useIoTStore } from '../../hooks/useIoTStore';
-import { useIoTStore as _useIoTStore } from '../../hooks/useIoTStore';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 interface HistoryPoint {
-  animalId: string | number;
-  lat: number;
-  lng: number;
-  timestamp: string;
-  battery: number;
-  temp: number;
-}
-
-interface SheepRecord {
   collar_id?: string;
-  _id?: string;
-  name?: string;
-  battery?: number;
-  temperature?: number;
-  activity_level?: number;
+  sheepId?: string;
+  animalId?: string | number;
+  timestamp?: string;
+  rx_time?: string;
+  sensors?: { temperature?: number; movement_g?: number };
+  metadata?: { temperature?: number; movement_g?: number };
+  lora?: { rssi?: number; snr?: number };
   [key: string]: any;
 }
 
@@ -83,13 +74,6 @@ const AnalyticsSkeleton = () => (
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-function parseSheepArray(data: any): SheepRecord[] {
-  if (Array.isArray(data)) return data;
-  if (data?.data && Array.isArray(data.data)) return data.data;
-  if (data?.sheep && Array.isArray(data.sheep)) return data.sheep;
-  return [];
-}
-
 function parseHistoryArray(data: any): HistoryPoint[] {
   if (Array.isArray(data)) return data;
   if (data?.data && Array.isArray(data.data)) return data.data;
@@ -114,8 +98,6 @@ const Analytics = () => {
   // ── Query 1: GET /api/sheep → live KPIs (battery, temp, most active) ────────
   const fetchSheepData = async (): Promise<any[]> => {
     try {
-      const storeState = _useIoTStore.getState();
-      if (!storeState.isConnected && !storeState.isOfflineData) return [];
       const res = await api.get('/sheep', {
         headers: token ? { Authorization: `Bearer ${token}` } : undefined
       });
@@ -125,7 +107,6 @@ const Analytics = () => {
       else if (res.data?.sheep && Array.isArray(res.data.sheep)) data = res.data.sheep;
 
       if (data.length > 0) return data;
-      // If empty, fallback to store (e.g. simulation mode)
       return Object.values(useIoTStore.getState().devices);
     } catch (e) {
       console.warn('Sheep API error, fallback to store', e);
@@ -188,43 +169,34 @@ const Analytics = () => {
 
   // ── Derived KPIs from sheep endpoint (or Zustand fallback) ──────────────────
   const stats = useMemo(() => {
-    if (!sheepData || sheepData.length === 0) {
-      return { avgBattery: 0, avgTemp: 0, mostActiveId: 'N/A', totalPoints: history?.length || 0 };
-    }
+    const empty = { avgMovement: 0, avgTemp: 0, mostActiveId: 'N/A', totalPoints: history?.length || 0 };
+    if (!sheepData || sheepData.length === 0) return empty;
 
     const total = sheepData.length;
-    const avgBattery = sheepData.reduce((a, s) => a + (s.battery ?? 0), 0) / total;
-    const avgTemp = sheepData.reduce((a, s) => a + (s.temperature ?? 0), 0) / total;
+    const avgMovement = sheepData.reduce((a: number, s: any) => a + (s.movement_g ?? s.sensors?.movement_g ?? 0), 0) / total;
+    const avgTemp = sheepData.reduce((a: number, s: any) => a + (s.temperature ?? s.sensors?.temperature ?? 0), 0) / total;
 
-    let mostActiveId = sheepData[0].collar_id || sheepData[0]._id || sheepData[0].id || 'N/A';
+    let mostActiveId: string = sheepData[0].collar_id || sheepData[0]._id || sheepData[0].id || 'N/A';
 
     if (history && history.length > 0) {
       const counts: Record<string, number> = {};
       let max = 0;
-      for (let i = 0; i < history.length; i++) {
-        const id = String(history[i].animalId);
+      for (const point of history) {
+        const id = String(point.collar_id || point.sheepId || point.animalId || 'unknown');
         counts[id] = (counts[id] || 0) + 1;
-        if (counts[id] > max) {
-          max = counts[id];
-          mostActiveId = id;
-        }
+        if (counts[id] > max) { max = counts[id]; mostActiveId = id; }
       }
     }
 
     return {
-      avgBattery: Math.round(avgBattery),
+      avgMovement: Math.round(avgMovement * 100) / 100,
       avgTemp: Math.round(avgTemp * 10) / 10,
       mostActiveId,
       totalPoints: history?.length || 0
     };
   }, [sheepData, history]);
 
-  // ── Battery depletion prediction ────────────────────────────────────────────
-  const batteryPrediction = useMemo(() => {
-    return predictBatteryDepletion(history || []);
-  }, [history]);
-
-  const handleExport = () => downloadCSVReport(history || []);
+  const handleExport = () => downloadCSVReport(history || [] as any[]);
 
   const isInitialLoading = (sheepLoading || historyLoading) &&
     (!sheepData || sheepData.length === 0) &&
@@ -304,7 +276,7 @@ const Analytics = () => {
       )}
 
       {/* KPI Cards */}
-      <KPIStats kpis={stats} prediction={batteryPrediction} />
+      <KPIStats kpis={stats} />
 
       {/* Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -312,11 +284,11 @@ const Analytics = () => {
           <div className="p-6 border-b border-white/10">
             <h3 className="title-md text-slate-800 dark:text-white flex items-center gap-2">
               <MapIcon className="w-5 h-5 text-primary" />
-              Zone de pâturage
+              Zone de pâturage (GPS)
             </h3>
           </div>
           <div className="p-4">
-            <GPSHeatmap data={history || []} theme={theme} />
+            <GPSHeatmap />
           </div>
         </div>
 
@@ -324,7 +296,7 @@ const Analytics = () => {
           <div className="p-6 border-b border-white/10 flex items-center justify-between">
             <h3 className="title-md text-slate-800 dark:text-white flex items-center gap-2">
               <BarChart3 className="w-5 h-5 text-primary" />
-              Niveaux de batterie
+              Température des colliers
             </h3>
             {isRefetching && <RefreshCw className="w-4 h-4 animate-spin text-primary" />}
           </div>

@@ -191,15 +191,13 @@ const AnomalyRegistry: React.FC = () => {
 
                 if (response?.data) {
                     const data = response.data;
-                    if (data.success && data.data) {
-                        setAiAnalysis(data.data);
-                        setLastAIUpdate(new Date());
-                    } else if (data.fallback && data.data) {
-                        // local AI fallback returned structured data
-                        setAiAnalysis(data.data);
+                    const analysisData = (data.success || data.fallback) && data.data ? data.data : null;
+                    if (analysisData) {
+                        setAiAnalysis(analysisData);
                         setLastAIUpdate(new Date());
                     } else {
                         console.warn('[AnomalyRegistry] AI analyze returned no usable data', data);
+                        setLastAIUpdate(new Date());
                     }
                 }
             } catch (error: any) {

@@ -8,6 +8,10 @@ function authSuffix(hasQuery = false) {
   return (hasQuery ? '&' : '?') + `auth=${DB_SECRET}`;
 }
 
+function entryTime(entry) {
+  return entry?.lora?.rx_time || entry?.rx_time || null;
+}
+
 function computeHealth(sensors) {
   if (!sensors) return 'good';
   const temp = sensors.temperature;
@@ -40,22 +44,22 @@ function mapToAnimal(collarId, latest = {}) {
     lat: null,
     lng: null,
     location: { type: 'Point', coordinates: [0, 0] },
-    lastSeen: latest.rx_time || null,
-    lastUpdate: latest.rx_time || null,
+    lastSeen: entryTime(latest) || null,
+    lastUpdate: entryTime(latest) || null,
     lora: latest.lora || null,
     imu: latest.imu || null,
     ts: latest.ts || null,
     isActive: true,
     active: true,
-    updatedAt: latest.rx_time || new Date().toISOString(),
-    createdAt: latest.rx_time || new Date().toISOString(),
+    updatedAt: entryTime(latest) || new Date().toISOString(),
+    createdAt: entryTime(latest) || new Date().toISOString(),
   };
 }
 
 function latestEntry(history = {}) {
   const entries = Object.values(history);
   if (!entries.length) return {};
-  return entries.sort((a, b) => new Date(b.rx_time) - new Date(a.rx_time))[0];
+  return entries.sort((a, b) => new Date(entryTime(b)) - new Date(entryTime(a)))[0];
 }
 
 export async function getAllAnimals() {
@@ -81,7 +85,7 @@ export async function getAnimalHistory(collarId, { limit = 100, from, to } = {})
 
   if (from || to) {
     entries = entries.filter(e => {
-      const t = new Date(e.rx_time);
+      const t = new Date(entryTime(e));
       if (from && t < new Date(from)) return false;
       if (to && t > new Date(to)) return false;
       return true;
@@ -89,7 +93,7 @@ export async function getAnimalHistory(collarId, { limit = 100, from, to } = {})
   }
 
   return entries
-    .sort((a, b) => new Date(b.rx_time) - new Date(a.rx_time))
+    .sort((a, b) => new Date(entryTime(b)) - new Date(entryTime(a)))
     .slice(0, Number(limit));
 }
 
@@ -110,7 +114,7 @@ export async function getAllHistory({ limit = 200, collarId, from, to } = {}) {
   let filtered = all;
   if (from || to) {
     filtered = all.filter(e => {
-      const t = new Date(e.rx_time);
+      const t = new Date(entryTime(e));
       if (from && t < new Date(from)) return false;
       if (to && t > new Date(to)) return false;
       return true;
@@ -118,7 +122,7 @@ export async function getAllHistory({ limit = 200, collarId, from, to } = {}) {
   }
 
   return filtered
-    .sort((a, b) => new Date(b.rx_time) - new Date(a.rx_time))
+    .sort((a, b) => new Date(entryTime(b)) - new Date(entryTime(a)))
     .slice(0, Number(limit));
 }
 
@@ -126,4 +130,85 @@ export async function getCollarIds() {
   const { data } = await axios.get(`${DB_URL}/animals.json?shallow=true${authSuffix(true)}`);
   if (!data) return [];
   return Object.keys(data);
+}
+
+// --- Labels (Ground-Truth) in RTDB ---
+
+export async function saveLabel(label) {
+  const id = label._id || `label-${Date.now()}`;
+  await axios.put(`${DB_URL}/labels/${id}.json${authSuffix()}`, label);
+  return { ...label, _id: id };
+}
+
+export async function getLabels() {
+  const { data } = await axios.get(`${DB_URL}/labels.json${authSuffix()}`);
+  if (!data) return [];
+  return Object.values(data).sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+}
+
+export async function getLabelsCount() {
+  const { data } = await axios.get(`${DB_URL}/labels.json?shallow=true${authSuffix(true)}`);
+  if (!data) return 0;
+  return Object.keys(data).length;
+}
+
+// --- RTDB collections: farms / memberships / users ---
+
+async function getRtdbCollection(collection) {
+  const { data } = await axios.get(`${DB_URL}/${collection}.json${authSuffix()}`);
+  if (!data) return [];
+  return Object.entries(data).map(([id, val]) => ({ id, ...val }));
+}
+
+export async function getFirestoreStats() {
+  const [farms, memberships, users] = await Promise.all([
+    getRtdbCollection('farms'),
+    getRtdbCollection('memberships'),
+    getRtdbCollection('users'),
+  ]);
+  return {
+    farms:       { count: farms.length,       items: farms },
+    memberships: { count: memberships.length, items: memberships },
+    users:       { count: users.length,       items: users },
+  };
+}
+
+// --- Users CRUD in RTDB ---
+
+export async function getAllRtdbUsers() {
+  return getRtdbCollection('users');
+}
+
+export async function getRtdbUser(id) {
+  const { data } = await axios.get(`${DB_URL}/users/${id}.json${authSuffix()}`);
+  return data ? { id, ...data } : null;
+}
+
+export async function saveRtdbUser(id, user) {
+  await axios.put(`${DB_URL}/users/${id}.json${authSuffix()}`, user);
+  return { id, ...user };
+}
+
+// --- Anomalies in RTDB ---
+
+export async function saveAnomaly(anomaly) {
+  const id = anomaly._id || `anomaly-${Date.now()}`;
+  await axios.put(`${DB_URL}/anomalies/${id}.json${authSuffix()}`, anomaly);
+  return { ...anomaly, _id: id };
+}
+
+export async function getAnomalies() {
+  const { data } = await axios.get(`${DB_URL}/anomalies.json${authSuffix()}`);
+  if (!data) return [];
+  return Object.values(data)
+    .sort((a, b) => new Date(b.detectedAt) - new Date(a.detectedAt))
+    .slice(0, 100);
+}
+
+export async function resolveAnomaly(id) {
+  const { data } = await axios.get(`${DB_URL}/anomalies/${id}.json${authSuffix()}`);
+  if (!data) return null;
+  const updated = { ...data, resolved: true, resolvedAt: new Date().toISOString() };
+  await axios.put(`${DB_URL}/anomalies/${id}.json${authSuffix()}`, updated);
+  return updated;
 }

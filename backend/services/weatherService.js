@@ -11,6 +11,7 @@ class WeatherService {
     this.baseUrl = 'https://api.open-meteo.com/v1';
     this.archiveUrl = 'https://archive-api.open-meteo.com/v1';
     this.geocodingUrl = 'https://geocoding-api.open-meteo.com/v1';
+    this.reverseGeocodingUrl = 'https://nominatim.openstreetmap.org/reverse';
     this.cache = new Map();
     this.cacheDuration = 10 * 60 * 1000; // 10 minutes cache
   }
@@ -39,14 +40,14 @@ class WeatherService {
           },
           timeout: 15000
         }),
-        axios.get(`${this.geocodingUrl}/reverse`, {
+        axios.get(this.reverseGeocodingUrl, {
           params: {
-            latitude: lat,
-            longitude: lon,
-            count: 1,
-            language: 'fr',
-            format: 'json'
+            lat,
+            lon,
+            format: 'json',
+            'accept-language': 'fr'
           },
+          headers: { 'User-Agent': 'SmartShepherd/1.0' },
           timeout: 15000
         })
       ]);
@@ -141,32 +142,28 @@ class WeatherService {
 
   async fetchLocation(lat, lon) {
     try {
-      const response = await axios.get(`${this.geocodingUrl}/reverse`, {
+      const response = await axios.get(this.reverseGeocodingUrl, {
         params: {
-          latitude: lat,
-          longitude: lon,
-          count: 1,
-          language: 'fr',
-          format: 'json'
+          lat,
+          lon,
+          format: 'json',
+          'accept-language': 'fr'
         },
+        headers: { 'User-Agent': 'SmartShepherd/1.0' },
         timeout: 10000
       });
 
-      const location = response.data?.results?.[0];
-      if (!location) {
-        return {
-          name: 'Coordonnées GPS',
-          country: '',
-          lat,
-          lon
-        };
+      const data = response.data;
+      const addr = data?.address;
+      if (!addr) {
+        return { name: 'Coordonnées GPS', country: '', lat, lon };
       }
 
       return {
-        name: location.name || location.admin1 || 'Coordonnées GPS',
-        country: location.country_code?.toUpperCase() || location.country || '',
-        lat: location.latitude ?? lat,
-        lon: location.longitude ?? lon
+        name: addr.city || addr.town || addr.village || addr.county || 'Coordonnées GPS',
+        country: addr.country_code?.toUpperCase() || addr.country || '',
+        lat: parseFloat(data.lat) || lat,
+        lon: parseFloat(data.lon) || lon
       };
     } catch (error) {
       logger.warn('Reverse geocoding indisponible:', error.message);
@@ -185,11 +182,11 @@ class WeatherService {
     const weather = this.mapWeatherCode(current.weather_code);
 
     return {
-      location: locationData?.results?.[0] ? {
-        name: locationData.results[0].name || locationData.results[0].admin1 || 'Coordonnées GPS',
-        country: locationData.results[0].country_code?.toUpperCase() || locationData.results[0].country || '',
-        lat: locationData.results[0].latitude ?? lat,
-        lon: locationData.results[0].longitude ?? lon
+      location: locationData?.address ? {
+        name: locationData.address.city || locationData.address.town || locationData.address.village || locationData.address.county || 'Coordonnées GPS',
+        country: locationData.address.country_code?.toUpperCase() || locationData.address.country || '',
+        lat: parseFloat(locationData.lat) || lat,
+        lon: parseFloat(locationData.lon) || lon
       } : {
         name: 'Coordonnées GPS',
         country: '',

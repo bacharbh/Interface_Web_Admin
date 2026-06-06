@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useLocation } from 'react-router-dom';
-import { addDays, addMinutes, endOfMonth, format, isSameMonth, parseISO, startOfMonth, startOfWeek } from 'date-fns';
+import { addDays, addMonths, format, isSameMonth, parseISO, startOfMonth, startOfWeek } from 'date-fns';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
 import AddEventModal from './AddEventModal';
@@ -67,7 +67,7 @@ const AgendaView: React.FC = () => {
     const [isModalOpen, setModalOpen] = useState(false);
     const [prefillAnimal, setPrefillAnimal] = useState<string | null>(prefill);
     const [selectedEvent, setSelectedEvent] = useState<AgendaEvent | null>(null);
-    const [monthAnchor] = useState(() => new Date());
+    const [monthAnchor, setMonthAnchor] = useState(() => new Date());
 
     useEffect(() => {
         if (prefill) setPrefillAnimal(prefill);
@@ -81,25 +81,27 @@ const AgendaView: React.FC = () => {
 
     const { events, isLoading: eventsLoading, error: eventsError } = useAgendaEvents(monthAnchor);
 
-    const isConnected = useIoTStore(state => state.isConnected);
-    const isOfflineData = useIoTStore(state => state.isOfflineData);
+    const devicesMap = useIoTStore(state => state.devices);
 
     const animalsQuery = useQuery<AnimalOption[]>({
         queryKey: ['agenda-animals'],
         queryFn: async () => {
-            const response = await api.get('/sheep', { params: { limit: 200, page: 1 } });
-            const payload = Array.isArray(response.data)
-                ? response.data
-                : Array.isArray(response.data?.data)
-                    ? response.data.data
-                    : Array.isArray(response.data?.sheep)
-                        ? response.data.sheep
-                        : [];
-
-            return payload.map((animal: Record<string, unknown>) => formatAnimalLabel(animal));
+            try {
+                const response = await api.get('/sheep', { params: { limit: 200, page: 1 } });
+                const payload = Array.isArray(response.data)
+                    ? response.data
+                    : Array.isArray(response.data?.data)
+                        ? response.data.data
+                        : Array.isArray(response.data?.sheep)
+                            ? response.data.sheep
+                            : [];
+                if (payload.length > 0) return payload.map((animal: Record<string, unknown>) => formatAnimalLabel(animal));
+            } catch {
+                // fall through to store fallback
+            }
+            return Object.values(devicesMap).map((animal) => formatAnimalLabel(animal as Record<string, unknown>));
         },
         staleTime: 5 * 60 * 1000,
-        enabled: isConnected || isOfflineData,
     });
 
     const monthGrid = useMemo(() => toMonthGrid(monthAnchor), [monthAnchor]);
@@ -222,7 +224,28 @@ const AgendaView: React.FC = () => {
                     <h1 className="title-lg">Agenda vétérinaire</h1>
                     <p className="label-sm text-gray-500">Planifiez et suivez les visites, vaccinations et traitements</p>
                 </div>
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-3 flex-wrap">
+                    <div className="flex items-center gap-1 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-card-dark px-2 py-1">
+                        <button
+                            type="button"
+                            onClick={() => setMonthAnchor(prev => addMonths(prev, -1))}
+                            className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500 dark:text-gray-400 transition-colors"
+                            aria-label="Mois précédent"
+                        >
+                            ‹
+                        </button>
+                        <span className="px-2 text-sm font-semibold text-gray-900 dark:text-white min-w-[120px] text-center">
+                            {format(monthAnchor, 'MMMM yyyy')}
+                        </span>
+                        <button
+                            type="button"
+                            onClick={() => setMonthAnchor(prev => addMonths(prev, 1))}
+                            className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500 dark:text-gray-400 transition-colors"
+                            aria-label="Mois suivant"
+                        >
+                            ›
+                        </button>
+                    </div>
                     <div className="flex items-center gap-2 rounded-xl bg-white p-2 dark:bg-card-dark">
                         <Button variant={view === 'month' ? 'primary' : 'secondary'} size="sm" onClick={() => setView('month')}>Mois</Button>
                         <Button variant={view === 'week' ? 'primary' : 'secondary'} size="sm" onClick={() => setView('week')}>Semaine</Button>

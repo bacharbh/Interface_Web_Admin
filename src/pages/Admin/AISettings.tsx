@@ -184,7 +184,7 @@ export default function AISettings() {
                         </div>
                         <h1 className="text-3xl font-black tracking-tight md:text-5xl">Paramètres IA</h1>
                         <p className="mt-3 text-sm leading-6 text-slate-300 md:text-base">
-                            Ajustez les seuils d’alerte, la cadence de polling et les canaux de notification pour piloter les règles IA.
+                            Ajustez les seuils d'alerte, la cadence de polling et les canaux de notification pour piloter les règles IA.
                             Les changements sont sauvegardés automatiquement dans le store Zustand et dans le navigateur.
                         </p>
                     </div>
@@ -214,8 +214,8 @@ export default function AISettings() {
                 <div className="space-y-6">
                     <Section
                         icon={<ShieldAlert className="h-6 w-6" />}
-                        title="Seuils d’alerte par métrique"
-                        subtitle="Définissez les limites qui déclenchent les alertes critiques ou les signaux d’attention."
+                        title="Seuils d'alerte par métrique"
+                        subtitle="Définissez les limites qui déclenchent les alertes critiques ou les signaux d'attention."
                     >
                         <div className="grid gap-4">
                             <NumberField
@@ -245,7 +245,7 @@ export default function AISettings() {
                                 max={240}
                                 step={1}
                                 suffix=" min"
-                                helper="Déclenche une alerte si l’animal ne bouge plus pendant cette durée."
+                                helper="Déclenche une alerte si l'animal ne bouge plus pendant cette durée."
                                 onChange={(value) => updateThreshold('immobilityMinutes', value)}
                             />
                         </div>
@@ -254,7 +254,7 @@ export default function AISettings() {
                     <Section
                         icon={<Clock3 className="h-6 w-6" />}
                         title="Fréquence du polling IA"
-                        subtitle="Intervalle de rafraîchissement du moteur IA pour la détection d’anomalies."
+                        subtitle="Intervalle de rafraîchissement du moteur IA pour la détection d'anomalies."
                     >
                         <div className="rounded-2xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-950/40">
                             <div className="mb-3 flex items-center justify-between gap-3">
@@ -292,7 +292,7 @@ export default function AISettings() {
                         <div className="space-y-3">
                             <ToggleRow
                                 label="Toast"
-                                description="Notification visuelle dans l’interface."
+                                description="Notification visuelle dans l'interface."
                                 checked={aiSettings.notificationChannels.toast}
                                 onChange={(value) => updateChannel('toast', value)}
                                 icon={<AlertTriangle className="h-5 w-5" />}
@@ -316,39 +316,42 @@ export default function AISettings() {
 
                     <Section
                         icon={<Activity className="h-6 w-6" />}
-                        title="Règles d’anomalie"
+                        title="Règles d'anomalie"
                         subtitle="Activez ou désactivez chaque règle indépendamment."
                     >
                         <div className="space-y-3">
-                            {(Object.keys(ANOMALY_LABELS) as AnomalyKey[]).map((key) => (
-                                <ToggleRow
-                                    key={key}
-                                    label={ANOMALY_LABELS[key]}
-                                    description={
-                                        key === 'batteryCritical'
-                                            ? 'Déclenche les alertes de batterie basse.'
+                            {(Object.keys(ANOMALY_LABELS) as AnomalyKey[]).map((key) => {
+                                const unavailable = key === 'batteryCritical' || key === 'outOfZone';
+                                const description = unavailable
+                                    ? key === 'batteryCritical'
+                                        ? 'Non disponible — les colliers ne transmettent pas de données de batterie.'
+                                        : 'Non disponible — les colliers ne transmettent pas de coordonnées GPS.'
+                                    : key === 'temperatureCritical'
+                                        ? 'Déclenche les alertes de surchauffe.'
+                                        : key === 'immobility'
+                                            ? "Déclenche les alertes si l'animal reste immobile trop longtemps (via movement_g)."
+                                            : 'Déclenche les alertes en cas de perte de signal LoRa.';
+                                return (
+                                    <ToggleRow
+                                        key={key}
+                                        label={unavailable ? `${ANOMALY_LABELS[key]} — N/A` : ANOMALY_LABELS[key]}
+                                        description={description}
+                                        checked={unavailable ? false : aiSettings.anomalyRules[key]}
+                                        onChange={(value) => !unavailable && updateRule(key, value)}
+                                        disabled={unavailable}
+                                        icon={key === 'batteryCritical'
+                                            ? <Battery className="h-5 w-5" />
                                             : key === 'temperatureCritical'
-                                                ? 'Déclenche les alertes de surchauffe.'
+                                                ? <Thermometer className="h-5 w-5" />
                                                 : key === 'immobility'
-                                                    ? 'Déclenche les alertes si l’animal reste immobile trop longtemps.'
+                                                    ? <Clock3 className="h-5 w-5" />
                                                     : key === 'outOfZone'
-                                                        ? 'Déclenche les alertes géofencing.'
-                                                        : 'Déclenche les alertes en cas de perte de signal.'
-                                    }
-                                    checked={aiSettings.anomalyRules[key]}
-                                    onChange={(value) => updateRule(key, value)}
-                                    icon={key === 'batteryCritical'
-                                        ? <Battery className="h-5 w-5" />
-                                        : key === 'temperatureCritical'
-                                            ? <Thermometer className="h-5 w-5" />
-                                            : key === 'immobility'
-                                                ? <Clock3 className="h-5 w-5" />
-                                                : key === 'outOfZone'
-                                                    ? <ShieldAlert className="h-5 w-5" />
-                                                    : <WifiOff className="h-5 w-5" />
-                                    }
-                                />
-                            ))}
+                                                        ? <ShieldAlert className="h-5 w-5" />
+                                                        : <WifiOff className="h-5 w-5" />
+                                        }
+                                    />
+                                );
+                            })}
                         </div>
                     </Section>
                 </div>

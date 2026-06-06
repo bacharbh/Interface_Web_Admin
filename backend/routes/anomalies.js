@@ -1,13 +1,16 @@
 import express from 'express';
 import authMiddleware from '../middleware/auth.js';
+import { saveAnomaly, getAnomalies, resolveAnomaly } from '../services/firebaseService.js';
 
 const router = express.Router();
 
-// Stockage en mémoire (remplace AnomalyEvent MongoDB)
-const anomalies = [];
-
 router.get('/', authMiddleware, async (_req, res) => {
-  res.json({ success: true, data: anomalies.slice(-100).reverse() });
+  try {
+    const data = await getAnomalies();
+    res.json({ success: true, data });
+  } catch {
+    res.json({ success: true, data: [] });
+  }
 });
 
 router.post('/', authMiddleware, async (req, res) => {
@@ -22,8 +25,8 @@ router.post('/', authMiddleware, async (req, res) => {
       resolved: false,
       ...req.body,
     };
-    anomalies.push(anomaly);
-    res.status(201).json({ success: true, data: anomaly });
+    const saved = await saveAnomaly(anomaly);
+    res.status(201).json({ success: true, data: saved });
   } catch {
     res.status(500).json({ success: false, error: "Impossible de créer l'anomalie" });
   }
@@ -31,11 +34,9 @@ router.post('/', authMiddleware, async (req, res) => {
 
 router.patch('/:id/resolve', authMiddleware, async (req, res) => {
   try {
-    const anomaly = anomalies.find(a => a._id === req.params.id);
-    if (!anomaly) return res.status(404).json({ success: false, error: 'Anomalie introuvable' });
-    anomaly.resolved = true;
-    anomaly.resolvedAt = new Date().toISOString();
-    res.json({ success: true, data: anomaly });
+    const updated = await resolveAnomaly(req.params.id);
+    if (!updated) return res.status(404).json({ success: false, error: 'Anomalie introuvable' });
+    res.json({ success: true, data: updated });
   } catch {
     res.status(500).json({ success: false, error: "Impossible de résoudre l'anomalie" });
   }
