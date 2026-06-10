@@ -21,8 +21,30 @@ function computeHealth(sensors) {
   return 'good';
 }
 
-function mapToAnimal(collarId, latest = {}) {
+
+function latestEntry(history = {}) {
+  const entries = Object.values(history);
+  if (!entries.length) return {};
+  return entries.sort((a, b) => new Date(entryTime(b)) - new Date(entryTime(a)))[0];
+}
+
+// Find the most recent entry that contains any of the given sensor fields
+function latestEntryWithSensor(history = {}, ...fields) {
+  const entries = Object.values(history);
+  const matching = entries.filter(e => {
+    const s = e?.sensors || {};
+    return fields.some(f => s[f] != null);
+  });
+  if (!matching.length) return null;
+  return matching.sort((a, b) => new Date(entryTime(b)) - new Date(entryTime(a)))[0];
+}
+
+function mapToAnimalWithHistory(collarId, latest = {}, history = {}) {
   const sensors = latest.sensors || {};
+  // Fall back to the most recent history entry that actually has a BPM reading
+  const bpmEntry = latestEntryWithSensor(history, 'bpm', 'heart_rate', 'heartRate');
+  const bpmSensors = bpmEntry?.sensors || {};
+
   const health = computeHealth(sensors);
 
   return {
@@ -40,7 +62,9 @@ function mapToAnimal(collarId, latest = {}) {
     status: health,
     temperature: sensors.temperature ?? null,
     movement_g: sensors.movement_g ?? null,
-    heartRate: sensors.heart_rate ?? sensors.heartRate ?? sensors.bpm ?? null,
+    heartRate:
+      sensors.heart_rate ?? sensors.heartRate ?? sensors.bpm ??
+      bpmSensors.heart_rate ?? bpmSensors.heartRate ?? bpmSensors.bpm ?? null,
     battery: sensors.battery ?? latest.battery ?? null,
     lat: null,
     lng: null,
@@ -57,25 +81,19 @@ function mapToAnimal(collarId, latest = {}) {
   };
 }
 
-function latestEntry(history = {}) {
-  const entries = Object.values(history);
-  if (!entries.length) return {};
-  return entries.sort((a, b) => new Date(entryTime(b)) - new Date(entryTime(a)))[0];
-}
-
 export async function getAllAnimals() {
   const { data } = await axios.get(`${DB_URL}/animals.json${authSuffix()}`);
   if (!data) return [];
 
   return Object.entries(data).map(([collarId, animal]) =>
-    mapToAnimal(collarId, latestEntry(animal.history))
+    mapToAnimalWithHistory(collarId, latestEntry(animal.history), animal.history || {})
   );
 }
 
 export async function getAnimalByCollarId(collarId) {
   const { data } = await axios.get(`${DB_URL}/animals/${collarId}.json${authSuffix()}`);
   if (!data) return null;
-  return mapToAnimal(collarId, latestEntry(data.history));
+  return mapToAnimalWithHistory(collarId, latestEntry(data.history), data.history || {});
 }
 
 export async function getAnimalHistory(collarId, { limit = 100, from, to } = {}) {

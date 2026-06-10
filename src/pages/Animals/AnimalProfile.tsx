@@ -54,6 +54,7 @@ import {
     LineElement, Tooltip, Legend, Filler,
 } from 'chart.js';
 import { Line } from 'react-chartjs-2';
+import MiniGPSMap from './components/MiniGPSMap';
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Tooltip, Legend, Filler);
 
@@ -1163,13 +1164,14 @@ const AnimalProfile: React.FC = () => {
             <div className="bg-white dark:bg-gray-800 border-t border-gray-100 dark:border-gray-700">
                 <div className="max-w-7xl mx-auto px-6 py-6">
                     <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Position GPS</h3>
-                    <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/30 py-10 gap-3">
-                        <MapPin className="w-8 h-8 text-slate-300 dark:text-slate-600" />
-                        <p className="text-sm font-semibold text-slate-400 dark:text-slate-500">GPS non disponible</p>
-                        <p className="text-xs text-slate-400 dark:text-slate-600 text-center max-w-[200px]">
-                            Ce collier ne transmet pas de coordonnées GPS
-                        </p>
-                    </div>
+                    <MiniGPSMap
+                        animalId={animalId}
+                        gpsPoints={
+                            animal && typeof animal.lat === 'number' && typeof animal.lng === 'number'
+                                ? [{ lat: animal.lat, lng: animal.lng, timestamp: new Date().toISOString() }]
+                                : undefined
+                        }
+                    />
                 </div>
             </div>
         </div>

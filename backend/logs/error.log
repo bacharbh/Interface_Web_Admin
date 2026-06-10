@@ -35004,3 +35004,530 @@
     '    at LayersModel.standardizeUserData (C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:24481:16)',
   timestamp: '2026-06-10 17:14:57'
 }
+{
+  service: 'smart-shepherd-api',
+  level: 'error',
+  message: "Erreur lors de l'initialisation IA: target expected a batch of elements where each example has shape [1] (i.e.,tensor shape [*,1]) but the target received an input with 140 examples, each with shape [5] (tensor shape [140,5])",
+  stack: 'Error: target expected a batch of elements where each example has shape [1] (i.e.,tensor shape [*,1]) but the target received an input with 140 examples, each with shape [5] (tensor shape [140,5])\n' +
+    '    at new ValueError (C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:273:28)\n' +
+    '    at standardizeInputData (C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:23579:27)\n' +
+    '    at LayersModel.standardizeUserDataXY (C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:24465:13)\n' +
+    '    at LayersModel.<anonymous> (C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:24486:42)\n' +
+    '    at step (C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:159:27)\n' +
+    '    at Object.next (C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:108:53)\n' +
+    '    at C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:101:71\n' +
+    '    at new Promise (<anonymous>)\n' +
+    '    at __awaiter (C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:87:12)\n' +
+    '    at LayersModel.standardizeUserData (C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:24481:16)',
+  timestamp: '2026-06-10 21:16:24'
+}
+{
+  service: 'smart-shepherd-api',
+  level: 'error',
+  message: "Erreur lors de l'initialisation IA: target expected a batch of elements where each example has shape [1] (i.e.,tensor shape [*,1]) but the target received an input with 191 examples, each with shape [5] (tensor shape [191,5])",
+  stack: 'Error: target expected a batch of elements where each example has shape [1] (i.e.,tensor shape [*,1]) but the target received an input with 191 examples, each with shape [5] (tensor shape [191,5])\n' +
+    '    at new ValueError (C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:273:28)\n' +
+    '    at standardizeInputData (C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:23579:27)\n' +
+    '    at LayersModel.standardizeUserDataXY (C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:24465:13)\n' +
+    '    at LayersModel.<anonymous> (C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:24486:42)\n' +
+    '    at step (C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:159:27)\n' +
+    '    at Object.next (C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:108:53)\n' +
+    '    at C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:101:71\n' +
+    '    at new Promise (<anonymous>)\n' +
+    '    at __awaiter (C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:87:12)\n' +
+    '    at LayersModel.standardizeUserData (C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:24481:16)',
+  timestamp: '2026-06-10 21:33:18'
+}
+{
+  service: 'smart-shepherd-api',
+  level: 'error',
+  message: "Erreur lors de l'initialisation IA: target expected a batch of elements where each example has shape [1] (i.e.,tensor shape [*,1]) but the target received an input with 191 examples, each with shape [5] (tensor shape [191,5])",
+  stack: 'Error: target expected a batch of elements where each example has shape [1] (i.e.,tensor shape [*,1]) but the target received an input with 191 examples, each with shape [5] (tensor shape [191,5])\n' +
+    '    at new ValueError (C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:273:28)\n' +
+    '    at standardizeInputData (C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:23579:27)\n' +
+    '    at LayersModel.standardizeUserDataXY (C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:24465:13)\n' +
+    '    at LayersModel.<anonymous> (C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:24486:42)\n' +
+    '    at step (C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:159:27)\n' +
+    '    at Object.next (C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:108:53)\n' +
+    '    at C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:101:71\n' +
+    '    at new Promise (<anonymous>)\n' +
+    '    at __awaiter (C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:87:12)\n' +
+    '    at LayersModel.standardizeUserData (C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:24481:16)',
+  timestamp: '2026-06-10 21:33:18'
+}
+{
+  service: 'smart-shepherd-api',
+  level: 'error',
+  message: "Erreur lors de l'initialisation IA: target expected a batch of elements where each example has shape [1] (i.e.,tensor shape [*,1]) but the target received an input with 191 examples, each with shape [5] (tensor shape [191,5])",
+  stack: 'Error: target expected a batch of elements where each example has shape [1] (i.e.,tensor shape [*,1]) but the target received an input with 191 examples, each with shape [5] (tensor shape [191,5])\n' +
+    '    at new ValueError (C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:273:28)\n' +
+    '    at standardizeInputData (C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:23579:27)\n' +
+    '    at LayersModel.standardizeUserDataXY (C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:24465:13)\n' +
+    '    at LayersModel.<anonymous> (C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:24486:42)\n' +
+    '    at step (C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:159:27)\n' +
+    '    at Object.next (C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:108:53)\n' +
+    '    at C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:101:71\n' +
+    '    at new Promise (<anonymous>)\n' +
+    '    at __awaiter (C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:87:12)\n' +
+    '    at LayersModel.standardizeUserData (C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:24481:16)',
+  timestamp: '2026-06-10 21:33:19'
+}
+{
+  service: 'smart-shepherd-api',
+  level: 'error',
+  message: "Erreur lors de l'initialisation IA: target expected a batch of elements where each example has shape [1] (i.e.,tensor shape [*,1]) but the target received an input with 191 examples, each with shape [5] (tensor shape [191,5])",
+  stack: 'Error: target expected a batch of elements where each example has shape [1] (i.e.,tensor shape [*,1]) but the target received an input with 191 examples, each with shape [5] (tensor shape [191,5])\n' +
+    '    at new ValueError (C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:273:28)\n' +
+    '    at standardizeInputData (C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:23579:27)\n' +
+    '    at LayersModel.standardizeUserDataXY (C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:24465:13)\n' +
+    '    at LayersModel.<anonymous> (C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:24486:42)\n' +
+    '    at step (C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:159:27)\n' +
+    '    at Object.next (C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:108:53)\n' +
+    '    at C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:101:71\n' +
+    '    at new Promise (<anonymous>)\n' +
+    '    at __awaiter (C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:87:12)\n' +
+    '    at LayersModel.standardizeUserData (C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:24481:16)',
+  timestamp: '2026-06-10 21:33:19'
+}
+{
+  service: 'smart-shepherd-api',
+  level: 'error',
+  message: "Erreur lors de l'initialisation IA: target expected a batch of elements where each example has shape [1] (i.e.,tensor shape [*,1]) but the target received an input with 192 examples, each with shape [5] (tensor shape [192,5])",
+  stack: 'Error: target expected a batch of elements where each example has shape [1] (i.e.,tensor shape [*,1]) but the target received an input with 192 examples, each with shape [5] (tensor shape [192,5])\n' +
+    '    at new ValueError (C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:273:28)\n' +
+    '    at standardizeInputData (C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:23579:27)\n' +
+    '    at LayersModel.standardizeUserDataXY (C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:24465:13)\n' +
+    '    at LayersModel.<anonymous> (C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:24486:42)\n' +
+    '    at step (C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:159:27)\n' +
+    '    at Object.next (C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:108:53)\n' +
+    '    at C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:101:71\n' +
+    '    at new Promise (<anonymous>)\n' +
+    '    at __awaiter (C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:87:12)\n' +
+    '    at LayersModel.standardizeUserData (C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:24481:16)',
+  timestamp: '2026-06-10 21:33:41'
+}
+{
+  service: 'smart-shepherd-api',
+  level: 'error',
+  message: "Erreur lors de l'initialisation IA: target expected a batch of elements where each example has shape [1] (i.e.,tensor shape [*,1]) but the target received an input with 192 examples, each with shape [5] (tensor shape [192,5])",
+  stack: 'Error: target expected a batch of elements where each example has shape [1] (i.e.,tensor shape [*,1]) but the target received an input with 192 examples, each with shape [5] (tensor shape [192,5])\n' +
+    '    at new ValueError (C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:273:28)\n' +
+    '    at standardizeInputData (C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:23579:27)\n' +
+    '    at LayersModel.standardizeUserDataXY (C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:24465:13)\n' +
+    '    at LayersModel.<anonymous> (C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:24486:42)\n' +
+    '    at step (C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:159:27)\n' +
+    '    at Object.next (C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:108:53)\n' +
+    '    at C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:101:71\n' +
+    '    at new Promise (<anonymous>)\n' +
+    '    at __awaiter (C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:87:12)\n' +
+    '    at LayersModel.standardizeUserData (C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:24481:16)',
+  timestamp: '2026-06-10 21:33:42'
+}
+{
+  service: 'smart-shepherd-api',
+  level: 'error',
+  message: "Erreur lors de l'initialisation IA: target expected a batch of elements where each example has shape [1] (i.e.,tensor shape [*,1]) but the target received an input with 192 examples, each with shape [5] (tensor shape [192,5])",
+  stack: 'Error: target expected a batch of elements where each example has shape [1] (i.e.,tensor shape [*,1]) but the target received an input with 192 examples, each with shape [5] (tensor shape [192,5])\n' +
+    '    at new ValueError (C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:273:28)\n' +
+    '    at standardizeInputData (C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:23579:27)\n' +
+    '    at LayersModel.standardizeUserDataXY (C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:24465:13)\n' +
+    '    at LayersModel.<anonymous> (C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:24486:42)\n' +
+    '    at step (C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:159:27)\n' +
+    '    at Object.next (C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:108:53)\n' +
+    '    at C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:101:71\n' +
+    '    at new Promise (<anonymous>)\n' +
+    '    at __awaiter (C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:87:12)\n' +
+    '    at LayersModel.standardizeUserData (C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:24481:16)',
+  timestamp: '2026-06-10 21:33:42'
+}
+{
+  service: 'smart-shepherd-api',
+  level: 'error',
+  message: "Erreur lors de l'initialisation IA: target expected a batch of elements where each example has shape [1] (i.e.,tensor shape [*,1]) but the target received an input with 192 examples, each with shape [5] (tensor shape [192,5])",
+  stack: 'Error: target expected a batch of elements where each example has shape [1] (i.e.,tensor shape [*,1]) but the target received an input with 192 examples, each with shape [5] (tensor shape [192,5])\n' +
+    '    at new ValueError (C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:273:28)\n' +
+    '    at standardizeInputData (C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:23579:27)\n' +
+    '    at LayersModel.standardizeUserDataXY (C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:24465:13)\n' +
+    '    at LayersModel.<anonymous> (C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:24486:42)\n' +
+    '    at step (C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:159:27)\n' +
+    '    at Object.next (C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:108:53)\n' +
+    '    at C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:101:71\n' +
+    '    at new Promise (<anonymous>)\n' +
+    '    at __awaiter (C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:87:12)\n' +
+    '    at LayersModel.standardizeUserData (C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:24481:16)',
+  timestamp: '2026-06-10 21:33:44'
+}
+{
+  service: 'smart-shepherd-api',
+  level: 'error',
+  message: "Erreur lors de l'initialisation IA: target expected a batch of elements where each example has shape [1] (i.e.,tensor shape [*,1]) but the target received an input with 267 examples, each with shape [5] (tensor shape [267,5])",
+  stack: 'Error: target expected a batch of elements where each example has shape [1] (i.e.,tensor shape [*,1]) but the target received an input with 267 examples, each with shape [5] (tensor shape [267,5])\n' +
+    '    at new ValueError (C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:273:28)\n' +
+    '    at standardizeInputData (C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:23579:27)\n' +
+    '    at LayersModel.standardizeUserDataXY (C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:24465:13)\n' +
+    '    at LayersModel.<anonymous> (C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:24486:42)\n' +
+    '    at step (C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:159:27)\n' +
+    '    at Object.next (C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:108:53)\n' +
+    '    at C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:101:71\n' +
+    '    at new Promise (<anonymous>)\n' +
+    '    at __awaiter (C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:87:12)\n' +
+    '    at LayersModel.standardizeUserData (C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:24481:16)',
+  timestamp: '2026-06-10 21:59:05'
+}
+{
+  service: 'smart-shepherd-api',
+  level: 'error',
+  message: "Erreur lors de l'initialisation IA: target expected a batch of elements where each example has shape [1] (i.e.,tensor shape [*,1]) but the target received an input with 267 examples, each with shape [5] (tensor shape [267,5])",
+  stack: 'Error: target expected a batch of elements where each example has shape [1] (i.e.,tensor shape [*,1]) but the target received an input with 267 examples, each with shape [5] (tensor shape [267,5])\n' +
+    '    at new ValueError (C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:273:28)\n' +
+    '    at standardizeInputData (C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:23579:27)\n' +
+    '    at LayersModel.standardizeUserDataXY (C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:24465:13)\n' +
+    '    at LayersModel.<anonymous> (C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:24486:42)\n' +
+    '    at step (C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:159:27)\n' +
+    '    at Object.next (C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:108:53)\n' +
+    '    at C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:101:71\n' +
+    '    at new Promise (<anonymous>)\n' +
+    '    at __awaiter (C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:87:12)\n' +
+    '    at LayersModel.standardizeUserData (C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:24481:16)',
+  timestamp: '2026-06-10 21:59:06'
+}
+{
+  service: 'smart-shepherd-api',
+  level: 'error',
+  message: "Erreur lors de l'initialisation IA: target expected a batch of elements where each example has shape [1] (i.e.,tensor shape [*,1]) but the target received an input with 267 examples, each with shape [5] (tensor shape [267,5])",
+  stack: 'Error: target expected a batch of elements where each example has shape [1] (i.e.,tensor shape [*,1]) but the target received an input with 267 examples, each with shape [5] (tensor shape [267,5])\n' +
+    '    at new ValueError (C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:273:28)\n' +
+    '    at standardizeInputData (C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:23579:27)\n' +
+    '    at LayersModel.standardizeUserDataXY (C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:24465:13)\n' +
+    '    at LayersModel.<anonymous> (C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:24486:42)\n' +
+    '    at step (C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:159:27)\n' +
+    '    at Object.next (C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:108:53)\n' +
+    '    at C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:101:71\n' +
+    '    at new Promise (<anonymous>)\n' +
+    '    at __awaiter (C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:87:12)\n' +
+    '    at LayersModel.standardizeUserData (C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:24481:16)',
+  timestamp: '2026-06-10 21:59:06'
+}
+{
+  service: 'smart-shepherd-api',
+  level: 'error',
+  message: "Erreur lors de l'initialisation IA: target expected a batch of elements where each example has shape [1] (i.e.,tensor shape [*,1]) but the target received an input with 267 examples, each with shape [5] (tensor shape [267,5])",
+  stack: 'Error: target expected a batch of elements where each example has shape [1] (i.e.,tensor shape [*,1]) but the target received an input with 267 examples, each with shape [5] (tensor shape [267,5])\n' +
+    '    at new ValueError (C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:273:28)\n' +
+    '    at standardizeInputData (C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:23579:27)\n' +
+    '    at LayersModel.standardizeUserDataXY (C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:24465:13)\n' +
+    '    at LayersModel.<anonymous> (C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:24486:42)\n' +
+    '    at step (C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:159:27)\n' +
+    '    at Object.next (C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:108:53)\n' +
+    '    at C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:101:71\n' +
+    '    at new Promise (<anonymous>)\n' +
+    '    at __awaiter (C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:87:12)\n' +
+    '    at LayersModel.standardizeUserData (C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:24481:16)',
+  timestamp: '2026-06-10 21:59:07'
+}
+{
+  service: 'smart-shepherd-api',
+  level: 'error',
+  message: "Erreur lors de l'initialisation IA: target expected a batch of elements where each example has shape [1] (i.e.,tensor shape [*,1]) but the target received an input with 269 examples, each with shape [5] (tensor shape [269,5])",
+  stack: 'Error: target expected a batch of elements where each example has shape [1] (i.e.,tensor shape [*,1]) but the target received an input with 269 examples, each with shape [5] (tensor shape [269,5])\n' +
+    '    at new ValueError (C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:273:28)\n' +
+    '    at standardizeInputData (C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:23579:27)\n' +
+    '    at LayersModel.standardizeUserDataXY (C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:24465:13)\n' +
+    '    at LayersModel.<anonymous> (C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:24486:42)\n' +
+    '    at step (C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:159:27)\n' +
+    '    at Object.next (C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:108:53)\n' +
+    '    at C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:101:71\n' +
+    '    at new Promise (<anonymous>)\n' +
+    '    at __awaiter (C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:87:12)\n' +
+    '    at LayersModel.standardizeUserData (C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:24481:16)',
+  timestamp: '2026-06-10 21:59:59'
+}
+{
+  service: 'smart-shepherd-api',
+  level: 'error',
+  message: "Erreur lors de l'initialisation IA: target expected a batch of elements where each example has shape [1] (i.e.,tensor shape [*,1]) but the target received an input with 269 examples, each with shape [5] (tensor shape [269,5])",
+  stack: 'Error: target expected a batch of elements where each example has shape [1] (i.e.,tensor shape [*,1]) but the target received an input with 269 examples, each with shape [5] (tensor shape [269,5])\n' +
+    '    at new ValueError (C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:273:28)\n' +
+    '    at standardizeInputData (C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:23579:27)\n' +
+    '    at LayersModel.standardizeUserDataXY (C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:24465:13)\n' +
+    '    at LayersModel.<anonymous> (C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:24486:42)\n' +
+    '    at step (C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:159:27)\n' +
+    '    at Object.next (C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:108:53)\n' +
+    '    at C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:101:71\n' +
+    '    at new Promise (<anonymous>)\n' +
+    '    at __awaiter (C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:87:12)\n' +
+    '    at LayersModel.standardizeUserData (C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:24481:16)',
+  timestamp: '2026-06-10 21:59:59'
+}
+{
+  service: 'smart-shepherd-api',
+  level: 'error',
+  message: "Erreur lors de l'initialisation IA: target expected a batch of elements where each example has shape [1] (i.e.,tensor shape [*,1]) but the target received an input with 269 examples, each with shape [5] (tensor shape [269,5])",
+  stack: 'Error: target expected a batch of elements where each example has shape [1] (i.e.,tensor shape [*,1]) but the target received an input with 269 examples, each with shape [5] (tensor shape [269,5])\n' +
+    '    at new ValueError (C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:273:28)\n' +
+    '    at standardizeInputData (C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:23579:27)\n' +
+    '    at LayersModel.standardizeUserDataXY (C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:24465:13)\n' +
+    '    at LayersModel.<anonymous> (C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:24486:42)\n' +
+    '    at step (C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:159:27)\n' +
+    '    at Object.next (C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:108:53)\n' +
+    '    at C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:101:71\n' +
+    '    at new Promise (<anonymous>)\n' +
+    '    at __awaiter (C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:87:12)\n' +
+    '    at LayersModel.standardizeUserData (C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:24481:16)',
+  timestamp: '2026-06-10 22:00:01'
+}
+{
+  service: 'smart-shepherd-api',
+  level: 'error',
+  message: "Erreur lors de l'initialisation IA: target expected a batch of elements where each example has shape [1] (i.e.,tensor shape [*,1]) but the target received an input with 269 examples, each with shape [5] (tensor shape [269,5])",
+  stack: 'Error: target expected a batch of elements where each example has shape [1] (i.e.,tensor shape [*,1]) but the target received an input with 269 examples, each with shape [5] (tensor shape [269,5])\n' +
+    '    at new ValueError (C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:273:28)\n' +
+    '    at standardizeInputData (C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:23579:27)\n' +
+    '    at LayersModel.standardizeUserDataXY (C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:24465:13)\n' +
+    '    at LayersModel.<anonymous> (C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:24486:42)\n' +
+    '    at step (C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:159:27)\n' +
+    '    at Object.next (C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:108:53)\n' +
+    '    at C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:101:71\n' +
+    '    at new Promise (<anonymous>)\n' +
+    '    at __awaiter (C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:87:12)\n' +
+    '    at LayersModel.standardizeUserData (C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:24481:16)',
+  timestamp: '2026-06-10 22:00:01'
+}
+{
+  service: 'smart-shepherd-api',
+  level: 'error',
+  message: "Erreur lors de l'initialisation IA: target expected a batch of elements where each example has shape [1] (i.e.,tensor shape [*,1]) but the target received an input with 464 examples, each with shape [5] (tensor shape [464,5])",
+  stack: 'Error: target expected a batch of elements where each example has shape [1] (i.e.,tensor shape [*,1]) but the target received an input with 464 examples, each with shape [5] (tensor shape [464,5])\n' +
+    '    at new ValueError (C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:273:28)\n' +
+    '    at standardizeInputData (C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:23579:27)\n' +
+    '    at LayersModel.standardizeUserDataXY (C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:24465:13)\n' +
+    '    at LayersModel.<anonymous> (C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:24486:42)\n' +
+    '    at step (C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:159:27)\n' +
+    '    at Object.next (C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:108:53)\n' +
+    '    at C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:101:71\n' +
+    '    at new Promise (<anonymous>)\n' +
+    '    at __awaiter (C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:87:12)\n' +
+    '    at LayersModel.standardizeUserData (C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:24481:16)',
+  timestamp: '2026-06-10 23:05:50'
+}
+{
+  service: 'smart-shepherd-api',
+  level: 'error',
+  message: "Erreur lors de l'initialisation IA: target expected a batch of elements where each example has shape [1] (i.e.,tensor shape [*,1]) but the target received an input with 464 examples, each with shape [5] (tensor shape [464,5])",
+  stack: 'Error: target expected a batch of elements where each example has shape [1] (i.e.,tensor shape [*,1]) but the target received an input with 464 examples, each with shape [5] (tensor shape [464,5])\n' +
+    '    at new ValueError (C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:273:28)\n' +
+    '    at standardizeInputData (C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:23579:27)\n' +
+    '    at LayersModel.standardizeUserDataXY (C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:24465:13)\n' +
+    '    at LayersModel.<anonymous> (C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:24486:42)\n' +
+    '    at step (C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:159:27)\n' +
+    '    at Object.next (C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:108:53)\n' +
+    '    at C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:101:71\n' +
+    '    at new Promise (<anonymous>)\n' +
+    '    at __awaiter (C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:87:12)\n' +
+    '    at LayersModel.standardizeUserData (C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:24481:16)',
+  timestamp: '2026-06-10 23:05:50'
+}
+{
+  service: 'smart-shepherd-api',
+  level: 'error',
+  message: "Erreur lors de l'initialisation IA: target expected a batch of elements where each example has shape [1] (i.e.,tensor shape [*,1]) but the target received an input with 464 examples, each with shape [5] (tensor shape [464,5])",
+  stack: 'Error: target expected a batch of elements where each example has shape [1] (i.e.,tensor shape [*,1]) but the target received an input with 464 examples, each with shape [5] (tensor shape [464,5])\n' +
+    '    at new ValueError (C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:273:28)\n' +
+    '    at standardizeInputData (C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:23579:27)\n' +
+    '    at LayersModel.standardizeUserDataXY (C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:24465:13)\n' +
+    '    at LayersModel.<anonymous> (C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:24486:42)\n' +
+    '    at step (C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:159:27)\n' +
+    '    at Object.next (C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:108:53)\n' +
+    '    at C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:101:71\n' +
+    '    at new Promise (<anonymous>)\n' +
+    '    at __awaiter (C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:87:12)\n' +
+    '    at LayersModel.standardizeUserData (C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:24481:16)',
+  timestamp: '2026-06-10 23:05:51'
+}
+{
+  service: 'smart-shepherd-api',
+  level: 'error',
+  message: "Erreur lors de l'initialisation IA: target expected a batch of elements where each example has shape [1] (i.e.,tensor shape [*,1]) but the target received an input with 464 examples, each with shape [5] (tensor shape [464,5])",
+  stack: 'Error: target expected a batch of elements where each example has shape [1] (i.e.,tensor shape [*,1]) but the target received an input with 464 examples, each with shape [5] (tensor shape [464,5])\n' +
+    '    at new ValueError (C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:273:28)\n' +
+    '    at standardizeInputData (C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:23579:27)\n' +
+    '    at LayersModel.standardizeUserDataXY (C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:24465:13)\n' +
+    '    at LayersModel.<anonymous> (C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:24486:42)\n' +
+    '    at step (C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:159:27)\n' +
+    '    at Object.next (C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:108:53)\n' +
+    '    at C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:101:71\n' +
+    '    at new Promise (<anonymous>)\n' +
+    '    at __awaiter (C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:87:12)\n' +
+    '    at LayersModel.standardizeUserData (C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:24481:16)',
+  timestamp: '2026-06-10 23:05:52'
+}
+{
+  service: 'smart-shepherd-api',
+  level: 'error',
+  message: "Erreur lors de l'initialisation IA: target expected a batch of elements where each example has shape [1] (i.e.,tensor shape [*,1]) but the target received an input with 473 examples, each with shape [5] (tensor shape [473,5])",
+  stack: 'Error: target expected a batch of elements where each example has shape [1] (i.e.,tensor shape [*,1]) but the target received an input with 473 examples, each with shape [5] (tensor shape [473,5])\n' +
+    '    at new ValueError (C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:273:28)\n' +
+    '    at standardizeInputData (C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:23579:27)\n' +
+    '    at LayersModel.standardizeUserDataXY (C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:24465:13)\n' +
+    '    at LayersModel.<anonymous> (C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:24486:42)\n' +
+    '    at step (C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:159:27)\n' +
+    '    at Object.next (C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:108:53)\n' +
+    '    at C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:101:71\n' +
+    '    at new Promise (<anonymous>)\n' +
+    '    at __awaiter (C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:87:12)\n' +
+    '    at LayersModel.standardizeUserData (C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:24481:16)',
+  timestamp: '2026-06-10 23:08:48'
+}
+{
+  service: 'smart-shepherd-api',
+  level: 'error',
+  message: "Erreur lors de l'initialisation IA: target expected a batch of elements where each example has shape [1] (i.e.,tensor shape [*,1]) but the target received an input with 474 examples, each with shape [5] (tensor shape [474,5])",
+  stack: 'Error: target expected a batch of elements where each example has shape [1] (i.e.,tensor shape [*,1]) but the target received an input with 474 examples, each with shape [5] (tensor shape [474,5])\n' +
+    '    at new ValueError (C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:273:28)\n' +
+    '    at standardizeInputData (C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:23579:27)\n' +
+    '    at LayersModel.standardizeUserDataXY (C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:24465:13)\n' +
+    '    at LayersModel.<anonymous> (C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:24486:42)\n' +
+    '    at step (C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:159:27)\n' +
+    '    at Object.next (C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:108:53)\n' +
+    '    at C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:101:71\n' +
+    '    at new Promise (<anonymous>)\n' +
+    '    at __awaiter (C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:87:12)\n' +
+    '    at LayersModel.standardizeUserData (C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:24481:16)',
+  timestamp: '2026-06-10 23:09:04'
+}
+{
+  service: 'smart-shepherd-api',
+  level: 'error',
+  message: "Erreur lors de l'initialisation IA: target expected a batch of elements where each example has shape [1] (i.e.,tensor shape [*,1]) but the target received an input with 502 examples, each with shape [5] (tensor shape [502,5])",
+  stack: 'Error: target expected a batch of elements where each example has shape [1] (i.e.,tensor shape [*,1]) but the target received an input with 502 examples, each with shape [5] (tensor shape [502,5])\n' +
+    '    at new ValueError (C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:273:28)\n' +
+    '    at standardizeInputData (C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:23579:27)\n' +
+    '    at LayersModel.standardizeUserDataXY (C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:24465:13)\n' +
+    '    at LayersModel.<anonymous> (C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:24486:42)\n' +
+    '    at step (C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:159:27)\n' +
+    '    at Object.next (C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:108:53)\n' +
+    '    at C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:101:71\n' +
+    '    at new Promise (<anonymous>)\n' +
+    '    at __awaiter (C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:87:12)\n' +
+    '    at LayersModel.standardizeUserData (C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:24481:16)',
+  timestamp: '2026-06-10 23:18:23'
+}
+{
+  service: 'smart-shepherd-api',
+  level: 'error',
+  message: "Erreur lors de l'initialisation IA: target expected a batch of elements where each example has shape [1] (i.e.,tensor shape [*,1]) but the target received an input with 502 examples, each with shape [5] (tensor shape [502,5])",
+  stack: 'Error: target expected a batch of elements where each example has shape [1] (i.e.,tensor shape [*,1]) but the target received an input with 502 examples, each with shape [5] (tensor shape [502,5])\n' +
+    '    at new ValueError (C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:273:28)\n' +
+    '    at standardizeInputData (C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:23579:27)\n' +
+    '    at LayersModel.standardizeUserDataXY (C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:24465:13)\n' +
+    '    at LayersModel.<anonymous> (C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:24486:42)\n' +
+    '    at step (C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:159:27)\n' +
+    '    at Object.next (C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:108:53)\n' +
+    '    at C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:101:71\n' +
+    '    at new Promise (<anonymous>)\n' +
+    '    at __awaiter (C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:87:12)\n' +
+    '    at LayersModel.standardizeUserData (C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:24481:16)',
+  timestamp: '2026-06-10 23:18:23'
+}
+{
+  service: 'smart-shepherd-api',
+  level: 'error',
+  message: "Erreur lors de l'initialisation IA: target expected a batch of elements where each example has shape [1] (i.e.,tensor shape [*,1]) but the target received an input with 502 examples, each with shape [5] (tensor shape [502,5])",
+  stack: 'Error: target expected a batch of elements where each example has shape [1] (i.e.,tensor shape [*,1]) but the target received an input with 502 examples, each with shape [5] (tensor shape [502,5])\n' +
+    '    at new ValueError (C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:273:28)\n' +
+    '    at standardizeInputData (C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:23579:27)\n' +
+    '    at LayersModel.standardizeUserDataXY (C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:24465:13)\n' +
+    '    at LayersModel.<anonymous> (C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:24486:42)\n' +
+    '    at step (C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:159:27)\n' +
+    '    at Object.next (C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:108:53)\n' +
+    '    at C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:101:71\n' +
+    '    at new Promise (<anonymous>)\n' +
+    '    at __awaiter (C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:87:12)\n' +
+    '    at LayersModel.standardizeUserData (C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:24481:16)',
+  timestamp: '2026-06-10 23:18:25'
+}
+{
+  service: 'smart-shepherd-api',
+  level: 'error',
+  message: "Erreur lors de l'initialisation IA: target expected a batch of elements where each example has shape [1] (i.e.,tensor shape [*,1]) but the target received an input with 502 examples, each with shape [5] (tensor shape [502,5])",
+  stack: 'Error: target expected a batch of elements where each example has shape [1] (i.e.,tensor shape [*,1]) but the target received an input with 502 examples, each with shape [5] (tensor shape [502,5])\n' +
+    '    at new ValueError (C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:273:28)\n' +
+    '    at standardizeInputData (C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:23579:27)\n' +
+    '    at LayersModel.standardizeUserDataXY (C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:24465:13)\n' +
+    '    at LayersModel.<anonymous> (C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:24486:42)\n' +
+    '    at step (C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:159:27)\n' +
+    '    at Object.next (C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:108:53)\n' +
+    '    at C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:101:71\n' +
+    '    at new Promise (<anonymous>)\n' +
+    '    at __awaiter (C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:87:12)\n' +
+    '    at LayersModel.standardizeUserData (C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:24481:16)',
+  timestamp: '2026-06-10 23:18:25'
+}
+{
+  service: 'smart-shepherd-api',
+  level: 'error',
+  message: "Erreur lors de l'initialisation IA: target expected a batch of elements where each example has shape [1] (i.e.,tensor shape [*,1]) but the target received an input with 503 examples, each with shape [5] (tensor shape [503,5])",
+  stack: 'Error: target expected a batch of elements where each example has shape [1] (i.e.,tensor shape [*,1]) but the target received an input with 503 examples, each with shape [5] (tensor shape [503,5])\n' +
+    '    at new ValueError (C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:273:28)\n' +
+    '    at standardizeInputData (C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:23579:27)\n' +
+    '    at LayersModel.standardizeUserDataXY (C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:24465:13)\n' +
+    '    at LayersModel.<anonymous> (C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:24486:42)\n' +
+    '    at step (C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:159:27)\n' +
+    '    at Object.next (C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:108:53)\n' +
+    '    at C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:101:71\n' +
+    '    at new Promise (<anonymous>)\n' +
+    '    at __awaiter (C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:87:12)\n' +
+    '    at LayersModel.standardizeUserData (C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:24481:16)',
+  timestamp: '2026-06-10 23:18:51'
+}
+{
+  service: 'smart-shepherd-api',
+  level: 'error',
+  message: "Erreur lors de l'initialisation IA: target expected a batch of elements where each example has shape [1] (i.e.,tensor shape [*,1]) but the target received an input with 503 examples, each with shape [5] (tensor shape [503,5])",
+  stack: 'Error: target expected a batch of elements where each example has shape [1] (i.e.,tensor shape [*,1]) but the target received an input with 503 examples, each with shape [5] (tensor shape [503,5])\n' +
+    '    at new ValueError (C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:273:28)\n' +
+    '    at standardizeInputData (C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:23579:27)\n' +
+    '    at LayersModel.standardizeUserDataXY (C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:24465:13)\n' +
+    '    at LayersModel.<anonymous> (C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:24486:42)\n' +
+    '    at step (C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:159:27)\n' +
+    '    at Object.next (C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:108:53)\n' +
+    '    at C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:101:71\n' +
+    '    at new Promise (<anonymous>)\n' +
+    '    at __awaiter (C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:87:12)\n' +
+    '    at LayersModel.standardizeUserData (C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:24481:16)',
+  timestamp: '2026-06-10 23:18:56'
+}
+{
+  service: 'smart-shepherd-api',
+  level: 'error',
+  message: "Erreur lors de l'initialisation IA: target expected a batch of elements where each example has shape [1] (i.e.,tensor shape [*,1]) but the target received an input with 503 examples, each with shape [5] (tensor shape [503,5])",
+  stack: 'Error: target expected a batch of elements where each example has shape [1] (i.e.,tensor shape [*,1]) but the target received an input with 503 examples, each with shape [5] (tensor shape [503,5])\n' +
+    '    at new ValueError (C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:273:28)\n' +
+    '    at standardizeInputData (C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:23579:27)\n' +
+    '    at LayersModel.standardizeUserDataXY (C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:24465:13)\n' +
+    '    at LayersModel.<anonymous> (C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:24486:42)\n' +
+    '    at step (C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:159:27)\n' +
+    '    at Object.next (C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:108:53)\n' +
+    '    at C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:101:71\n' +
+    '    at new Promise (<anonymous>)\n' +
+    '    at __awaiter (C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:87:12)\n' +
+    '    at LayersModel.standardizeUserData (C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:24481:16)',
+  timestamp: '2026-06-10 23:19:00'
+}
+{
+  service: 'smart-shepherd-api',
+  level: 'error',
+  message: "Erreur lors de l'initialisation IA: target expected a batch of elements where each example has shape [1] (i.e.,tensor shape [*,1]) but the target received an input with 504 examples, each with shape [5] (tensor shape [504,5])",
+  stack: 'Error: target expected a batch of elements where each example has shape [1] (i.e.,tensor shape [*,1]) but the target received an input with 504 examples, each with shape [5] (tensor shape [504,5])\n' +
+    '    at new ValueError (C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:273:28)\n' +
+    '    at standardizeInputData (C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:23579:27)\n' +
+    '    at LayersModel.standardizeUserDataXY (C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:24465:13)\n' +
+    '    at LayersModel.<anonymous> (C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:24486:42)\n' +
+    '    at step (C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:159:27)\n' +
+    '    at Object.next (C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:108:53)\n' +
+    '    at C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:101:71\n' +
+    '    at new Promise (<anonymous>)\n' +
+    '    at __awaiter (C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:87:12)\n' +
+    '    at LayersModel.standardizeUserData (C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:24481:16)',
+  timestamp: '2026-06-10 23:19:00'
+}

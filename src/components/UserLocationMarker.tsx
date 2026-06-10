@@ -82,7 +82,7 @@ const UserLocationMarker: React.FC<UserLocationMarkerProps> = ({
   onLocationUpdate
 }) => {
   const map = useMap();
-  const { position, error, isLoading, watchPosition, stopWatching } = useGeolocation();
+  const { position, error, isLoading, watchPosition, stopWatching, getCurrentPosition } = useGeolocation();
   const hasCentered = useRef(false);
   const [isFollowing, setIsFollowing] = React.useState(autoTrack);
 
@@ -101,23 +101,26 @@ const UserLocationMarker: React.FC<UserLocationMarkerProps> = ({
       if (position) {
         map.setView([position.latitude, position.longitude], 18, { animate: true });
         setIsFollowing(true);
+      } else {
+        // Position not yet resolved — request it on demand
+        getCurrentPosition()
+          .then((pos) => {
+            map.setView([pos.latitude, pos.longitude], 18, { animate: true });
+            setIsFollowing(true);
+          })
+          .catch(() => {});
       }
     };
     window.addEventListener('centerOnUser', handleCenterOnUser);
     return () => window.removeEventListener('centerOnUser', handleCenterOnUser);
-  }, [map, position]);
+  }, [map, position, getCurrentPosition]);
 
   useEffect(() => {
-    if (autoTrack) {
-      watchPosition();
-    }
-    
-    return () => {
-      if (autoTrack) {
-        stopWatching();
-      }
-    };
-  }, [autoTrack, watchPosition, stopWatching]);
+    if (autoTrack) watchPosition();
+    return () => { if (autoTrack) stopWatching(); };
+    // watchPosition/stopWatching are stable refs — safe to omit
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [autoTrack]);
 
   useEffect(() => {
     if (position) {

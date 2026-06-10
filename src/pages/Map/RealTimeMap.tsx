@@ -20,7 +20,6 @@ import { useFarmConfig } from '../../hooks/useFarmConfig';
 import { IAnimal, IGeofenceZone } from '../../types';
 import { getCurrentWeather, getWeatherAlerts } from '../../services/weatherService';
 import { Cloud, Sun, CloudRain, Thermometer, Wind, Route, Waves, Radar, Sparkles, PenSquare, Trash2, Ban } from 'lucide-react';
-import Button from '../../components/ui/Button';
 
 interface AnimalPosition extends Pick<IAnimal, 'collar_id' | 'name' | 'lat' | 'lng' | 'battery' | 'health' | 'status' | 'speed' | 'temperature' | 'heading' | 'breed' | 'lastUpdate' | 'heartRate' | 'rssi' | 'activity_level' | 'sector' | 'activity'> {
   id: string;
@@ -335,8 +334,6 @@ const createCustomClusterIcon = (cluster: ClusterMarker) => {
 
 const RealTimeMap = React.memo(({
   animalsList,
-  clusters = [],
-  finalAnimals = [],
   history,
   zones,
   selectedAnimalId,
@@ -358,9 +355,21 @@ const RealTimeMap = React.memo(({
   const [activeLayer, setActiveLayer] = useState<keyof typeof TILE_LAYERS>(theme === 'dark' ? 'dark' : 'street');
   const [tileUrl, setTileUrl] = useState(TILE_LAYERS[theme === 'dark' ? 'dark' : 'street'].url);
   const [showWeather, setShowWeather] = useState(false);
-  const [weatherType, setWeatherType] = useState('precipitation_new');
+  const [weatherType] = useState('precipitation_new');
   const [weatherData, setWeatherData] = useState<WeatherData | null>(null);
   const [weatherAlerts, setWeatherAlerts] = useState<WeatherAlert[]>([]);
+
+  const [geoStatus, setGeoStatus] = useState<'idle' | 'loading' | 'granted' | 'denied'>('idle');
+
+  useEffect(() => {
+    if (!navigator.geolocation) { setGeoStatus('denied'); return; }
+    setGeoStatus('loading');
+    navigator.geolocation.getCurrentPosition(
+      () => setGeoStatus('granted'),
+      () => setGeoStatus('denied'),
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
+    );
+  }, []);
 
   // Floating Controls State
   const [showTrails, setShowTrails] = useState(false);
@@ -419,7 +428,9 @@ const RealTimeMap = React.memo(({
     return [farmConfig.farmLat, farmConfig.farmLng];
   }, [farmConfig.farmLat, farmConfig.farmLng]);
 
-  const initialCenter = useMemo<[number, number] | null>(() => {
+  const DEFAULT_CENTER: [number, number] = [35.5047, 11.0622]; // Mahdia, Tunisia
+
+  const initialCenter = useMemo<[number, number]>(() => {
     if (animalPositions.length > 0) {
       const total = animalPositions.reduce((acc, [lat, lng]) => {
         acc.lat += lat;
@@ -431,7 +442,7 @@ const RealTimeMap = React.memo(({
     }
 
     if (farmCenter) return farmCenter;
-    return null;
+    return DEFAULT_CENTER;
   }, [animalPositions, farmCenter]);
 
   // Listen for focus toggles to reflow Leaflet size
@@ -540,31 +551,34 @@ const RealTimeMap = React.memo(({
     }
   }, [animalsList, focusId]);
 
-  if (!initialCenter) {
-    return (
-      <div className="relative h-full min-h-[520px] overflow-hidden rounded-[10px] border border-[var(--card-border)] bg-white dark:bg-[var(--card-bg)] flex items-center justify-center">
-        <div className="max-w-md text-center px-6 py-10 space-y-4">
-          <div className="w-16 h-16 mx-auto rounded-2xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center">
-            <svg className="w-8 h-8 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
-            </svg>
-          </div>
-          <div>
-            <h3 className="text-base font-semibold text-[var(--text-primary)]">Carte GPS non disponible</h3>
-            <p className="mt-2 text-sm text-[var(--text-secondary)]">
-              Les colliers IoT ne transmettent pas de coordonnées GPS.<br />
-              Configurez la position de la ferme pour afficher un centre de carte.
-            </p>
-          </div>
-          <Button variant="primary" onClick={() => navigate("/settings")}>Configurer la position de la ferme</Button>
-        </div>
-      </div>
-    );
-  }
+  const noGpsData = animalPositions.length === 0 && !farmCenter;
 
   return (
     <div className="flex flex-1 relative h-full min-h-[520px] overflow-hidden rounded-[10px] border border-[var(--card-border)] bg-white dark:bg-[var(--card-bg)]">
       <div className="pointer-events-none absolute inset-0 z-[600] bg-[radial-gradient(circle_at_18%_20%,rgba(16,185,129,0.16),transparent_36%),radial-gradient(circle_at_82%_78%,rgba(14,165,233,0.14),transparent_34%)]" />
+
+      {/* Geolocation status pill */}
+      {geoStatus === 'loading' && (
+        <div className="pointer-events-none absolute top-4 left-1/2 -translate-x-1/2 z-[900] flex items-center gap-2 rounded-full border border-blue-200 bg-blue-50/95 px-4 py-1.5 text-xs font-medium text-blue-700 shadow-sm backdrop-blur-sm dark:border-blue-700/50 dark:bg-blue-900/60 dark:text-blue-300">
+          <span className="h-2 w-2 animate-ping rounded-full bg-blue-500" />
+          Localisation en cours…
+        </div>
+      )}
+
+      {geoStatus === 'denied' && noGpsData && (
+        <div className="absolute top-4 left-1/2 -translate-x-1/2 z-[900] flex items-center gap-2 rounded-full border border-red-300 bg-red-50/95 px-4 py-1.5 text-xs font-medium text-red-700 shadow-sm backdrop-blur-sm dark:border-red-700/50 dark:bg-red-900/60 dark:text-red-300">
+          <svg className="h-3.5 w-3.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" /></svg>
+          Localisation refusée — autorisez dans la barre du navigateur
+        </div>
+      )}
+
+      {geoStatus === 'granted' && (
+        <div className="pointer-events-none absolute top-4 left-1/2 -translate-x-1/2 z-[900] flex items-center gap-2 rounded-full border border-emerald-300 bg-emerald-50/95 px-4 py-1.5 text-xs font-medium text-emerald-700 shadow-sm backdrop-blur-sm dark:border-emerald-700/50 dark:bg-emerald-900/60 dark:text-emerald-300"
+          style={{ animation: 'fadeOut 3s forwards 2s' }}>
+          <span className="h-2 w-2 rounded-full bg-emerald-500" />
+          Position détectée
+        </div>
+      )}
       <div className="pointer-events-none absolute inset-x-0 top-0 z-[610] h-28 bg-gradient-to-b from-black/20 via-black/5 to-transparent" />
 
       <MapContainer

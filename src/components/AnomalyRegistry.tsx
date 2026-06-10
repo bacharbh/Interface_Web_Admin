@@ -52,6 +52,14 @@ const normalizeHealth = (health: string): string => {
     return health;
 };
 
+const timeAgo = (past: Date, now: Date): string => {
+    const secs = Math.floor((now.getTime() - past.getTime()) / 1000);
+    if (secs < 60) return `il y a ${secs}s`;
+    const mins = Math.floor(secs / 60);
+    if (mins < 60) return `il y a ${mins}min`;
+    return `il y a ${Math.floor(mins / 60)}h`;
+};
+
 const activityLabel = (activity: number | null): string => {
     if (activity === null) return '—';
     if (activity === 0) return 'Inactif';
@@ -69,6 +77,13 @@ const AnomalyRegistry: React.FC = () => {
     const [isLoading, setIsLoading] = useState(false);
     const [lastDataUpdate, setLastDataUpdate] = useState<Date | null>(null);
     const [lastAIUpdate, setLastAIUpdate] = useState<Date | null>(null);
+    const [now, setNow] = useState(() => new Date());
+
+    // Live clock — ticks every second
+    useEffect(() => {
+        const t = setInterval(() => setNow(new Date()), 1000);
+        return () => clearInterval(t);
+    }, []);
     const anomaliesRef = useRef<Map<string, number>>(new Map());
     const lastAIRequestAtRef = useRef<number>(0);
     const lastAIRequestSignatureRef = useRef<string>('');
@@ -255,16 +270,6 @@ const AnomalyRegistry: React.FC = () => {
         }
     };
 
-    const getHealthColor = (health: string) => {
-        switch (health) {
-            case 'Good': return 'text-green-600 dark:text-green-400';
-            case 'Warning': return 'text-orange-500 dark:text-orange-400';
-            case 'Critical': return 'text-red-600 dark:text-red-400';
-            case 'Résolu': return 'text-blue-600 dark:text-blue-400';
-            default: return 'text-gray-500 dark:text-gray-400';
-        }
-    };
-
     const getHealthBadge = (health: string) => {
         switch (health) {
             case 'Good': return 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400';
@@ -339,9 +344,12 @@ const AnomalyRegistry: React.FC = () => {
                         <span className="text-sm font-medium text-gray-600 dark:text-gray-400">Dernière mise à jour</span>
                         <Clock className="w-5 h-5 text-gray-400" />
                     </div>
-                    <p className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
+                    <p className="text-xl font-semibold text-gray-900 dark:text-white mb-1">
                         {lastDataUpdate?.toLocaleTimeString('fr-FR') || 'En attente...'}
                     </p>
+                    {lastDataUpdate && (
+                        <p className="text-xs text-gray-400 dark:text-gray-500 mb-2">{timeAgo(lastDataUpdate, now)}</p>
+                    )}
                     <div className="text-sm text-gray-600 dark:text-gray-400">
                         Animaux: <strong className="text-gray-900 dark:text-white">{totalAnimals}</strong>
                         {' · '}
@@ -354,9 +362,12 @@ const AnomalyRegistry: React.FC = () => {
                         <span className="text-sm font-medium text-gray-600 dark:text-gray-400">Dernière analyse IA</span>
                         <TrendingUp className="w-5 h-5 text-gray-400" />
                     </div>
-                    <p className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
+                    <p className="text-xl font-semibold text-gray-900 dark:text-white mb-1">
                         {lastAIUpdate?.toLocaleTimeString('fr-FR') || 'Non disponible'}
                     </p>
+                    {lastAIUpdate && (
+                        <p className="text-xs text-gray-400 dark:text-gray-500 mb-2">{timeAgo(lastAIUpdate, now)}</p>
+                    )}
                     <div className="text-sm text-gray-600 dark:text-gray-400">
                         Analysés: <strong className="text-gray-900 dark:text-white">{totalAnimals}</strong>
                     </div>
@@ -468,7 +479,8 @@ const AnomalyRegistry: React.FC = () => {
                                         {activityLabel(record.activity)}
                                     </td>
                                     <td className="px-6 py-4 text-sm text-gray-500 dark:text-gray-400">
-                                        {record.timestamp}
+                                        <span className="font-mono">{now.toLocaleTimeString('fr-FR')}</span>
+                                        <span className="block text-xs text-gray-400 dark:text-gray-500">en direct</span>
                                     </td>
                                 </tr>
                             ))}

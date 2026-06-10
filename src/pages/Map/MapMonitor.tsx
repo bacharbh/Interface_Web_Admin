@@ -1,8 +1,6 @@
 import React, { useState, useCallback, useEffect, useMemo, useRef, Suspense } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
-import { MapContainer, Marker, TileLayer, useMap } from 'react-leaflet';
-import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import {
   Activity, AlertTriangle, Battery, ChevronRight, Cpu,
@@ -32,17 +30,6 @@ const STATUS_CONFIG: Record<StatusFilter, { label: string; color: string; dot: s
   CRITICAL: { label: 'Critiques', color: 'text-red-600', dot: '#dc2626' },
 };
 
-const DEFAULT_USER_MAP_CENTER: [number, number] = [35.8245, 10.6346];
-
-const USER_LOCATION_ICON = L.icon({
-  iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
-  iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
-  shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
-  iconSize: [25, 41],
-  iconAnchor: [12, 41],
-  popupAnchor: [1, -34],
-  shadowSize: [41, 41],
-});
 
 // ─── Component ────────────────────────────────────────────────────────────────
 export default function MapMonitor() {
@@ -135,33 +122,29 @@ export default function MapMonitor() {
 
       {/* ── Map area (Full Background) ────────────────────────────────────────────────────── */}
       <div className="absolute inset-0 z-0">
-        {animalsList.length > 0 ? (
-          <Suspense fallback={
-            <div className="absolute inset-0 flex items-center justify-center bg-gray-100 dark:bg-gray-900">
-              <div className="flex flex-col items-center gap-3 text-gray-400">
-                <RefreshCw className="w-6 h-6 animate-spin" />
-                <span className="text-sm">Chargement de la carte…</span>
-              </div>
+        <Suspense fallback={
+          <div className="absolute inset-0 flex items-center justify-center bg-gray-100 dark:bg-gray-900">
+            <div className="flex flex-col items-center gap-3 text-gray-400">
+              <RefreshCw className="w-6 h-6 animate-spin" />
+              <span className="text-sm">Chargement de la carte…</span>
             </div>
-          }>
-            <LazyRealTimeMap
-              animalsList={filteredAnimals}
-              history={history}
-              zones={zones}
-              selectedAnimalId={selectedAnimalId}
-              onSelectAnimal={handleSelectAnimal}
-              onZoneCreated={handleZoneCreated}
-              onZoneEdited={handleZoneEdited}
-              onZoneDeleted={handleZoneDeleted}
-              isConnected={isConnected}
-              onViewportChange={() => { }}
-              tileLayerOverride={tileLayer === 'street' ? 'streets' : tileLayer}
-              imperativeRef={mapFocusRef}
-            />
-          </Suspense>
-        ) : (
-          <EmptyLiveGeoMap />
-        )}
+          </div>
+        }>
+          <LazyRealTimeMap
+            animalsList={filteredAnimals}
+            history={history}
+            zones={zones}
+            selectedAnimalId={selectedAnimalId}
+            onSelectAnimal={handleSelectAnimal}
+            onZoneCreated={handleZoneCreated}
+            onZoneEdited={handleZoneEdited}
+            onZoneDeleted={handleZoneDeleted}
+            isConnected={isConnected}
+            onViewportChange={() => { }}
+            tileLayerOverride={tileLayer === 'street' ? 'streets' : tileLayer}
+            imperativeRef={mapFocusRef}
+          />
+        </Suspense>
       </div>
 
       {/* ── Floating Top Status Bar ─────────────────────────────────────────────────── */}
@@ -282,69 +265,6 @@ export default function MapMonitor() {
   );
 }
 
-function RecenterOnUserPosition({ position }: { position: [number, number] | null }) {
-  const map = useMap();
-
-  useEffect(() => {
-    if (!position) return;
-    map.setView(position, 13, { animate: false });
-  }, [map, position]);
-
-  return null;
-}
-
-function EmptyLiveGeoMap() {
-  const [userPosition, setUserPosition] = useState<[number, number] | null>(null);
-  const [geoError, setGeoError] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (!navigator.geolocation) {
-      setGeoError('Geolocalisation non disponible sur ce navigateur.');
-      return;
-    }
-
-    navigator.geolocation.getCurrentPosition(
-      ({ coords }) => {
-        setUserPosition([coords.latitude, coords.longitude]);
-        setGeoError(null);
-      },
-      () => {
-        setGeoError('Geolocalisation refusee. Activez la permission pour centrer la carte.');
-      },
-      {
-        enableHighAccuracy: true,
-        timeout: 10000,
-        maximumAge: 60000,
-      }
-    );
-  }, []);
-
-  return (
-    <div className="absolute inset-0 z-0">
-      <MapContainer
-        center={userPosition ?? DEFAULT_USER_MAP_CENTER}
-        zoom={13}
-        zoomControl={true}
-        scrollWheelZoom={true}
-        className="h-full w-full"
-        style={{ height: '100%', width: '100%' }}
-      >
-        <TileLayer
-          attribution='&copy; OpenStreetMap contributors'
-          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-        />
-        <RecenterOnUserPosition position={userPosition} />
-        {userPosition && <Marker position={userPosition} icon={USER_LOCATION_ICON} />}
-      </MapContainer>
-
-      {geoError && (
-        <div className="pointer-events-none absolute bottom-4 left-1/2 z-[1200] -translate-x-1/2 rounded-xl border border-amber-200 bg-white/90 px-3 py-2 text-xs text-amber-700 shadow-md dark:border-amber-900/60 dark:bg-gray-900/90 dark:text-amber-300">
-          {geoError}
-        </div>
-      )}
-    </div>
-  );
-}
 
 // ─── AnimalDetailPanel ─────────────────────────────────────────────────────────
 function AnimalDetailPanel({ animal, onClose, onNavigate }: {

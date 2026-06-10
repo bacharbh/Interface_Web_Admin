@@ -138,9 +138,9 @@ const AnimalDetailUnified: React.FC<AnimalDetailUnifiedProps> = ({ animalId }) =
     }
 
     const battery = animal.battery ?? 0;
-    const temperature = animal.temperature ?? 0;
-    const heartRate = animal.heartRate ?? 0;
-    const activity = animal.activity ?? 0;
+    const temperature = animal.temperature ?? null;
+    const heartRate = animal.heartRate ?? null;
+    const activity = animal.activity ?? null;
     const speed = animal.speed ?? 0;
 
     return (
@@ -219,9 +219,9 @@ const AnimalDetailUnified: React.FC<AnimalDetailUnifiedProps> = ({ animalId }) =
             <section className="grid grid-cols-1 xl:grid-cols-[1.4fr_0.9fr] gap-6">
                 <div className="space-y-6">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <VitalBox label="BPM" value={heartRate || 85} unit="BPM" range={{ min: 70, max: 120 }} icon={<Heart className="w-5 h-5" />} />
-                        <VitalBox label="Température" value={temperature || 38.5} unit="°C" range={{ min: 38.5, max: 39.5 }} icon={<Thermometer className="w-5 h-5" />} />
-                        <VitalBox label="Activité" value={activity || 65} unit="%" range={{ min: 50, max: 100 }} icon={<Activity className="w-5 h-5" />} />
+                        <VitalBox label="BPM" value={heartRate} unit="BPM" range={{ min: 70, max: 120 }} icon={<Heart className="w-5 h-5" />} />
+                        <VitalBox label="Température" value={temperature} unit="°C" range={{ min: 38.5, max: 39.5 }} icon={<Thermometer className="w-5 h-5" />} />
+                        <VitalBox label="Activité" value={activity} unit="%" range={{ min: 50, max: 100 }} icon={<Activity className="w-5 h-5" />} />
                         <VitalBox label="Vitesse" value={speed || 0} unit="km/h" range={{ min: 0, max: 10 }} icon={<Wind className="w-5 h-5" />} />
                     </div>
 

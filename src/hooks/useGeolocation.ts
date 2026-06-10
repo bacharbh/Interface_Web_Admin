@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 
 interface GeolocationPosition {
   latitude: number;
@@ -25,155 +25,112 @@ interface UseGeolocationReturn {
   getCurrentPosition: () => Promise<GeolocationPosition>;
 }
 
+const getErrorMessage = (code: number): string => {
+  switch (code) {
+    case 1: return 'Permission de localisation refusée.';
+    case 2: return 'Localisation indisponible.';
+    case 3: return 'Délai de localisation dépassé.';
+    default: return 'Erreur de localisation inconnue.';
+  }
+};
+
 const useGeolocation = (): UseGeolocationReturn => {
   const [position, setPosition] = useState<GeolocationPosition | null>(null);
   const [error, setError] = useState<GeolocationError | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [watchId, setWatchId] = useState<number | null>(null);
+  // Use a ref (not state) so watchPosition/stopWatching don't change identity
+  const watchIdRef = useRef<number | null>(null);
 
   const getCurrentPosition = useCallback((): Promise<GeolocationPosition> => {
     return new Promise((resolve, reject) => {
       if (!navigator.geolocation) {
-        reject({
-          code: 0,
-          message: 'Geolocation is not supported by this browser'
-        });
+        reject({ code: 0, message: 'Géolocalisation non supportée' });
         return;
       }
-
       setIsLoading(true);
       navigator.geolocation.getCurrentPosition(
-        (position) => {
-          const geoPosition: GeolocationPosition = {
-            latitude: position.coords.latitude,
-            longitude: position.coords.longitude,
-            accuracy: position.coords.accuracy,
-            altitude: position.coords.altitude || undefined,
-            altitudeAccuracy: position.coords.altitudeAccuracy || undefined,
-            heading: position.coords.heading || undefined,
-            speed: position.coords.speed || undefined,
-            timestamp: position.timestamp
+        (pos) => {
+          const geoPos: GeolocationPosition = {
+            latitude: pos.coords.latitude,
+            longitude: pos.coords.longitude,
+            accuracy: pos.coords.accuracy,
+            altitude: pos.coords.altitude ?? undefined,
+            altitudeAccuracy: pos.coords.altitudeAccuracy ?? undefined,
+            heading: pos.coords.heading ?? undefined,
+            speed: pos.coords.speed ?? undefined,
+            timestamp: pos.timestamp,
           };
-          
-          setPosition(geoPosition);
+          setPosition(geoPos);
           setError(null);
           setIsLoading(false);
-          resolve(geoPosition);
+          resolve(geoPos);
         },
-        (error) => {
-          const geoError: GeolocationError = {
-            code: error.code,
-            message: getErrorMessage(error.code)
-          };
-          
-          setError(geoError);
-          setPosition(null);
+        (err) => {
+          const geoErr: GeolocationError = { code: err.code, message: getErrorMessage(err.code) };
+          setError(geoErr);
           setIsLoading(false);
-          reject(geoError);
+          reject(geoErr);
         },
-        {
-          enableHighAccuracy: true,
-          timeout: 10000,
-          maximumAge: 0
-        }
+        { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
       );
     });
-  }, []);
+  }, []); // stable — no deps
 
+  // stable — uses ref, not state
   const watchPosition = useCallback(() => {
     if (!navigator.geolocation) {
-      setError({
-        code: 0,
-        message: 'Geolocation is not supported by this browser'
-      });
+      setError({ code: 0, message: 'Géolocalisation non supportée' });
       return;
     }
-
-    if (watchId !== null) {
-      // Already watching
-      return;
-    }
+    if (watchIdRef.current !== null) return; // already watching
 
     const id = navigator.geolocation.watchPosition(
-      (position) => {
-        const geoPosition: GeolocationPosition = {
-          latitude: position.coords.latitude,
-          longitude: position.coords.longitude,
-          accuracy: position.coords.accuracy,
-          altitude: position.coords.altitude || undefined,
-          altitudeAccuracy: position.coords.altitudeAccuracy || undefined,
-          heading: position.coords.heading || undefined,
-          speed: position.coords.speed || undefined,
-          timestamp: position.timestamp
-        };
-        
-        setPosition(geoPosition);
+      (pos) => {
+        setPosition({
+          latitude: pos.coords.latitude,
+          longitude: pos.coords.longitude,
+          accuracy: pos.coords.accuracy,
+          altitude: pos.coords.altitude ?? undefined,
+          altitudeAccuracy: pos.coords.altitudeAccuracy ?? undefined,
+          heading: pos.coords.heading ?? undefined,
+          speed: pos.coords.speed ?? undefined,
+          timestamp: pos.timestamp,
+        });
         setError(null);
         setIsLoading(false);
       },
-      (error) => {
-        const geoError: GeolocationError = {
-          code: error.code,
-          message: getErrorMessage(error.code)
-        };
-        
-        setError(geoError);
+      (err) => {
+        setError({ code: err.code, message: getErrorMessage(err.code) });
         setIsLoading(false);
       },
-      {
-        enableHighAccuracy: true,
-        timeout: 10000,
-        maximumAge: 5000 // Accept positions that are up to 5 seconds old
-      }
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 5000 }
     );
+    watchIdRef.current = id;
+  }, []); // stable — no deps
 
-    setWatchId(id);
-  }, [watchId]);
-
+  // stable — uses ref, not state
   const stopWatching = useCallback(() => {
-    if (watchId !== null) {
-      navigator.geolocation.clearWatch(watchId);
-      setWatchId(null);
+    if (watchIdRef.current !== null) {
+      navigator.geolocation.clearWatch(watchIdRef.current);
+      watchIdRef.current = null;
     }
-  }, [watchId]);
+  }, []); // stable — no deps
 
-  // Clean up on unmount
+  // Cleanup on unmount
   useEffect(() => {
     return () => {
-      if (watchId !== null) {
-        navigator.geolocation.clearWatch(watchId);
+      if (watchIdRef.current !== null) {
+        navigator.geolocation.clearWatch(watchIdRef.current);
       }
     };
-  }, [watchId]);
+  }, []);
 
-  // Get initial position on mount
+  // Get one-shot position on mount
   useEffect(() => {
-    getCurrentPosition().catch(() => {
-      // Silently fail initial position request
-    });
+    getCurrentPosition().catch(() => {});
   }, [getCurrentPosition]);
 
-  return {
-    position,
-    error,
-    isLoading,
-    watchPosition,
-    stopWatching,
-    getCurrentPosition
-  };
-};
-
-const getErrorMessage = (code: number): string => {
-  switch (code) {
-    case 1:
-      return 'Location permission denied. Please enable location access in your browser settings.';
-    case 2:
-      return 'Location information is unavailable.';
-    case 3:
-      return 'Location request timed out.';
-    default:
-      return 'An unknown error occurred while retrieving location.';
-  }
+  return { position, error, isLoading, watchPosition, stopWatching, getCurrentPosition };
 };
 
 export default useGeolocation;
