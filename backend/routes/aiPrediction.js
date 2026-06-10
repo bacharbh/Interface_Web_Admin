@@ -52,7 +52,11 @@ router.get('/predictions/:sheepId', authenticate, async (req, res) => {
       aiService.predictHealth7Days(sheepId),
     ]);
     const anomalies = Array.isArray(anomalyResult?.anomalies) ? anomalyResult.anomalies : [];
+<<<<<<< HEAD
     const riskScore = aiService._calcScoreFromAnomalies(anomalies);
+=======
+    const riskScore = aiService.calculateRiskScore(anomalies, {});
+>>>>>>> 06d853e5c17655b3af6f1c56ad6cf748927d17ef
     res.json({ success: true, data: { sheepId, anomalies, healthPrediction, riskScore, timestamp: new Date().toISOString() } });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
@@ -97,7 +101,11 @@ router.get('/risk-score/:sheepId', authenticate, async (req, res) => {
     await safeInit();
     const anomalyResult = await aiService.detectAnomalies(sheepId);
     const anomalies = Array.isArray(anomalyResult?.anomalies) ? anomalyResult.anomalies : [];
+<<<<<<< HEAD
     const riskScore = aiService._calcScoreFromAnomalies(anomalies);
+=======
+    const riskScore = aiService.calculateRiskScore(anomalies, {});
+>>>>>>> 06d853e5c17655b3af6f1c56ad6cf748927d17ef
     res.json({ success: true, data: { sheepId, riskScore, timestamp: new Date().toISOString() } });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });

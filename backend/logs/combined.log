@@ -35334,6 +35334,7 @@
     '    at async file:///C:/Users/bacha/Desktop/Interface_Web_Admin/backend/routes/aiPrediction.js:113:25',
   timestamp: '2026-06-06 03:50:58'
 }
+<<<<<<< HEAD
 {
   message: 'Initialisation des modèles IA de santé...',
   level: 'info',
@@ -49787,3 +49788,5 @@
     '    at LayersModel.standardizeUserData (C:\\Users\\bacha\\Desktop\\Interface_Web_Admin\\node_modules\\@tensorflow\\tfjs-layers\\dist\\tf-layers.node.js:24481:16)',
   timestamp: '2026-06-10 23:19:00'
 }
+=======
+>>>>>>> 06d853e5c17655b3af6f1c56ad6cf748927d17ef

@@ -81,6 +81,15 @@ function mapToAnimalWithHistory(collarId, latest = {}, history = {}) {
   };
 }
 
+<<<<<<< HEAD
+=======
+function latestEntry(history = {}) {
+  const entries = Object.values(history);
+  if (!entries.length) return {};
+  return entries.sort((a, b) => new Date(entryTime(b)) - new Date(entryTime(a)))[0];
+}
+
+>>>>>>> 06d853e5c17655b3af6f1c56ad6cf748927d17ef
 export async function getAllAnimals() {
   const { data } = await axios.get(`${DB_URL}/animals.json${authSuffix()}`);
   if (!data) return [];
@@ -166,6 +175,7 @@ export async function getLabels() {
 }
 
 export async function getLabelsCount() {
+<<<<<<< HEAD
   const { data } = await axios.get(`${DB_URL}/labels.json${authSuffix()}`);
   if (!data) return 0;
   const now = new Date();
@@ -173,6 +183,11 @@ export async function getLabelsCount() {
   return Object.values(data).filter(
     (label) => label.createdAt && label.createdAt >= startOfMonth
   ).length;
+=======
+  const { data } = await axios.get(`${DB_URL}/labels.json?shallow=true${authSuffix(true)}`);
+  if (!data) return 0;
+  return Object.keys(data).length;
+>>>>>>> 06d853e5c17655b3af6f1c56ad6cf748927d17ef
 }
 
 // --- RTDB collections: farms / memberships / users ---

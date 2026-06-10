@@ -441,9 +441,20 @@ class AIHealthPredictionService {
     const { default: LocalAIService } = await import('./localAIService.js');
     const sheep = await getAllAnimals();
 
+<<<<<<< HEAD
     return sheep.map(animal => {
       const riskLevel = LocalAIService.calculateRiskLevel(animal);
       const levelOrder = { LOW: 0, MEDIUM: 1, HIGH: 2, CRITICAL: 3 };
+=======
+    for (const animal of sheep) {
+      try {
+        const [anomalyResult, healthPrediction] = await Promise.all([
+          this.detectAnomalies(animal.sheepId),
+          this.predictHealth7Days(animal.sheepId),
+        ]);
+        const anomalies = Array.isArray(anomalyResult?.anomalies) ? anomalyResult.anomalies : [];
+        const riskScore = this.calculateRiskScore(anomalies, {});
+>>>>>>> 06d853e5c17655b3af6f1c56ad6cf748927d17ef
 
       // Build anomaly entries from real sensor values
       const anomalyList = [];
